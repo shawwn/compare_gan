@@ -326,8 +326,6 @@ def run_with_schedule(schedule, run_config, task_manager, options, use_tpu,
       train_hooks.append(
           hooks.AsyncCheckpointSaverHook(
               checkpoint_dir=run_config.model_dir,
-              keep_checkpoint_max=10,
-              keep_checkpoint_every_n_hours=1,
               save_steps=run_config.save_checkpoints_steps))
       # (b/122782388): Remove hotfix.
       run_config = run_config.replace(save_checkpoints_steps=1000000)
