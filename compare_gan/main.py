@@ -79,9 +79,10 @@ def _get_cluster():
 @gin.configurable("run_config")
 def _get_run_config(tf_random_seed=None,
                     single_core=False,
-                    iterations_per_loop=1000,
-                    save_checkpoints_steps=5000,
-                    keep_checkpoint_max=1000):
+                    iterations_per_loop=250,
+                    save_checkpoints_steps=250,
+                    keep_checkpoint_every_n_hours=1,
+                    keep_checkpoint_max=10):
   """Return `RunConfig` for TPUs."""
   tpu_config = tf.contrib.tpu.TPUConfig(
       num_shards=1 if single_core else None,  # None = all cores.
@@ -91,6 +92,7 @@ def _get_run_config(tf_random_seed=None,
       tf_random_seed=tf_random_seed,
       save_checkpoints_steps=save_checkpoints_steps,
       keep_checkpoint_max=keep_checkpoint_max,
+      keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
       cluster=_get_cluster(),
       tpu_config=tpu_config)
 
