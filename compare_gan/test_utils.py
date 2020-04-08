@@ -27,7 +27,8 @@ from compare_gan import eval_utils
 from compare_gan.architectures import abstract_arch
 from compare_gan.architectures import arch_ops
 import gin
-import mock
+from tensorflow.python.platform import test
+mock = test.mock
 import numpy as np
 import tensorflow as tf
 
