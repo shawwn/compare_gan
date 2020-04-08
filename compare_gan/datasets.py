@@ -1326,6 +1326,8 @@ DATASETS = {
     "imagenet_512_hq400": (functools.partial(
         SizeFilteredImagenetDataset, resolution=512, threshold=400)),
     "danbooru_128": functools.partial(DanbooruDataset,resolution=128),
+    "danbooru_256": functools.partial(DanbooruDataset,resolution=256),
+    "danbooru_512": functools.partial(DanbooruDataset,resolution=512),
     "soft_labeled_imagenet_128": functools.partial(
         SoftLabeledImagenetDataset, resolution=128),
     "single_class_imagenet_128": functools.partial(
