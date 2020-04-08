@@ -209,7 +209,8 @@ def _decode_and_crop_image(image_bytes, image_size, crop_padding=0, random_crop=
 
   offset_height = ((image_height - padded_center_crop_size) + 1) // 2
   offset_width = ((image_width - padded_center_crop_size) + 1) // 2
-  if random_crop:
+  #if random_crop:
+  if True:
     image = tf.image.random_crop(image, [padded_center_crop_size, padded_center_crop_size, channels])
   else:
     image = tf.image.crop_to_bounding_box(image, offset_height, offset_width, padded_center_crop_size, padded_center_crop_size)
@@ -1028,7 +1029,7 @@ class DanbooruDataset(ImageDatasetV2):
 
   def _load_dataset(self, split):
     ini = ImageNetInput(os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*",
-                is_training=split=='train', image_size=self.resolution)
+                is_training=True, image_size=self.resolution)
     params = {}
     params['batch_size'] = 1
     dataset = ini.input_fn(params)
