@@ -48,6 +48,7 @@ import tensorflow as tf
 import tensorflow_gan as tfgan
 import tensorflow_hub as hub
 
+import os
 
 FLAGS = flags.FLAGS
 
@@ -323,21 +324,31 @@ class ModularGAN(AbstractGAN):
     # create a 8x8 image grid.
     batch_size_per_replica = images.shape[0].value
     num_replicas = params["context"].num_replicas if "context" in params else 1
+    grid_shape = (3, 3)
     total_num_images = batch_size_per_replica * num_replicas
-    if total_num_images >= 64:
-      grid_shape = (8, 8)
-      # This can be more than 64. We slice all_images below.
-      samples_per_replica = int(np.ceil(64 / num_replicas))
+    sample_num_images = np.prod(grid_shape)
+    if total_num_images >= sample_num_images:
+      samples_per_replica = int(np.ceil(sample_num_images / num_replicas))
     else:
-      grid_shape = self._grid_shape(total_num_images)
       samples_per_replica = batch_size_per_replica
+    image_shape = self._dataset.image_shape[:]
+    sample_res = int(os.environ['GRID_RESOLUTION']) if 'GRID_RESOLUTION' in os.environ else 200
+    sample_shape = [sample_res, sample_res, image_shape[2]]
     def _merge_images_to_grid(all_images):
-      logging.info("Creating images summary for fake images: %s", all_images)
+      all_images = all_images[:np.prod(grid_shape)]
+      shape = image_shape
+      if shape[0] > sample_shape[0] or shape[1] > sample_shape[1]:
+        tf.logging.info('autoimages(%s, %s): Downscaling sampled images from %dx%d to %dx%d',
+                        repr(summary_name), repr(all_images),
+                        shape[0], shape[1],
+                        sample_shape[0], sample_shape[1])
+        all_images = tf.image.resize(all_images, sample_shape[0:2], method=tf.image.ResizeMethod.AREA)
+        shape = sample_shape
       return tfgan.eval.image_grid(
-          all_images[:np.prod(grid_shape)],
-          grid_shape=grid_shape,
-          image_shape=self._dataset.image_shape[:2],
-          num_channels=self._dataset.image_shape[2])
+        all_images,
+        grid_shape=grid_shape,
+        image_shape=shape[:2],
+        num_channels=shape[2])
     self._tpu_summary.image(summary_name,
                             images[:samples_per_replica],
                             reduce_fn=_merge_images_to_grid)
