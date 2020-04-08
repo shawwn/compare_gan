@@ -20,7 +20,7 @@ weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 
 # Generator
-G.ch = 96
+#G.ch = 96 # TODO: How to configure this?
 G.batch_norm_fn = @conditional_batch_norm
 G.spectral_norm = True
 ModularGAN.g_use_ema = True
@@ -31,8 +31,8 @@ standardize_batch.epsilon = 1e-5
 standardize_batch.use_moving_averages = False
 
 # Discriminator
-D.ch = 96
-options.disc_iters = 2
+# D.ch = 96 # TODO: How to configure this?
+options.disc_iters = 1
 D.spectral_norm = True
 resnet_biggan_deep.Discriminator.project_y = True
 

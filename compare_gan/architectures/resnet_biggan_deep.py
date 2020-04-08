@@ -184,7 +184,7 @@ class Generator(abstract_arch.AbstractGenerator):
   """ResNet-based generator supporting resolutions 32, 64, 128, 256, 512."""
 
   def __init__(self,
-               ch=128,
+               ch=96,
                embed_y=True,
                embed_y_dim=128,
                experimental_fast_conv_to_rgb=False,
@@ -314,7 +314,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
   """ResNet-based discriminator supporting resolutions 32, 64, 128, 256, 512."""
 
   def __init__(self,
-               ch=128,
+               ch=96,
                blocks_with_attention="B1",
                project_y=True,
                **kwargs):
