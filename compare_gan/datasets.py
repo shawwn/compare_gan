@@ -1017,14 +1017,15 @@ class DanbooruDataset(ImageDatasetV2):
         tfds_name="danbooru",
         resolution=resolution,
         colors=3,
-        num_classes=1000,
+        num_classes=1,
         eval_test_samples=10000,
         seed=seed)
     self.resolution = resolution
   def _parse_fn(self, image, label):
     #image, label = features[0]
-    label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
-      #image = tf.cast(features["image"], tf.float32) / 255.0
+    #label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
+    label = tf.constant(0, dtype=tf.int32)
+    #image = tf.cast(features["image"], tf.float32) / 255.0
     return image[0] / 255.0, label
 
   def _load_dataset(self, split):
