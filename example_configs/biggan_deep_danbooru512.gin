@@ -1,0 +1,43 @@
+dataset.name = "danbooru_512"
+options.z_dim = 128
+
+options.architecture = "resnet_biggan_deep_arch"
+ModularGAN.conditional = True
+options.batch_size = 4096 # make it 16x the TPU pod size
+options.gan_class = @ModularGAN
+options.lamba = 1
+options.training_steps = 250000
+weights.initializer = "orthogonal"
+spectral_norm.singular_value = "auto"
+
+# Generator
+G.batch_norm_fn = @conditional_batch_norm
+G.spectral_norm = True
+ModularGAN.g_use_ema = True
+resnet_biggan_deep.Generator.ch = 128
+resnet_biggan_deep.Generator.embed_y = True
+standardize_batch.decay = 0.9
+standardize_batch.epsilon = 1e-4
+standardize_batch.use_moving_averages = False
+
+# Discriminator
+options.disc_iters = 2
+D.spectral_norm = True
+resnet_biggan_deep.Discriminator.ch = 128
+resnet_biggan_deep.Discriminator.project_y = True
+
+# Loss and optimizer
+loss.fn = @hinge
+penalty.fn = @no_penalty
+ModularGAN.g_lr = 0.000025
+ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
+ModularGAN.d_lr = 0.000025
+ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
+tf.train.AdamOptimizer.beta1 = 0.0
+tf.train.AdamOptimizer.beta2 = 0.999
+
+z.distribution_fn = @tf.random.normal
+eval_z.distribution_fn = @tf.random.normal
+
+run_config.iterations_per_loop = 250
+run_config.save_checkpoints_steps = 250
