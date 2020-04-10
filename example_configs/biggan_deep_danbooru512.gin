@@ -29,9 +29,9 @@ resnet_biggan_deep.Discriminator.project_y = True
 # Loss and optimizer
 loss.fn = @hinge
 penalty.fn = @no_penalty
-ModularGAN.g_lr = 0.000025
+ModularGAN.g_lr = 0.00025
 ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
-ModularGAN.d_lr = 0.000025
+ModularGAN.d_lr = 0.00050
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 tf.train.AdamOptimizer.beta1 = 0.0
 tf.train.AdamOptimizer.beta2 = 0.999
