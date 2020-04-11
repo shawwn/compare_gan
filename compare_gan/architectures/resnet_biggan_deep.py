@@ -403,7 +403,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
           out_channels=out_channels[block_idx],
           scale=scale)
       net = block(net, z=None, y=y, is_training=is_training)
-      if self._blocks_with_attention:
+      if name in self._blocks_with_attention:
         logging.info("[Discriminator] Applying non-local block to %s",
                      net.shape)
         net = ops.non_local_block(net, "non_local_block",
