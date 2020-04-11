@@ -278,15 +278,15 @@ class Generator(abstract_arch.AbstractGenerator):
         name="fc_reshaped")
 
     for block_idx in range(num_blocks):
+      name = "B{}".format(block_idx + 1)
       scale = "none" if block_idx % 2 == 0 else "up"
       block = self._resnet_block(
-          name="B{}".format(block_idx + 1),
+          name=name,
           in_channels=in_channels[block_idx],
           out_channels=out_channels[block_idx],
           scale=scale)
       net = block(net, z=z, y=y, is_training=is_training)
-      # At resolution 64x64 there is a self-attention block.
-      if scale == "up" and net.shape[1].value == 64:
+      if scale == "up" and name in self._blocks_with_attention:
         logging.info("[Generator] Applying non-local block to %s", net.shape)
         net = ops.non_local_block(net, "non_local_block",
                                   use_sn=self._spectral_norm)
@@ -395,15 +395,15 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
                      use_sn=self._spectral_norm)
 
     for block_idx in range(num_blocks):
+      name = "B{}".format(block_idx + 1)
       scale = "down" if block_idx % 2 == 0 else "none"
       block = self._resnet_block(
-          name="B{}".format(block_idx + 1),
+          name=name,
           in_channels=in_channels[block_idx],
           out_channels=out_channels[block_idx],
           scale=scale)
       net = block(net, z=None, y=y, is_training=is_training)
-      # At resolution 64x64 there is a self-attention block.
-      if scale == "none" and net.shape[1].value == 64:
+      if scale == "none" and name in self._blocks_with_attention:
         logging.info("[Discriminator] Applying non-local block to %s",
                      net.shape)
         net = ops.non_local_block(net, "non_local_block",
