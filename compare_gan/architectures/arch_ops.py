@@ -548,9 +548,9 @@ def graph_name(name):
 
 def graph_spectral_norm(w):
   name = graph_name(w.name)
-  if name is not None:
+  assert tpu_summaries.TpuSummaries.inst is not None
+  if name is not None and not tpu_summaries.TpuSummaries.inst.has(name):
     logging.info("[ops] Graphing spectral norm name=%s, %s", name, repr(w))
-    assert tpu_summaries.TpuSummaries.inst is not None
     w1, norm = spectral_norm(w)
     tpu_summaries.TpuSummaries.inst.scalar(name, norm)
   return w
