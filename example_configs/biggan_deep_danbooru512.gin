@@ -42,3 +42,6 @@ eval_z.distribution_fn = @tf.random.normal
 
 run_config.iterations_per_loop = 250
 run_config.save_checkpoints_steps = 250
+
+resnet_biggan_deep.Generator.blocks_with_attention = ""
+resnet_biggan_deep.Discriminator.blocks_with_attention = ""
