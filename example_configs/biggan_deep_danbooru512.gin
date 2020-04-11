@@ -19,6 +19,7 @@ resnet_biggan_deep.Generator.embed_y = True
 standardize_batch.decay = 0.9
 standardize_batch.epsilon = 1e-4
 standardize_batch.use_moving_averages = False
+standardize_batch.use_cross_replica_mean = False
 
 # Discriminator
 options.disc_iters = 2
@@ -41,5 +42,3 @@ eval_z.distribution_fn = @tf.random.normal
 
 run_config.iterations_per_loop = 250
 run_config.save_checkpoints_steps = 250
-
-standardize_batch.use_cross_replica_mean=False
