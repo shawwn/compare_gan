@@ -537,7 +537,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
 from compare_gan.tpu import tpu_summaries
 
 def graph_spectral_norm(w):
-  logging.debug("Graphing spectral norm name=%s, %s", w.name, repr(w))
+  logging.info("[ops] Graphing spectral norm name=%s, %s", w.name, repr(w))
   assert tpu_summaries.TpuSummaries.inst is not None
   return w
 
