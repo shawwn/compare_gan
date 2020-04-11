@@ -70,6 +70,8 @@ class TpuSummaries(object):
     # and don't want to add multiple summaries per step.
     self.record = True
     self._save_summary_steps = save_summary_steps
+    assert TpuSummaries.inst is None
+    TpuSummaries.inst = self
 
   def image(self, name, tensor, reduce_fn):
     """Add a summary for images. Tensor must be of 4-D tensor."""
@@ -111,3 +113,6 @@ class TpuSummaries(object):
           value = e.reduce_fn(args[i])
           e.summary_fn(e.name, value, step=step)
         return summary.all_summary_ops()
+
+
+TpuSummaries.inst = None

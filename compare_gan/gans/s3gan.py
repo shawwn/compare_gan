@@ -165,7 +165,7 @@ class S3GAN(modular_gan.ModularGAN):
           "kernel", [y.shape[1], embedding_dim], tf.float32,
           initializer=tf.initializers.glorot_normal())
       if use_sn:
-        kernel = ops.spectral_norm(kernel)
+        kernel, norm = ops.spectral_norm(kernel)
       embedded_y = tf.matmul(y, kernel)
       logging.info("[Discriminator] embedded_y for projection: %s",
                    embedded_y.shape)

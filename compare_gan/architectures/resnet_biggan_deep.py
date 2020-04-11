@@ -426,7 +426,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
             "kernel", [y.shape[1], y_embedding_dim], tf.float32,
             initializer=tf.initializers.glorot_normal())
         if self._spectral_norm:
-          kernel = ops.spectral_norm(kernel)
+          kernel, norm = ops.spectral_norm(kernel)
         embedded_y = tf.matmul(y, kernel)
         logging.info("[Discriminator] embedded_y for projection: %s",
                      embedded_y.shape)
