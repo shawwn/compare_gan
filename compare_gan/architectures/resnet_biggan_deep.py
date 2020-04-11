@@ -188,6 +188,7 @@ class Generator(abstract_arch.AbstractGenerator):
                embed_y=True,
                embed_y_dim=128,
                experimental_fast_conv_to_rgb=False,
+               blocks_with_attention="B4",
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -204,6 +205,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_y = embed_y
     self._embed_y_dim = embed_y_dim
     self._experimental_fast_conv_to_rgb = experimental_fast_conv_to_rgb
+    self._blocks_with_attention = set(blocks_with_attention.split(","))
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
