@@ -494,6 +494,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
       shape=u_shape,
       dtype=w.dtype,
       initializer=tf.random_normal_initializer(),
+      #collections=[tf.GraphKeys.LOCAL_VARIABLES],
       trainable=False)
   u = u_var
 
@@ -532,8 +533,28 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
 
   # Deflate normalized weights to match the unnormalized tensor.
   w_tensor_normalized = tf.reshape(w_normalized, inputs.shape)
-  return w_tensor_normalized
+  return w_tensor_normalized, norm_value[0][0]
 
+from compare_gan.tpu import tpu_summaries
+
+def graph_name(name):
+  name = name.split(':')[0]
+  name = name.split('/kernel')[0]
+  if name.startswith('generator/'):
+    name = name.replace('generator/', '')
+    return 'G_' + name
+  elif name.startswith('discriminator/'):
+    name = name.replace('discriminator/', '')
+    return 'D_' + name
+
+def graph_spectral_norm(w):
+  name = graph_name(w.name)
+  assert tpu_summaries.TpuSummaries.inst is not None
+  if name is not None and not tpu_summaries.TpuSummaries.inst.has(name):
+    logging.info("[ops] Graphing spectral norm name=%s, %s", name, repr(w))
+    w1, norm = spectral_norm(w)
+    tpu_summaries.TpuSummaries.inst.scalar(name, norm)
+  return w
 
 def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
            use_sn=False, use_bias=True):
@@ -544,8 +565,9 @@ def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
         "kernel",
         [shape[1], output_size],
         initializer=weight_initializer(stddev=stddev))
+    kernel = graph_spectral_norm(kernel)
     if use_sn:
-      kernel = spectral_norm(kernel)
+      kernel, norm = spectral_norm(kernel)
     outputs = tf.matmul(inputs, kernel)
     if use_bias:
       bias = tf.get_variable(
@@ -563,8 +585,9 @@ def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
     w = tf.get_variable(
         "kernel", [k_h, k_w, inputs.shape[-1].value, output_dim],
         initializer=weight_initializer(stddev=stddev))
+    w = graph_spectral_norm(w)
     if use_sn:
-      w = spectral_norm(w)
+      w, norm = spectral_norm(w)
     outputs = tf.nn.conv2d(inputs, w, strides=[1, d_h, d_w, 1], padding="SAME")
     if use_bias:
       bias = tf.get_variable(
@@ -583,8 +606,9 @@ def deconv2d(inputs, output_shape, k_h, k_w, d_h, d_w,
     w = tf.get_variable(
         "kernel", [k_h, k_w, output_shape[-1], inputs.get_shape()[-1]],
         initializer=weight_initializer(stddev=stddev))
+    w = graph_spectral_norm(w)
     if use_sn:
-      w = spectral_norm(w)
+      w, norm = spectral_norm(w)
     deconv = tf.nn.conv2d_transpose(
         inputs, w, output_shape=output_shape, strides=[1, d_h, d_w, 1])
     bias = tf.get_variable(

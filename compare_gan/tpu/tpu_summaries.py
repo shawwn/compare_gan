@@ -70,23 +70,37 @@ class TpuSummaries(object):
     # and don't want to add multiple summaries per step.
     self.record = True
     self._save_summary_steps = save_summary_steps
+    #assert TpuSummaries.inst is None
+    TpuSummaries.inst = self
+
+  def has(self, name):
+    for entry in self._entries:
+      if entry.name == name:
+        return True
+    return False
 
   def image(self, name, tensor, reduce_fn):
     """Add a summary for images. Tensor must be of 4-D tensor."""
     if not self.record:
       return
-    self._entries.append(
-        TpuSummaryEntry(summary.image, name, tensor, reduce_fn))
+    if self.has(name):
+      logging.info("TpuSummaries.image: skipping duplicate %s", name)
+    else:
+      self._entries.append(
+          TpuSummaryEntry(summary.image, name, tensor, reduce_fn))
 
   def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean):
     """Add a summary for a scalar tensor."""
     if not self.record:
       return
-    tensor = tf.convert_to_tensor(tensor)
-    if tensor.shape.ndims == 0:
-      tensor = tf.expand_dims(tensor, 0)
-    self._entries.append(
-        TpuSummaryEntry(summary.scalar, name, tensor, reduce_fn))
+    if self.has(name):
+      logging.info("TpuSummaries.scalar: skipping duplicate %s", name)
+    else:
+      tensor = tf.convert_to_tensor(tensor)
+      if tensor.shape.ndims == 0:
+        tensor = tf.expand_dims(tensor, 0)
+      self._entries.append(
+          TpuSummaryEntry(summary.scalar, name, tensor, reduce_fn))
 
   def get_host_call(self):
     """Returns the tuple (host_call_fn, host_call_args) for TPUEstimatorSpec."""
@@ -111,3 +125,6 @@ class TpuSummaries(object):
           value = e.reduce_fn(args[i])
           e.summary_fn(e.name, value, step=step)
         return summary.all_summary_ops()
+
+
+TpuSummaries.inst = None
