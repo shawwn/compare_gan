@@ -538,6 +538,7 @@ from compare_gan.tpu import tpu_summaries
 
 def graph_name(name):
   name = name.split(':')[0]
+  name = name.split('/kernel')[0]
   if name.startswith('generator/'):
     name = name.replace('generator/', '')
     return 'G_' + name
