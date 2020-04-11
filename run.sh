@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ex
 export TPU_HOST=10.255.128.3
-export TPU_NAME=tpu-v3-128-euw4a-27
-export MODEL_DIR=gs://danbooru-euw4a/test/bigrun05/
+export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-27}"
+export MODEL_DIR="${MODEL_DIR:-gs://danbooru-euw4a/test/bigrun05/}"
 #export DATASETS=gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://danbooru-euw4a/datasets/e621-s/e621-s-0*
 #export DATASETS=gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*
 export DATASETS=gs://danbooru-euw4a/datasets/portraits/portraits-0*
