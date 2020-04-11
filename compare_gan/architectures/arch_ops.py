@@ -536,9 +536,22 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
 
 from compare_gan.tpu import tpu_summaries
 
+def graph_name(name):
+  name = name.split(':')[0]
+  if name.startswith('generator/'):
+    name = name.replace('generator/', '')
+    return 'G_' + name
+  elif name.startswith('discriminator/'):
+    name = name.replace('discriminator/', '')
+    return 'D_' + name
+
 def graph_spectral_norm(w):
-  logging.info("[ops] Graphing spectral norm name=%s, %s", w.name, repr(w))
-  assert tpu_summaries.TpuSummaries.inst is not None
+  name = graph_name(w.name)
+  if name is not None:
+    logging.info("[ops] Graphing spectral norm name=%s, %s", name, repr(w))
+    assert tpu_summaries.TpuSummaries.inst is not None
+    w1, norm = spectral_norm(w)
+    tpu_summaries.TpuSummaries.inst.scalar(name, norm)
   return w
 
 def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
