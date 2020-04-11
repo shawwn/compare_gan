@@ -164,6 +164,7 @@ class S3GAN(modular_gan.ModularGAN):
       kernel = tf.get_variable(
           "kernel", [y.shape[1], embedding_dim], tf.float32,
           initializer=tf.initializers.glorot_normal())
+      kernel = ops.graph_spectral_norm(kernel)
       if use_sn:
         kernel, norm = ops.spectral_norm(kernel)
       embedded_y = tf.matmul(y, kernel)

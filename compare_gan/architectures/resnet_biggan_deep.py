@@ -425,6 +425,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
         kernel = tf.get_variable(
             "kernel", [y.shape[1], y_embedding_dim], tf.float32,
             initializer=tf.initializers.glorot_normal())
+        kernel = ops.graph_spectral_norm(kernel)
         if self._spectral_norm:
           kernel, norm = ops.spectral_norm(kernel)
         embedded_y = tf.matmul(y, kernel)
