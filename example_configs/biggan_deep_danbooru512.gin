@@ -14,6 +14,7 @@ spectral_norm.singular_value = "auto"
 G.batch_norm_fn = @conditional_batch_norm
 G.spectral_norm = True
 ModularGAN.g_use_ema = True
+ModularGAN.ema_start_step = 0
 resnet_biggan_deep.Generator.ch = 96
 resnet_biggan_deep.Generator.embed_y = True
 standardize_batch.decay = 0.9
