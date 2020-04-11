@@ -25,7 +25,7 @@ standardize_batch.use_cross_replica_mean = False
 options.disc_iters = 2
 D.spectral_norm = True
 resnet_biggan_deep.Discriminator.ch = 96
-resnet_biggan_deep.Discriminator.project_y = True
+resnet_biggan_deep.Discriminator.project_y = False
 
 # Loss and optimizer
 loss.fn = @hinge
@@ -45,3 +45,4 @@ run_config.save_checkpoints_steps = 250
 
 resnet_biggan_deep.Generator.blocks_with_attention = ""
 resnet_biggan_deep.Discriminator.blocks_with_attention = ""
+
