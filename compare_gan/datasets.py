@@ -1072,7 +1072,7 @@ class DanbooruDataset(ImageDatasetV2):
     #iparams['batch_size'] = 1
     dset = ini.input_fn(iparams)
     dset = dset.map(self._parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    print('Using dataset(s) %s (host %d / %d)' % (path, current_host, num_hosts))
+    logging.info('Using dataset(s) for host %d / %d: %s', current_host, num_hosts, path)
     return dset
 
 class MnistDataset(ImageDatasetV2):
