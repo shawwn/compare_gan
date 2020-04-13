@@ -938,7 +938,7 @@ class ImageDatasetV2(object):
         as_dataset_kwargs={"shuffle_files": False})
     ds = self._replace_labels(split, ds)
     ds = ds.map(self._parse_fn)
-    return ds.prefetch(tf.contrib.data.AUTOTUNE), False
+    return ds.prefetch(tf.contrib.data.AUTOTUNE)
 
   def _train_filter_fn(self, image, label):
     del image, label
@@ -969,8 +969,8 @@ class ImageDatasetV2(object):
     seed = self._get_per_host_random_seed(params.get("context", None))
     logging.info("train_input_fn(): params=%s seed=%s", params, seed)
 
-    ds, done = self._load_dataset(split=self._train_split, params=params)
-    if done:
+    ds = self._load_dataset(split=self._train_split, params=params)
+    if hasattr(self, "_shortcircuit"):
       return ds
     ds = ds.filter(self._train_filter_fn)
     ds = ds.repeat()
@@ -1005,8 +1005,8 @@ class ImageDatasetV2(object):
     seed = self._get_per_host_random_seed(params.get("context", None))
     logging.info("eval_input_fn(): params=%s seed=%s", params, seed)
 
-    ds, done = self._load_dataset(split=split, params=params)
-    if done:
+    ds = self._load_dataset(split=split, params=params)
+    if hasattr(self, "_shortcircuit"):
       return ds
     # No filter, no rpeat.
     ds = ds.map(functools.partial(self._eval_transform_fn, seed=seed))
@@ -1038,12 +1038,13 @@ class DanbooruDataset(ImageDatasetV2):
         eval_test_samples=10000,
         seed=seed)
     self.resolution = resolution
+    self._shortcircuit = True
 
   def _load_dataset(self, split, params):
     ini = ImageNetInput(os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*",
                 is_training=True, image_size=self.resolution)
     dataset = ini.input_fn(params)
-    return dataset, True
+    return dataset
 
 class MnistDataset(ImageDatasetV2):
   """Wrapper for the MNIST dataset from TFDS."""
