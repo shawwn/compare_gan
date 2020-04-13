@@ -188,7 +188,7 @@ class Generator(abstract_arch.AbstractGenerator):
                embed_y=True,
                embed_y_dim=128,
                experimental_fast_conv_to_rgb=False,
-               blocks_with_attention="B4",
+               blocks_with_attention="64",
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -286,7 +286,8 @@ class Generator(abstract_arch.AbstractGenerator):
           out_channels=out_channels[block_idx],
           scale=scale)
       net = block(net, z=z, y=y, is_training=is_training)
-      if name in self._blocks_with_attention:
+      res = net.shape[1].value
+      if name in self._blocks_with_attention or scale == "up" and str(res) in self.blocks_with_attention:
         logging.info("[Generator] Applying non-local block to %s", net.shape)
         net = ops.non_local_block(net, "non_local_block",
                                   use_sn=self._spectral_norm)
@@ -317,7 +318,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
 
   def __init__(self,
                ch=96,
-               blocks_with_attention="B1",
+               blocks_with_attention="64",
                project_y=True,
                **kwargs):
     """Constructor for BigGAN discriminator.
@@ -403,7 +404,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
           out_channels=out_channels[block_idx],
           scale=scale)
       net = block(net, z=None, y=y, is_training=is_training)
-      if name in self._blocks_with_attention:
+      res = net.shape[1].value
+      if name in self._blocks_with_attention or scale == "none" and str(res) in self.blocks_with_attention:
         logging.info("[Discriminator] Applying non-local block to %s",
                      net.shape)
         net = ops.non_local_block(net, "non_local_block",
