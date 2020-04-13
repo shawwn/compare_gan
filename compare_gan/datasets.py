@@ -250,7 +250,7 @@ def preprocess_image(image_bytes, is_training, use_bfloat16=False, image_size=IM
   if random_crop is None:
     random_crop = not is_training
   image = _decode_and_crop_image(image_bytes, image_size, random_crop=random_crop)
-  image = process_reals(image)
+  # image = process_reals(image)
   if mirror:
     image = _flip(image)
   image = tf.reshape(image, [image_size, image_size, 3])
@@ -501,7 +501,7 @@ class ImageNetTFExampleInput(object):
       params: `dict` of parameters passed from the `TPUEstimator`.
           `params['batch_size']` is always provided and should be used as the
           effective batch size.
-
+/
     Returns:
       A `tf.data.Dataset` object.
     """
@@ -1040,11 +1040,40 @@ class DanbooruDataset(ImageDatasetV2):
     self.resolution = resolution
     self._shortcircuit = True
 
+  def _parse_fn(self, image, label):
+    # image, label = features[0]
+    # label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
+    label = tf.constant(0, dtype=tf.int32)
+    # image = tf.cast(features["image"], tf.float32) / 255.0
+    return image[0] / 255.0, label
+
   def _load_dataset(self, split, params):
-    ini = ImageNetInput(os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*",
-                is_training=True, image_size=self.resolution)
-    dataset = ini.input_fn(params)
-    return dataset
+    if 'context' in params:
+      current_host = params['context'].current_input_fn_deployment()[1]
+      num_hosts = params['context'].num_hosts
+    else:
+      if 'dataset_index' in params:
+        current_host = params['dataset_index']
+        num_hosts = params['dataset_num_shards']
+      else:
+        current_host = 0
+        num_hosts = 1
+    num_replicas = params["context"].num_replicas if "context" in params else 1
+
+    path = os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
+    ini = ImageNetInput(
+      path,
+      is_training=True,
+      image_size=self.resolution,
+      prefetch_depth_auto_tune=True,
+      num_cores=num_hosts,
+    )
+    iparams = dict(params)
+    iparams['batch_size'] = 1
+    dset = ini.input_fn(iparams)
+    dset = dset.map(self._parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    print('Using dataset(s) %s (host %d / %d)' % (path, current_host, num_hosts))
+    return dset
 
 class MnistDataset(ImageDatasetV2):
   """Wrapper for the MNIST dataset from TFDS."""
