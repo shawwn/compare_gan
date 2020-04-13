@@ -1038,14 +1038,14 @@ class DanbooruDataset(ImageDatasetV2):
         eval_test_samples=10000,
         seed=seed)
     self.resolution = resolution
-    #self._shortcircuit = True
+    self._shortcircuit = True
 
   def _parse_fn(self, image, label):
     # image, label = features[0]
     # label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
-    label = tf.constant(0, dtype=tf.int32)
+    # label = tf.constant(0, dtype=tf.int32)
     # image = tf.cast(features["image"], tf.float32) / 255.0
-    return image[0] / 255.0, label
+    return image / 255.0, label
 
   def _load_dataset(self, split, params):
     if 'context' in params:
@@ -1069,7 +1069,7 @@ class DanbooruDataset(ImageDatasetV2):
       num_cores=num_hosts,
     )
     iparams = dict(params)
-    iparams['batch_size'] = 1
+    #iparams['batch_size'] = 1
     dset = ini.input_fn(iparams)
     dset = dset.map(self._parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     print('Using dataset(s) %s (host %d / %d)' % (path, current_host, num_hosts))
