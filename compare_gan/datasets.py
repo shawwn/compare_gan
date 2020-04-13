@@ -223,6 +223,18 @@ def _flip(image):
   image = tf.image.random_flip_left_right(image)
   return image
 
+def adjust_dynamic_range(data, drange_in, drange_out):
+    if drange_in != drange_out:
+        scale = (np.float32(drange_out[1]) - np.float32(drange_out[0])) / (np.float32(drange_in[1]) - np.float32(drange_in[0]))
+        bias = (np.float32(drange_out[0]) - np.float32(drange_in[0]) * scale)
+        data = data * scale + bias
+    return data
+
+def process_reals(x, drange_data = [0, 255], drange_net = [0, 1]):
+  with tf.name_scope('DynamicRange'):
+    x = tf.cast(x, tf.float32)
+    x = adjust_dynamic_range(x, drange_data, drange_net)
+  return x
 
 def preprocess_image(image_bytes, is_training, use_bfloat16=False, image_size=IMAGE_SIZE, mirror=True, random_crop=None):
   """Preprocesses the given image for evaluation.
@@ -238,6 +250,7 @@ def preprocess_image(image_bytes, is_training, use_bfloat16=False, image_size=IM
   if random_crop is None:
     random_crop = not is_training
   image = _decode_and_crop_image(image_bytes, image_size, random_crop=random_crop)
+  image = process_reals(image)
   if mirror:
     image = _flip(image)
   image = tf.reshape(image, [image_size, image_size, 3])
@@ -907,7 +920,7 @@ class ImageDatasetV2(object):
     image = tf.cast(features["image"], tf.float32) / 255.0
     return image, features["label"]
 
-  def _load_dataset(self, split):
+  def _load_dataset(self, split, params):
     """Loads the underlying dataset split from disk.
 
     Args:
@@ -956,7 +969,7 @@ class ImageDatasetV2(object):
     seed = self._get_per_host_random_seed(params.get("context", None))
     logging.info("train_input_fn(): params=%s seed=%s", params, seed)
 
-    ds = self._load_dataset(split=self._train_split)
+    ds = self._load_dataset(split=self._train_split, params=params)
     ds = ds.filter(self._train_filter_fn)
     ds = ds.repeat()
     ds = ds.map(functools.partial(self._train_transform_fn, seed=seed))
@@ -990,7 +1003,7 @@ class ImageDatasetV2(object):
     seed = self._get_per_host_random_seed(params.get("context", None))
     logging.info("eval_input_fn(): params=%s seed=%s", params, seed)
 
-    ds = self._load_dataset(split=split)
+    ds = self._load_dataset(split=split, params=params)
     # No filter, no rpeat.
     ds = ds.map(functools.partial(self._eval_transform_fn, seed=seed))
     # No shuffle.
@@ -1021,20 +1034,11 @@ class DanbooruDataset(ImageDatasetV2):
         eval_test_samples=10000,
         seed=seed)
     self.resolution = resolution
-  def _parse_fn(self, image, label):
-    #image, label = features[0]
-    #label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
-    label = tf.constant(0, dtype=tf.int32)
-    #image = tf.cast(features["image"], tf.float32) / 255.0
-    return image[0] / 255.0, label
 
-  def _load_dataset(self, split):
+  def _load_dataset(self, split, params):
     ini = ImageNetInput(os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*",
                 is_training=True, image_size=self.resolution)
-    params = {}
-    params['batch_size'] = 1
     dataset = ini.input_fn(params)
-    dataset = dataset.map(self._parse_fn)
     return dataset
 
 class MnistDataset(ImageDatasetV2):
