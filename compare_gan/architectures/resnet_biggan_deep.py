@@ -287,7 +287,7 @@ class Generator(abstract_arch.AbstractGenerator):
           scale=scale)
       net = block(net, z=z, y=y, is_training=is_training)
       res = net.shape[1].value
-      if name in self._blocks_with_attention or scale == "up" and str(res) in self.blocks_with_attention:
+      if name in self._blocks_with_attention or scale == "up" and str(res) in self._blocks_with_attention:
         logging.info("[Generator] Applying non-local block to %s", net.shape)
         net = ops.non_local_block(net, "non_local_block",
                                   use_sn=self._spectral_norm)
@@ -405,7 +405,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
           scale=scale)
       net = block(net, z=None, y=y, is_training=is_training)
       res = net.shape[1].value
-      if name in self._blocks_with_attention or scale == "none" and str(res) in self.blocks_with_attention:
+      if name in self._blocks_with_attention or scale == "none" and str(res) in self._blocks_with_attention:
         logging.info("[Discriminator] Applying non-local block to %s",
                      net.shape)
         net = ops.non_local_block(net, "non_local_block",
