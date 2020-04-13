@@ -1038,7 +1038,7 @@ class DanbooruDataset(ImageDatasetV2):
         eval_test_samples=10000,
         seed=seed)
     self.resolution = resolution
-    self._shortcircuit = True
+    #self._shortcircuit = True
 
   def _parse_fn(self, image, label):
     # image, label = features[0]
