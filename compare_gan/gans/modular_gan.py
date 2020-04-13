@@ -332,7 +332,7 @@ class ModularGAN(AbstractGAN):
     else:
       samples_per_replica = batch_size_per_replica
     image_shape = self._dataset.image_shape[:]
-    sample_res = int(os.environ['GRID_RESOLUTION']) if 'GRID_RESOLUTION' in os.environ else 200
+    sample_res = int(os.environ['GRID_RESOLUTION']) if 'GRID_RESOLUTION' in os.environ else 512
     sample_shape = [sample_res, sample_res, image_shape[2]]
     def _merge_images_to_grid(all_images):
       all_images = all_images[:np.prod(grid_shape)]
