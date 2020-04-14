@@ -387,6 +387,7 @@ class ImageNetTFExampleInput(object):
       features["images"] = images
       features["sampled_labels"] = labels
       features["z"] = z_generator([self.options["z_dim"]], name="z")
+      features[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = tf.cast(0, tf.int32)
       return features, labels
     if postprocess_fn is None:
       postprocess_fn = _postprocess
@@ -588,7 +589,7 @@ class ImageNetTFExampleInput(object):
               drop_remainder=True))
 
     # Add a feature for the random offset of operations in tpu_random.py.
-    dataset = tpu_random.add_random_offset_to_features(dataset)
+    #dataset = tpu_random.add_random_offset_to_features(dataset)
 
     # Transpose for performance on TPU
     if self.options["transpose_input"]:
