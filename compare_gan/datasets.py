@@ -390,7 +390,7 @@ class ImageNetTFExampleInput(object):
       features["images"] = images
       features["sampled_labels"] = labels
       features["z"] = z_generator([self.options["z_dim"]], name="z")
-      #features[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = tf.cast(0, tf.int32)
+      features[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = tf.constant(0, dtype=tf.int32)
       return features, labels
     if postprocess_fn is None:
       postprocess_fn = _postprocess
@@ -563,6 +563,8 @@ class ImageNetTFExampleInput(object):
 
     dataset = self.make_source_dataset(current_host, num_hosts)
 
+    # dataset = tpu_random.add_random_offset_to_features(dataset)
+
     #if not self.is_training:
     #  # Padding for eval.
     #  dataset = self.pad_dataset(dataset, num_hosts)
@@ -605,9 +607,6 @@ class ImageNetTFExampleInput(object):
 
     # Assign static batch size dimension
     dataset = dataset.map(functools.partial(self.set_shapes, batch_size, num_cores))
-
-    # Add a feature for the random offset of operations in tpu_random.py.
-    dataset = tpu_random.add_random_offset_to_features(dataset)
 
     # Prefetch overlaps in-feed with training
     if self.prefetch_depth_auto_tune:
