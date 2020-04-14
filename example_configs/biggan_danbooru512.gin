@@ -20,7 +20,7 @@ weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 
 # Generator
-G.batch_norm_fn = @conditional_batch_norm
+G.batch_norm_fn = @self_modulated_batch_norm
 G.spectral_norm = True
 ModularGAN.g_use_ema = True
 resnet_biggan.Generator.hierarchical_z = True
