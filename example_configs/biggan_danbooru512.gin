@@ -8,6 +8,7 @@
 # Recommended training platform: TPU v3-128.
 
 dataset.name = "danbooru_512"
+options.datasets = "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
 options.z_dim = 128
 
 options.architecture = "resnet_biggan_arch"
