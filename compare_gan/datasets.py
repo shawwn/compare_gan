@@ -382,27 +382,29 @@ class ImageNetTFExampleInput(object):
       return call_with_accepted_args(
         distribution_fn, shape=shape, minval=minval, maxval=maxval,
         stddev=stddev, name=name)
-    def _postprocess(images, labels):
+    def _postprocess(images, labels, seed=None):
+      logging.info("_postprocess(): images=%s, labels=%s, seed=%s",
+                   images, labels, seed)
+      tf.set_random_seed(seed)
       features = {}
       features["images"] = images
       features["sampled_labels"] = labels
       features["z"] = z_generator([self.options["z_dim"]], name="z")
-      features[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = tf.cast(0, tf.int32)
+      #features[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = tf.cast(0, tf.int32)
       return features, labels
     if postprocess_fn is None:
       postprocess_fn = _postprocess
     self.postprocess_fn = postprocess_fn
     self.is_training = is_training
     self.use_bfloat16 = use_bfloat16
-    self.num_cores = num_cores
     self.image_size = image_size
     self.prefetch_depth_auto_tune = prefetch_depth_auto_tune
 
-  def set_shapes(self, batch_size, features, labels):
+  def set_shapes(self, batch_size, num_cores, features, labels):
     """Statically set the batch_size dimension."""
     images = features["images"]
     if self.options["transpose_input"]:
-      if self.options["batch_size"] // self.num_cores > 8:
+      if self.options["batch_size"] // num_cores > 8:
         shape = [None, None, None, batch_size]
       else:
         shape = [None, None, batch_size, None]
@@ -415,6 +417,7 @@ class ImageNetTFExampleInput(object):
           tf.TensorShape([batch_size, None, None, None])))
       labels.set_shape(labels.get_shape().merge_with(
           tf.TensorShape([batch_size])))
+    features["images"] = images
 
     return features, labels
 
@@ -556,6 +559,7 @@ class ImageNetTFExampleInput(object):
       else:
         current_host = 0
         num_hosts = 1
+    num_cores = num_hosts * 8
 
     dataset = self.make_source_dataset(current_host, num_hosts)
 
@@ -578,32 +582,32 @@ class ImageNetTFExampleInput(object):
           tf.contrib.data.map_and_batch(
               self.dataset_parser_dynamic,
               batch_size=batch_size,
-              num_parallel_batches=self.num_cores,
+              num_parallel_batches=num_cores,
               drop_remainder=True))
     else:
       dataset = dataset.apply(
           tf.contrib.data.map_and_batch(
               self.dataset_parser,
               batch_size=batch_size,
-              num_parallel_batches=self.num_cores,
+              num_parallel_batches=num_cores,
               drop_remainder=True))
-
-    # Add a feature for the random offset of operations in tpu_random.py.
-    #dataset = tpu_random.add_random_offset_to_features(dataset)
 
     # Transpose for performance on TPU
     if self.options["transpose_input"]:
-      if self.options["batch_size"] // self.num_cores > 8:
+      if self.options["batch_size"] // num_cores > 8:
         transpose_array = [1, 2, 3, 0]
       else:
         transpose_array = [1, 2, 0, 3]
       def transposing(features, labels):
         features["images"] = tf.transpose(features["images"], transpose_array)
         return features, labels
-      dataset = dataset.map(transposing, num_parallel_calls=self.num_cores)
+      dataset = dataset.map(transposing, num_parallel_calls=num_cores)
 
     # Assign static batch size dimension
-    dataset = dataset.map(functools.partial(self.set_shapes, batch_size))
+    dataset = dataset.map(functools.partial(self.set_shapes, batch_size, num_cores))
+
+    # Add a feature for the random offset of operations in tpu_random.py.
+    dataset = tpu_random.add_random_offset_to_features(dataset)
 
     # Prefetch overlaps in-feed with training
     if self.prefetch_depth_auto_tune:
