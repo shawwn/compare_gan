@@ -1403,7 +1403,7 @@ DATASETS = {
 import inspect
 
 @gin.configurable("dataset")
-def get_dataset(name, options, seed=547):
+def get_dataset(name, options=None, seed=547):
   """Instantiates a data set and sets the random seed."""
   if name not in DATASETS:
     raise ValueError("Dataset %s is not available." % name)
