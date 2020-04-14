@@ -587,6 +587,9 @@ class ImageNetTFExampleInput(object):
               num_parallel_batches=self.num_cores,
               drop_remainder=True))
 
+    # Add a feature for the random offset of operations in tpu_random.py.
+    dataset = tpu_random.add_random_offset_to_features(dataset)
+
     # Transpose for performance on TPU
     if self.options["transpose_input"]:
       if self.options["batch_size"] // self.num_cores > 8:
