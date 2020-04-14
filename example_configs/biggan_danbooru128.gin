@@ -9,6 +9,7 @@
 
 dataset.name = "danbooru_128"
 options.datasets = "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
+train_imagenet_transform.crop_method = "random"
 options.z_dim = 120
 
 options.architecture = "resnet_biggan_arch"
