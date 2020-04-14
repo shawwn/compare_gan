@@ -824,11 +824,8 @@ class ImageDatasetV2(object):
       return features, labels
     ds = ds.map(transposing, num_parallel_calls=num_cores)
     # Assign static batch size dimension
-    ds = ds.map(functools.partial(ImageNet.set_shapes,
-                                  transpose_input=True,
-                                  train_batch_size=train_batch_size,
-                                  batch_size=params["batch_size"],
-                                  num_cores=num_cores))
+    ds = ds.map(functools.partial(
+      ImageNet.set_shapes, True, train_batch_size, params["batch_size"], num_cores))
     return ds
 
 class DanbooruDataset(ImageDatasetV2):
