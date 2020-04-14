@@ -361,8 +361,11 @@ class ImageNetTFExampleInput(object):
                ):
     self.train_batch_size = train_batch_size
     self.image_preprocessing_fn = preprocess_image
-    def _postprocess(images, label):
-      return {"images": images}, label
+    def _postprocess(images, labels):
+      features = {}
+      features["images"] = images
+      features["sampled_labels"] = labels
+      return features, labels
     if postprocess_fn is None:
       postprocess_fn = _postprocess
     self.postprocess_fn = postprocess_fn
