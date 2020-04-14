@@ -361,7 +361,7 @@ class ImageNetTFExampleInput(object):
                ):
     self.options = dict(options)
     if not 'transpose_input' in self.options:
-      self.options["transpose_input"] = False
+      self.options["transpose_input"] = True
     self.image_preprocessing_fn = preprocess_image
     def z_generator(shape, distribution_fn=tf.random.uniform,
                     minval=-1.0, maxval=1.0, stddev=1.0, name=None):
@@ -1091,6 +1091,9 @@ class DanbooruDataset(ImageDatasetV2):
         current_host = 0
         num_hosts = 1
     num_replicas = params["context"].num_replicas if "context" in params else 1
+    num_cores = num_hosts
+    image_size = self.resolution
+    channels = self._colors
 
     path = os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
     ini = ImageNetInput(
@@ -1099,11 +1102,24 @@ class DanbooruDataset(ImageDatasetV2):
       is_training=True,
       image_size=self.resolution,
       prefetch_depth_auto_tune=True,
-      num_cores=num_hosts,
+      num_cores=num_cores,
     )
     dset = ini.input_fn(params)
     def _parse_fn(features, label):
-      features["images"] = features["images"] / 255.0
+      images = features["images"]
+      images = images / 255.0
+
+      if self.options["transpose_input"]:
+        if self.options["batch_size"] // num_cores > 8:
+          images = tf.reshape(images,
+                                [image_size, image_size, channels, -1])
+          images = tf.transpose(images, [3, 0, 1, 2])  # HWCN to NHWC
+        else:
+          images = tf.reshape(images,
+                                [image_size, image_size, -1, channels])
+          images = tf.transpose(images, [2, 0, 1, 3])  # HWNC to NHWC
+
+      features["images"] = images
       #label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
       #label = tf.constant(0, dtype=tf.int32)
       return features, label
