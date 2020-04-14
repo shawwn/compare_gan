@@ -41,6 +41,8 @@ import gin
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import functools
+import tensorflow as tf
 
 FLAGS = flags.FLAGS
 
@@ -62,250 +64,6 @@ flags.DEFINE_integer(
 flags.DEFINE_integer(
     "data_reading_num_threads", 64,
     "The number of threads used to read the dataset.")
-
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""ImageNet preprocessing for ResNet."""
-from absl import flags
-import tensorflow as tf
-
-
-IMAGE_SIZE = 512
-CROP_PADDING = 32
-
-#FLAGS = flags.FLAGS
-class Namespace:
-  pass
-
-#FLAGS = Namespace()
-##FLAGS.cache_decoded_image = False
-
-
-def distorted_bounding_box_crop(image_bytes,
-                                bbox,
-                                min_object_covered=0.1,
-                                aspect_ratio_range=(0.75, 1.33),
-                                area_range=(0.05, 1.0),
-                                max_attempts=100,
-                                scope=None):
-  """Generates cropped_image using one of the bboxes randomly distorted.
-
-  See `tf.image.sample_distorted_bounding_box` for more documentation.
-
-  Args:
-    image_bytes: `Tensor` of binary image data.
-    bbox: `Tensor` of bounding boxes arranged `[1, num_boxes, coords]`
-        where each coordinate is [0, 1) and the coordinates are arranged
-        as `[ymin, xmin, ymax, xmax]`. If num_boxes is 0 then use the whole
-        image.
-    min_object_covered: An optional `float`. Defaults to `0.1`. The cropped
-        area of the image must contain at least this fraction of any bounding
-        box supplied.
-    aspect_ratio_range: An optional list of `float`s. The cropped area of the
-        image must have an aspect ratio = width / height within this range.
-    area_range: An optional list of `float`s. The cropped area of the image
-        must contain a fraction of the supplied image within in this range.
-    max_attempts: An optional `int`. Number of attempts at generating a cropped
-        region of the image of the specified constraints. After `max_attempts`
-        failures, return the entire image.
-    scope: Optional `str` for name scope.
-  Returns:
-    cropped image `Tensor`
-  """
-  with tf.name_scope(scope, 'distorted_bounding_box_crop', [image_bytes, bbox]):
-    if False:# FLAGS.cache_decoded_image:
-      shape = tf.shape(image_bytes)
-    else:
-      shape = tf.image.extract_jpeg_shape(image_bytes)
-    sample_distorted_bounding_box = tf.image.sample_distorted_bounding_box(
-        shape,
-        bounding_boxes=bbox,
-        min_object_covered=min_object_covered,
-        aspect_ratio_range=aspect_ratio_range,
-        area_range=area_range,
-        max_attempts=max_attempts,
-        use_image_if_no_bounding_boxes=True)
-    bbox_begin, bbox_size, _ = sample_distorted_bounding_box
-
-    # Crop the image to the specified bounding box.
-    offset_y, offset_x, _ = tf.unstack(bbox_begin)
-    target_height, target_width, _ = tf.unstack(bbox_size)
-    crop_window = tf.stack([offset_y, offset_x, target_height, target_width])
-    if False:#FLAGS.cache_decoded_image:
-      image = tf.image.crop_to_bounding_box(image_bytes, offset_y, offset_x,
-                                            target_height, target_width)
-    else:
-      image = tf.image.decode_and_crop_jpeg(
-          image_bytes, crop_window, channels=3)
-
-    return image
-
-
-def _at_least_x_are_equal(a, b, x):
-  """At least `x` of `a` and `b` `Tensors` are equal."""
-  match = tf.equal(a, b)
-  match = tf.cast(match, tf.int32)
-  return tf.greater_equal(tf.reduce_sum(match), x)
-
-
-def _decode_and_random_crop(image_bytes, image_size):
-  """Make a random crop of image_size."""
-  bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
-  image = distorted_bounding_box_crop(
-      image_bytes,
-      bbox,
-      min_object_covered=0.1,
-      aspect_ratio_range=(3. / 4, 4. / 3.),
-      area_range=(0.08, 1.0),
-      max_attempts=10,
-      scope=None)
-  return tf.image.resize_bicubic([image], [image_size, image_size])[0]
-
-
-def _decode_and_center_crop_broken(image_bytes, image_size):
-  """Crops to center of image with padding then scales image_size."""
-  shape = tf.image.extract_jpeg_shape(image_bytes)
-  image_height = shape[0]
-  image_width = shape[1]
-
-  padded_center_crop_size = tf.cast(
-      ((image_size / (image_size + CROP_PADDING)) *
-       tf.cast(tf.minimum(image_height, image_width), tf.float32)),
-      tf.int32)
-
-  offset_height = ((image_height - padded_center_crop_size) + 1) // 2
-  offset_width = ((image_width - padded_center_crop_size) + 1) // 2
-  crop_window = tf.stack([offset_height, offset_width,
-                          padded_center_crop_size, padded_center_crop_size])
-  image = tf.image.decode_and_crop_jpeg(image_bytes, crop_window, channels=3)
-  image = tf.image.resize_bicubic([image], [image_size, image_size])[0]
-
-  return image
-
-def _decode_and_crop_image(image_bytes, image_size, crop_padding=0, random_crop=True):
-  """Crops to center of image with padding then scales image_size."""
-  image = tf.io.decode_image(image_bytes, channels=3)
-  shape = tf.shape(image)
-  #shape = tf.image.extract_jpeg_shape(image_bytes)
-  image_height = shape[0]
-  image_width = shape[1]
-  channels = shape[2]
-
-  padded_center_crop_size = tf.cast(
-      ((image_size / (image_size + crop_padding)) *
-       tf.cast(tf.minimum(image_height, image_width), tf.float32)),
-      tf.int32)
-
-  offset_height = ((image_height - padded_center_crop_size) + 1) // 2
-  offset_width = ((image_width - padded_center_crop_size) + 1) // 2
-  #if random_crop:
-  if True:
-    image = tf.image.random_crop(image, [padded_center_crop_size, padded_center_crop_size, channels])
-  else:
-    image = tf.image.crop_to_bounding_box(image, offset_height, offset_width, padded_center_crop_size, padded_center_crop_size)
-  image = tf.image.resize_area([image], [image_size, image_size])[0]
-  return image
-
-
-def _flip(image):
-  """Random horizontal image flip."""
-  image = tf.image.random_flip_left_right(image)
-  return image
-
-def adjust_dynamic_range(data, drange_in, drange_out):
-    if drange_in != drange_out:
-        scale = (np.float32(drange_out[1]) - np.float32(drange_out[0])) / (np.float32(drange_in[1]) - np.float32(drange_in[0]))
-        bias = (np.float32(drange_out[0]) - np.float32(drange_in[0]) * scale)
-        data = data * scale + bias
-    return data
-
-def process_reals(x, drange_data = [0, 255], drange_net = [0, 1]):
-  with tf.name_scope('DynamicRange'):
-    x = tf.cast(x, tf.float32)
-    x = adjust_dynamic_range(x, drange_data, drange_net)
-  return x
-
-def preprocess_image(image_bytes, is_training, use_bfloat16=False, image_size=IMAGE_SIZE, mirror=True, random_crop=None):
-  """Preprocesses the given image for evaluation.
-
-  Args:
-    image_bytes: `Tensor` representing an image binary of arbitrary size.
-    use_bfloat16: `bool` for whether to use bfloat16.
-    image_size: image size.
-
-  Returns:
-    A preprocessed image `Tensor`.
-  """
-  if random_crop is None:
-    random_crop = not is_training
-  image = _decode_and_crop_image(image_bytes, image_size, random_crop=random_crop)
-  # image = process_reals(image)
-  if mirror:
-    image = _flip(image)
-  image = tf.reshape(image, [image_size, image_size, 3])
-  image = tf.image.convert_image_dtype(
-      image, dtype=tf.bfloat16 if use_bfloat16 else tf.float32)
-  return image
-
-
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Efficient ImageNet input pipeline using tf.data.Dataset."""
-
-
-import abc
-from collections import namedtuple
-import functools
-import math
-import os
-from absl import flags
-import tensorflow as tf
-
-#FLAGS = flags.FLAGS
-
-
-def image_serving_input_fn():
-  """Serving input fn for raw images."""
-
-  def _preprocess_image(image_bytes):
-    """Preprocess a single raw image."""
-    image = preprocess_image(
-        image_bytes=image_bytes, is_training=False)
-    return image
-
-  image_bytes_list = tf.placeholder(
-      shape=[None],
-      dtype=tf.string,
-  )
-  images = tf.map_fn(
-      _preprocess_image, image_bytes_list, back_prop=False, dtype=tf.float32)
-  return tf.estimator.export.ServingInputReceiver(
-      images, {'image_bytes': image_bytes_list})
-
 
 def _int64_feature(value):
   """Wrapper for inserting int64 features into Example proto."""
@@ -426,87 +184,10 @@ class ImageNet(object):
   def get_num_cores(params):
     return 8 * ImageNet.get_num_hosts(params)
 
-class ImageNetInput(object):
-  """Generates ImageNet input_fn from a series of TFRecord files.
-
-  The training data is assumed to be in TFRecord format with keys as specified
-  in the dataset_parser below, sharded across 1024 files, named sequentially:
-
-      train-00000-of-01024
-      train-00001-of-01024
-      ...
-      train-01023-of-01024
-
-  The validation data is in the same format but sharded in 128 files.
-
-  The format of the data required is created by the script at:
-      https://github.com/tensorflow/tpu/blob/master/tools/datasets/imagenet_to_gcs.py
-  """
-
-  def __init__(self,
-               options,
-               data_dir,
-               is_training=True,
-               use_bfloat16=False,
-               image_size=224,
-               num_parallel_calls=64,
-               num_cores=8,
-               prefetch_depth_auto_tune=False,
-               cache=False):
-    """Create an input from TFRecord files.
-
-    Args:
-      is_training: `bool` for whether the input is for training
-      use_bfloat16: If True, use bfloat16 precision; else use float32.
-      transpose_input: 'bool' for whether to use the double transpose trick
-      data_dir: `str` for the directory of the training and validation data;
-          if 'null' (the literal string 'null') or implicitly False
-          then construct a null pipeline, consisting of empty images
-          and blank labels.
-      image_size: size of input images
-      num_parallel_calls: concurrency level to use when reading data from disk.
-      num_cores: Number of prefetch threads
-      prefetch_depth_auto_tune: Auto-tuning prefetch depths in input pipeline
-      cache: if true, fill the dataset by repeating from its cache
-    """
-    super(ImageNetInput, self).__init__(
-        options=options,
-        is_training=is_training,
-        image_size=image_size,
-        use_bfloat16=use_bfloat16,
-        num_cores=num_cores,
-        prefetch_depth_auto_tune=prefetch_depth_auto_tune)
-    self.data_dir = data_dir
-    if self.data_dir == 'null' or not self.data_dir:
-      self.data_dir = None
-    self.num_parallel_calls = num_parallel_calls
-    self.cache = cache
-
-  def _get_null_input(self, data):
-    """Returns a null image (all black pixels).
-
-    Args:
-      data: element of a dataset, ignored in this method, since it produces
-          the same null image regardless of the element.
-
-    Returns:
-      a tensor representing a null image.
-    """
-    del data  # Unused since output is constant regardless of input
-    return tf.zeros([self.image_size, self.image_size, 3], tf.bfloat16
-                    if self.use_bfloat16 else tf.float32)
-
-  def dataset_parser(self, value):
-    """See base class."""
-    if not self.data_dir:
-      return value, tf.constant(0, tf.int32)
-    return super(ImageNetInput, self).dataset_parser(value)
-
   @staticmethod
   def make_dataset(data_dirs, index, num_hosts,
                    seed=None, shuffle_filenames=True,
                    num_parallel_calls = 64):
-    """See base class."""
 
     if shuffle_filenames:
       assert seed is not None
@@ -537,7 +218,6 @@ class ImageNetInput(object):
         num_parallel_calls=num_parallel_calls)
 
     return dataset
-
 
 
 class ImageDatasetV2(object):
@@ -839,43 +519,6 @@ class ImageDatasetV2(object):
   def transpose_input(self, ds, params, train_batch_size):
     return ds
 
-class DanbooruDataset(ImageDatasetV2):
-
-  def __init__(self, options, seed, resolution):
-    super(DanbooruDataset, self).__init__(
-        name="danbooru",
-        tfds_name="danbooru",
-        resolution=resolution,
-        colors=3,
-        num_classes=1,
-        eval_test_samples=10000,
-        seed=seed)
-    self._options = options
-
-  def _load_dataset(self, split, params, seed):
-    """Loads the underlying dataset split from disk.
-
-    Args:
-      split: Name of the split to load.
-
-    Returns:
-      Returns a `tf.data.Dataset` object with a tuple of image and label tensor.
-    """
-    if FLAGS.data_fake_dataset:
-      return self._make_fake_dataset(split)
-    ds = ImageNetInput.make_dataset(
-      self._options["datasets"],
-      ImageNet.get_current_host(params),
-      ImageNet.get_num_hosts(params),
-      seed=seed)
-    ds = self._replace_labels(split, ds)
-    ds = ds.map(self._parse_fn)
-    return ds.prefetch(tf.contrib.data.AUTOTUNE)
-
-  def _parse_fn(self, features):
-    image = tf.cast(features["image"], tf.float32) / 255.0
-    return image, features["label"]
-
 class MnistDataset(ImageDatasetV2):
   """Wrapper for the MNIST dataset from TFDS."""
 
@@ -1163,6 +806,45 @@ class SoftLabeledImagenetDataset(ImagenetDataset):
       feature_dict["label"] = tf.nn.softmax(logits=parsed_label["label"])
     return feature_dict
 
+
+class DanbooruDataset(ImagenetDataset):
+
+  def __init__(self, options, seed, resolution):
+    super(DanbooruDataset, self).__init__(
+      name="danbooru",
+      tfds_name="danbooru",
+      resolution=resolution,
+      colors=3,
+      num_classes=1,
+      eval_test_samples=10000,
+      seed=seed)
+    self._options = options
+
+  def _load_dataset(self, split, params, seed):
+    """Loads the underlying dataset split from disk.
+
+    Args:
+      split: Name of the split to load.
+      params: The params passed to input_fn or model_fn
+      seed: The random seed to use
+
+    Returns:
+      Returns a `tf.data.Dataset` object with a tuple of image and label tensor.
+    """
+    if FLAGS.data_fake_dataset:
+      return self._make_fake_dataset(split)
+    ds = ImageNet.make_dataset(
+      self._options["datasets"],
+      ImageNet.get_current_host(params),
+      ImageNet.get_num_hosts(params),
+      seed=seed)
+    ds = self._replace_labels(split, ds)
+    ds = ds.map(self._parse_fn)
+    return ds.prefetch(tf.contrib.data.AUTOTUNE)
+
+  def _parse_fn(self, features):
+    image = tf.cast(features["image"], tf.float32) / 255.0
+    return image, features["label"]
 
 DATASETS = {
     "celeb_a": CelebaDataset,
