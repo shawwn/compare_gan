@@ -339,72 +339,13 @@ def _convert_to_example(image_buffer, label):
   return example
 
 
-class ImageNetTFExampleInput(object):
-  """Base class for ImageNet input_fn generator.
+class ImageNet(object):
 
-  Args:
-    is_training: `bool` for whether the input is for training
-    use_bfloat16: If True, use bfloat16 precision; else use float32.
-    transpose_input: 'bool' for whether to use the double transpose trick
-    num_cores: `int` for the number of TPU cores
-  """
-  __metaclass__ = abc.ABCMeta
-
-  def __init__(self,
-               options,
-               is_training,
-               use_bfloat16,
-               num_cores=8,
-               image_size=IMAGE_SIZE,
-               prefetch_depth_auto_tune=False,
-               postprocess_fn=None
-               ):
-    self.options = dict(options)
-    if not 'transpose_input' in self.options:
-      self.options["transpose_input"] = True
-    self.image_preprocessing_fn = preprocess_image
-    def z_generator(shape, distribution_fn=tf.random.uniform,
-                    minval=-1.0, maxval=1.0, stddev=1.0, name=None):
-      """Random noise distributions as TF op.
-
-      Args:
-        shape: A 1-D integer Tensor or Python array.
-        distribution_fn: Function that create a Tensor. If the function has any
-          of the arguments 'minval', 'maxval' or 'stddev' these are passed to it.
-        minval: The lower bound on the range of random values to generate.
-        maxval: The upper bound on the range of random values to generate.
-        stddev: The standard deviation of a normal distribution.
-        name: A name for the operation.
-
-      Returns:
-        Tensor with the given shape and dtype tf.float32.
-      """
-      return call_with_accepted_args(
-        distribution_fn, shape=shape, minval=minval, maxval=maxval,
-        stddev=stddev, name=name)
-    def _postprocess(images, labels, seed=None):
-      logging.info("_postprocess(): images=%s, labels=%s, seed=%s",
-                   images, labels, seed)
-      tf.set_random_seed(seed)
-      features = {}
-      features["images"] = images
-      features["sampled_labels"] = labels
-      features["z"] = z_generator([self.options["z_dim"]], name="z")
-      features[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = tf.constant(0, dtype=tf.int32)
-      return features, labels
-    if postprocess_fn is None:
-      postprocess_fn = _postprocess
-    self.postprocess_fn = postprocess_fn
-    self.is_training = is_training
-    self.use_bfloat16 = use_bfloat16
-    self.image_size = image_size
-    self.prefetch_depth_auto_tune = prefetch_depth_auto_tune
-
-  def set_shapes(self, batch_size, num_cores, features, labels):
+  @staticmethod
+  def set_shapes(transpose_input, train_batch_size, batch_size, num_cores, images, labels):
     """Statically set the batch_size dimension."""
-    images = features["images"]
-    if self.options["transpose_input"]:
-      if self.options["batch_size"] // num_cores > 8:
+    if transpose_input:
+      if train_batch_size // num_cores > 8:
         shape = [None, None, None, batch_size]
       else:
         shape = [None, None, batch_size, None]
@@ -417,50 +358,10 @@ class ImageNetTFExampleInput(object):
           tf.TensorShape([batch_size, None, None, None])))
       labels.set_shape(labels.get_shape().merge_with(
           tf.TensorShape([batch_size])))
-    features["images"] = images
+    return images, labels
 
-    return features, labels
-
-  def dataset_parser(self, value):
-    """Parses an image and its label from a serialized ResNet-50 TFExample.
-
-    Args:
-      value: serialized string containing an ImageNet TFExample.
-
-    Returns:
-      Returns a tuple of (image, label) from the TFExample.
-    """
-    keys_to_features = {
-        'image/encoded': tf.FixedLenFeature((), tf.string, ''),
-        'image/format': tf.FixedLenFeature((), tf.string, 'jpeg'),
-        'image/class/label': tf.FixedLenFeature([], tf.int64, -1),
-        'image/class/text': tf.FixedLenFeature([], tf.string, ''),
-        'image/object/bbox/xmin': tf.VarLenFeature(dtype=tf.float32),
-        'image/object/bbox/ymin': tf.VarLenFeature(dtype=tf.float32),
-        'image/object/bbox/xmax': tf.VarLenFeature(dtype=tf.float32),
-        'image/object/bbox/ymax': tf.VarLenFeature(dtype=tf.float32),
-        'image/object/class/label': tf.VarLenFeature(dtype=tf.int64),
-    }
-
-    parsed = tf.parse_single_example(value, keys_to_features)
-    image_bytes = tf.reshape(parsed['image/encoded'], shape=[])
-
-    # Subtract one so that labels are in [0, 1000).
-    label = tf.cast(
-        tf.reshape(parsed['image/class/label'], shape=[]), dtype=tf.int32) - 0
-
-    # Return all black images for padded data.
-    image = tf.cond(
-        label < 0, lambda: self._get_null_input(None), lambda: self.  # pylint: disable=g-long-lambda
-        image_preprocessing_fn(
-            image_bytes=image_bytes,
-            is_training=self.is_training,
-            image_size=self.image_size,
-            use_bfloat16=self.use_bfloat16))
-
-    return self.postprocess_fn(image, label)
-
-  def dataset_parser_static(self, value):
+  @staticmethod
+  def dataset_parser_static(value):
     """Parses an image and its label from a serialized ResNet-50 TFExample.
 
        This only decodes the image, which is prepared for caching.
@@ -485,143 +386,41 @@ class ImageNetTFExampleInput(object):
 
     parsed = tf.parse_single_example(value, keys_to_features)
     image_bytes = tf.reshape(parsed['image/encoded'], shape=[])
-    image_bytes = tf.io.decode_jpeg(image_bytes, 3)
+    image = tf.io.decode_image(image_bytes, 3)
 
     # Subtract one so that labels are in [0, 1000).
     label = tf.cast(
         tf.reshape(parsed['image/class/label'], shape=[]), dtype=tf.int32) - 0
-    return image_bytes, label
 
-  def dataset_parser_dynamic(self, image_bytes, label):
-    return self.postprocess_fn(self.image_preprocessing_fn(
-        image_bytes=image_bytes,
-        is_training=self.is_training,
-        image_size=self.image_size,
-        use_bfloat16=self.use_bfloat16), label)
+    return {
+      'image': image,
+      'label': label,
+    }
 
-  def pad_dataset(self, dataset, num_hosts):
-    """Pad the eval dataset so that eval can have the same batch size as training."""
-    num_dataset_per_shard = int(
-        math.ceil(FLAGS.num_eval_images / FLAGS.eval_batch_size) *
-        FLAGS.eval_batch_size / num_hosts)
-    example_string = 'dummy_string'
-    padded_example = _convert_to_example(
-        str.encode(example_string), -1).SerializeToString()
-    padded_dataset = tf.data.Dataset.from_tensors(
-        tf.constant(padded_example, dtype=tf.string))
-    padded_dataset = padded_dataset.repeat(num_dataset_per_shard)
-
-    dataset = dataset.concatenate(padded_dataset).take(num_dataset_per_shard)
-    return dataset
-
-  @abc.abstractmethod
-  def make_source_dataset(self, index, num_hosts):
-    """Makes dataset of serialized TFExamples.
-
-    The returned dataset will contain `tf.string` tensors, but these strings are
-    serialized `TFExample` records that will be parsed by `dataset_parser`.
-
-    If self.is_training, the dataset should be infinite.
-
-    Args:
-      index: current host index.
-      num_hosts: total number of hosts.
-
-    Returns:
-      A `tf.data.Dataset` object.
-    """
-    return
-
-  def input_fn(self, params):
-    """Input function which provides a single batch for train or eval.
-
-    Args:
-      params: `dict` of parameters passed from the `TPUEstimator`.
-          `params['batch_size']` is always provided and should be used as the
-          effective batch size.
-/
-    Returns:
-      A `tf.data.Dataset` object.
-    """
-    # Retrieves the batch size for the current shard. The # of shards is
-    # computed according to the input pipeline deployment. See
-    # tf.contrib.tpu.RunConfig for details.
-    batch_size = params['batch_size']
-
+  @staticmethod
+  def get_current_host(params):
     # TODO(dehao): Replace the following with params['context'].current_host
     if 'context' in params:
-      current_host = params['context'].current_input_fn_deployment()[1]
-      num_hosts = params['context'].num_hosts
+      return params['context'].current_input_fn_deployment()[1]
+    elif 'dataset_index' in params:
+      return params['dataset_index']
     else:
-      if 'dataset_index' in params:
-        current_host = params['dataset_index']
-        num_hosts = params['dataset_num_shards']
-      else:
-        current_host = 0
-        num_hosts = 1
-    num_cores = num_hosts * 8
+      return 0
 
-    dataset = self.make_source_dataset(current_host, num_hosts)
-
-    # dataset = tpu_random.add_random_offset_to_features(dataset)
-
-    #if not self.is_training:
-    #  # Padding for eval.
-    #  dataset = self.pad_dataset(dataset, num_hosts)
-
-    # Use the fused map-and-batch operation.
-    #
-    # For XLA, we must used fixed shapes. Because we repeat the source training
-    # dataset indefinitely, we can use `drop_remainder=True` to get fixed-size
-    # batches without dropping any training examples.
-    #
-    # When evaluating, `drop_remainder=True` prevents accidentally evaluating
-    # the same image twice by dropping the final batch if it is less than a full
-    # batch size. As long as this validation is done with consistent batch size,
-    # exactly the same images will be used.
-    if self.is_training and False: #iand FLAGS.cache_decoded_image:
-      dataset = dataset.apply(
-          tf.contrib.data.map_and_batch(
-              self.dataset_parser_dynamic,
-              batch_size=batch_size,
-              num_parallel_batches=num_cores,
-              drop_remainder=True))
+  @staticmethod
+  def get_num_hosts(params):
+    if 'context' in params:
+     return params['context'].num_hosts
+    elif 'dataset_index' in params:
+      return params['dataset_num_shards']
     else:
-      dataset = dataset.apply(
-          tf.contrib.data.map_and_batch(
-              self.dataset_parser,
-              batch_size=batch_size,
-              num_parallel_batches=num_cores,
-              drop_remainder=True))
+      return 1
 
-    # Transpose for performance on TPU
-    if self.options["transpose_input"]:
-      if self.options["batch_size"] // num_cores > 8:
-        transpose_array = [1, 2, 3, 0]
-      else:
-        transpose_array = [1, 2, 0, 3]
-      def transposing(features, labels):
-        features["images"] = tf.transpose(features["images"], transpose_array)
-        return features, labels
-      dataset = dataset.map(transposing, num_parallel_calls=num_cores)
+  @staticmethod
+  def get_num_cores(params):
+    return 8 * ImageNet.get_num_hosts(params)
 
-    # Assign static batch size dimension
-    dataset = dataset.map(functools.partial(self.set_shapes, batch_size, num_cores))
-
-    # Prefetch overlaps in-feed with training
-    if self.prefetch_depth_auto_tune:
-      dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
-    else:
-      dataset = dataset.prefetch(4)
-
-    options = tf.data.Options()
-    options.experimental_threading.max_intra_op_parallelism = 1
-    options.experimental_threading.private_threadpool_size = 48
-    dataset = dataset.with_options(options)
-    return dataset
-
-
-class ImageNetInput(ImageNetTFExampleInput):
+class ImageNetInput(object):
   """Generates ImageNet input_fn from a series of TFRecord files.
 
   The training data is assumed to be in TFRecord format with keys as specified
@@ -697,34 +496,25 @@ class ImageNetInput(ImageNetTFExampleInput):
       return value, tf.constant(0, tf.int32)
     return super(ImageNetInput, self).dataset_parser(value)
 
-  def make_source_dataset(self, index, num_hosts):
+  @staticmethod
+  def make_dataset(data_dirs, index, num_hosts,
+                   seed=None, shuffle_filenames=True,
+                   num_parallel_calls = 64):
     """See base class."""
-    if not self.data_dir:
-      tf.logging.info('Undefined data_dir implies null input')
-      return tf.data.Dataset.range(1).repeat().map(self._get_null_input)
 
-    # Shuffle the filenames to ensure better randomization.
-    file_patterns = [x.strip() for x in self.data_dir.split(',') if len(x.strip()) > 0]
+    if shuffle_filenames:
+      assert seed is not None
+
+    file_patterns = [x.strip() for x in data_dirs.split(',') if len(x.strip()) > 0]
 
     # For multi-host training, we want each hosts to always process the same
     # subset of files.  Each host only sees a subset of the entire dataset,
     # allowing us to cache larger datasets in memory.
     dataset = None
     for pattern in file_patterns:
-      x = tf.data.Dataset.list_files(pattern, shuffle=False)
-      if dataset is None:
-        dataset = x
-      else:
-        dataset = dataset.concatenate(x)
+      x = tf.data.Dataset.list_files(pattern, shuffle=shuffle_filenames, seed=seed)
+      dataset = x if dataset is None else dataset.concatenate(x)
     dataset = dataset.shard(num_hosts, index)
-
-    if self.is_training and not self.cache:
-      # We shuffle only during training, and during training, we must produce an
-      # infinite dataset, so apply the fused shuffle_and_repeat optimized
-      # dataset transformation.
-      dataset = dataset.apply(
-        tf.contrib.data.shuffle_and_repeat(1024 * 16))
-      #dataset = dataset.repeat()
 
     def fetch_dataset(filename):
       buffer_size = 8 * 1024 * 1024  # 8 MiB per file
@@ -734,68 +524,14 @@ class ImageNetInput(ImageNetTFExampleInput):
     # Read the data from disk in parallel
     dataset = dataset.apply(
         tf.contrib.data.parallel_interleave(
-            fetch_dataset, cycle_length=self.num_parallel_calls, sloppy=True))
+            fetch_dataset, cycle_length=num_parallel_calls, sloppy=True))
 
-    if self.is_training and False:#and FLAGS.cache_decoded_image:
-      dataset = dataset.map(
-          self.dataset_parser_static,
-          num_parallel_calls=self.num_parallel_calls)
+    dataset = dataset.map(
+        ImageNet.dataset_parser_static,
+        num_parallel_calls=num_parallel_calls)
 
-    if self.cache:
-      dataset = dataset.cache()
-    if self.is_training:
-      # We shuffle only during training, and during training, we must produce an
-      # infinite dataset, so apply the fused shuffle_and_repeat optimized
-      # dataset transformation.
-      dataset = dataset.apply(
-          tf.contrib.data.shuffle_and_repeat(1024 * 16))
     return dataset
 
-
-# Defines a selection of data from a Cloud Bigtable.
-BigtableSelection = namedtuple('BigtableSelection',
-                               ['project',
-                                'instance',
-                                'table',
-                                'prefix',
-                                'column_family',
-                                'column_qualifier'])
-
-
-class ImageNetBigtableInput(ImageNetTFExampleInput):
-  """Generates ImageNet input_fn from a Bigtable for training or evaluation.
-  """
-
-  def __init__(self, options, is_training, use_bfloat16, selection):
-    """Constructs an ImageNet input from a BigtableSelection.
-
-    Args:
-      is_training: `bool` for whether the input is for training
-      use_bfloat16: If True, use bfloat16 precision; else use float32.
-      transpose_input: 'bool' for whether to use the double transpose trick
-      selection: a BigtableSelection specifying a part of a Bigtable.
-    """
-    super(ImageNetBigtableInput, self).__init__(
-        options=options,
-        is_training=is_training,
-        use_bfloat16=use_bfloat16)
-    self.selection = selection
-
-  def make_source_dataset(self, index, num_hosts):
-    """See base class."""
-    data = self.selection
-    client = tf.contrib.cloud.BigtableClient(data.project, data.instance)
-    table = client.table(data.table)
-    ds = table.parallel_scan_prefix(data.prefix,
-                                    columns=[(data.column_family,
-                                              data.column_qualifier)])
-    # The Bigtable datasets will have the shape (row_key, data)
-    ds_data = ds.map(lambda index, data: data)
-
-    if self.is_training:
-      ds_data = ds_data.repeat()
-
-    return ds_data
 
 
 class ImageDatasetV2(object):
@@ -843,6 +579,7 @@ class ImageDatasetV2(object):
     self._num_classes = num_classes
     self._eval_test_sample = eval_test_samples
     self._seed = seed
+    self._options = {}
 
     self._train_split = tfds.Split.TRAIN
     self._eval_split = tfds.Split.TEST
@@ -961,7 +698,7 @@ class ImageDatasetV2(object):
     image = tf.cast(features["image"], tf.float32) / 255.0
     return image, features["label"]
 
-  def _load_dataset(self, split, params):
+  def _load_dataset(self, split, params, seed):
     """Loads the underlying dataset split from disk.
 
     Args:
@@ -1010,9 +747,7 @@ class ImageDatasetV2(object):
     seed = self._get_per_host_random_seed(params.get("context", None))
     logging.info("train_input_fn(): params=%s seed=%s", params, seed)
 
-    ds = self._load_dataset(split=self._train_split, params=params)
-    if hasattr(self, "_shortcircuit"):
-      return ds
+    ds = self._load_dataset(split=self._train_split, params=params, seed=seed)
     ds = ds.filter(self._train_filter_fn)
     ds = ds.repeat()
     ds = ds.map(functools.partial(self._train_transform_fn, seed=seed))
@@ -1025,7 +760,13 @@ class ImageDatasetV2(object):
     ds = ds.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
     if "batch_size" in params:
       ds = ds.batch(params["batch_size"], drop_remainder=True)
+      # Transpose for performance on TPU
+      ds = self.transpose_dataset(ds, params)
     return ds.prefetch(tf.contrib.data.AUTOTUNE)
+
+  def _parse_fn(self, features):
+    image = tf.cast(features["image"], tf.float32) / 255.0
+    return image, features["label"]
 
   def eval_input_fn(self, params=None, split=None):
     """Input function for reading data.
@@ -1046,14 +787,14 @@ class ImageDatasetV2(object):
     seed = self._get_per_host_random_seed(params.get("context", None))
     logging.info("eval_input_fn(): params=%s seed=%s", params, seed)
 
-    ds = self._load_dataset(split=split, params=params)
-    if hasattr(self, "_shortcircuit"):
-      return ds
-    # No filter, no rpeat.
+    ds = self._load_dataset(split=split, params=params, seed=seed)
+    # No filter, no repeat.
     ds = ds.map(functools.partial(self._eval_transform_fn, seed=seed))
     # No shuffle.
     if "batch_size" in params:
       ds = ds.batch(params["batch_size"], drop_remainder=True)
+      # Transpose for performance on TPU
+      ds = self.transpose_dataset(ds, params)
     return ds.prefetch(tf.contrib.data.AUTOTUNE)
 
   # For backwards compatibility ImageDataset.
@@ -1067,6 +808,29 @@ class ImageDatasetV2(object):
     assert split_name == "test", split_name
     return self.eval_input_fn()
 
+  def transpose_dataset(self, ds, params):
+    if self._options.get("transpose_input"):
+      ds = self.transpose_input(ds, params, self._options.get("batch_size"))
+    return ds
+
+  def transpose_input(self, ds, params, train_batch_size):
+    num_cores = ImageNet.get_num_cores(params)
+    if train_batch_size // num_cores > 8:
+      transpose_array = [1, 2, 3, 0]
+    else:
+      transpose_array = [1, 2, 0, 3]
+    def transposing(features, labels):
+      features["images"] = tf.transpose(features["images"], transpose_array)
+      return features, labels
+    ds = ds.map(transposing, num_parallel_calls=num_cores)
+    # Assign static batch size dimension
+    ds = ds.map(functools.partial(ImageNet.set_shapes,
+                                  transpose_input=True,
+                                  train_batch_size=train_batch_size,
+                                  batch_size=params["batch_size"],
+                                  num_cores=num_cores))
+    return ds
+
 class DanbooruDataset(ImageDatasetV2):
 
   def __init__(self, options, seed, resolution):
@@ -1078,45 +842,31 @@ class DanbooruDataset(ImageDatasetV2):
         num_classes=1,
         eval_test_samples=10000,
         seed=seed)
-    self.options = dict(options)
-    self.resolution = resolution
-    self._shortcircuit = True
+    self._options = options
 
-  def _load_dataset(self, split, params):
-    if 'context' in params:
-      current_host = params['context'].current_input_fn_deployment()[1]
-      num_hosts = params['context'].num_hosts
-    else:
-      if 'dataset_index' in params:
-        current_host = params['dataset_index']
-        num_hosts = params['dataset_num_shards']
-      else:
-        current_host = 0
-        num_hosts = 1
-    num_replicas = params["context"].num_replicas if "context" in params else 1
-    num_cores = num_hosts * 8
+  def _load_dataset(self, split, params, seed):
+    """Loads the underlying dataset split from disk.
 
-    path = os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
-    ini = ImageNetInput(
-      options=self.options,
-      data_dir=path,
-      is_training=True,
-      image_size=self.resolution,
-      prefetch_depth_auto_tune=True,
-      num_cores=num_cores,
-    )
-    dset = ini.input_fn(params)
-    def _parse_fn(features, label):
-      images = features["images"]
-      images = images / 255.0
+    Args:
+      split: Name of the split to load.
 
-      features["images"] = images
-      #label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
-      #label = tf.constant(0, dtype=tf.int32)
-      return features, label
-    dset = dset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    logging.info('Using dataset(s) for host %d / %d: %s', current_host, num_hosts, path)
-    return dset
+    Returns:
+      Returns a `tf.data.Dataset` object with a tuple of image and label tensor.
+    """
+    if FLAGS.data_fake_dataset:
+      return self._make_fake_dataset(split)
+    ds = ImageNetInput.make_dataset(
+      self._options["datasets"],
+      ImageNet.get_current_host(params),
+      ImageNet.get_num_hosts(params),
+      seed=seed)
+    ds = self._replace_labels(split, ds)
+    ds = ds.map(self._parse_fn)
+    return ds.prefetch(tf.contrib.data.AUTOTUNE)
+
+  def _parse_fn(self, features):
+    image = tf.cast(features["image"], tf.float32) / 255.0
+    return image, features["label"]
 
 class MnistDataset(ImageDatasetV2):
   """Wrapper for the MNIST dataset from TFDS."""
@@ -1439,10 +1189,6 @@ def get_dataset(name, options=None, seed=547):
   if name not in DATASETS:
     raise ValueError("Dataset %s is not available." % name)
   kws = {'seed': seed}
-  if 'train_batch_size' in inspect.signature(DATASETS[name]).parameters:
-    kws['train_batch_size'] = options['batch_size']
-  if 'transpose_input' in inspect.signature(DATASETS[name]).parameters:
-    kws['transpose_input'] = options['transpose_input'] if 'transpose_input' in options else False
   if 'options' in inspect.signature(DATASETS[name]).parameters:
     kws['options'] = dict(options)
   return DATASETS[name](**kws)
