@@ -360,8 +360,8 @@ class ImageNetTFExampleInput(object):
                postprocess_fn=None
                ):
     self.options = dict(options)
-    if not 'transpose_input' in options:
-      options["transpose_input"] = False
+    if not 'transpose_input' in self.options:
+      self.options["transpose_input"] = False
     self.image_preprocessing_fn = preprocess_image
     def z_generator(shape, distribution_fn=tf.random.uniform,
                     minval=-1.0, maxval=1.0, stddev=1.0, name=None):
