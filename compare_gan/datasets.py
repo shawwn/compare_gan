@@ -1234,7 +1234,7 @@ def _transform_imagnet_image(image, target_image_shape, crop_method, seed):
         tf.shape(image),
         tf.zeros([0, 0, 4], tf.float32),
         aspect_ratio_range=[1.0, 1.0],
-        area_range=[0.5, 1.0],
+        area_range=[0.9, 1.0],
         use_image_if_no_bounding_boxes=True,
         seed=seed)
     image = tf.slice(image, begin, size)
