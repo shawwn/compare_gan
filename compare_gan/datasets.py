@@ -342,8 +342,10 @@ def _convert_to_example(image_buffer, label):
 class ImageNet(object):
 
   @staticmethod
-  def set_shapes(transpose_input, train_batch_size, batch_size, num_cores, images, labels):
+  def set_shapes(transpose_input, train_batch_size, batch_size, num_cores, features, labels):
     """Statically set the batch_size dimension."""
+    dick = isinstance(features, dict)
+    images = features["images"] if dick else features
     if transpose_input:
       if train_batch_size // num_cores > 8:
         shape = [None, None, None, batch_size]
@@ -358,7 +360,11 @@ class ImageNet(object):
           tf.TensorShape([batch_size, None, None, None])))
       labels.set_shape(labels.get_shape().merge_with(
           tf.TensorShape([batch_size])))
-    return images, labels
+    if dick:
+      features["images"] = images
+    else:
+      features = images
+    return features, labels
 
   @staticmethod
   def dataset_parser_static(value):
