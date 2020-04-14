@@ -386,7 +386,7 @@ class ImageNetTFExampleInput(object):
       features = {}
       features["images"] = images
       features["sampled_labels"] = labels
-      features["z"] = z_generator(self.options["z_dim"])
+      features["z"] = z_generator([self.options["z_dim"]], name="z")
       return features, labels
     if postprocess_fn is None:
       postprocess_fn = _postprocess
