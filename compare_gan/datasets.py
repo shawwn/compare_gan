@@ -342,22 +342,22 @@ def _convert_to_example(image_buffer, label):
 class ImageNet(object):
 
   @staticmethod
-  def set_shapes(transpose_input, train_batch_size, batch_size, num_cores, features, labels):
+  def set_shapes(image_size, channels, transpose_input, train_batch_size, batch_size, num_cores, features, labels):
     """Statically set the batch_size dimension."""
     dick = isinstance(features, dict)
     images = features["images"] if dick else features
     if transpose_input:
       if train_batch_size // num_cores > 8:
-        shape = [None, None, None, batch_size]
+        shape = [image_size, image_size, channels, batch_size]
       else:
-        shape = [None, None, batch_size, None]
+        shape = [image_size, image_size, batch_size, channels]
       images.set_shape(images.get_shape().merge_with(tf.TensorShape(shape)))
       images = tf.reshape(images, [-1])
       labels.set_shape(labels.get_shape().merge_with(
           tf.TensorShape([batch_size])))
     else:
       images.set_shape(images.get_shape().merge_with(
-          tf.TensorShape([batch_size, None, None, None])))
+          tf.TensorShape([batch_size, image_size, image_size, channels])))
       labels.set_shape(labels.get_shape().merge_with(
           tf.TensorShape([batch_size])))
     if dick:
@@ -815,23 +815,28 @@ class ImageDatasetV2(object):
     return self.eval_input_fn()
 
   def transpose_dataset(self, ds, params):
-    if self._options.get("transpose_input"):
-      ds = self.transpose_input(ds, params, self._options.get("batch_size"))
+    num_cores = ImageNet.get_num_cores(params)
+    transpose_input = self._options.get("transpose_input")
+    image_size = self._resolution
+    channels = self._colors
+    if transpose_input:
+      train_batch_size = self._options["batch_size"]
+      if train_batch_size // num_cores > 8:
+        transpose_array = [1, 2, 3, 0]
+      else:
+        transpose_array = [1, 2, 0, 3]
+      def transposing(features, labels):
+        features["images"] = tf.transpose(features["images"], transpose_array)
+        return features, labels
+      ds = ds.map(transposing, num_parallel_calls=num_cores)
+    # Assign static batch size dimension
+    ds = ds.map(functools.partial(
+      ImageNet.set_shapes, image_size, channels,
+      transpose_input, train_batch_size,
+      params["batch_size"], num_cores))
     return ds
 
   def transpose_input(self, ds, params, train_batch_size):
-    num_cores = ImageNet.get_num_cores(params)
-    if train_batch_size // num_cores > 8:
-      transpose_array = [1, 2, 3, 0]
-    else:
-      transpose_array = [1, 2, 0, 3]
-    def transposing(features, labels):
-      features["images"] = tf.transpose(features["images"], transpose_array)
-      return features, labels
-    ds = ds.map(transposing, num_parallel_calls=num_cores)
-    # Assign static batch size dimension
-    ds = ds.map(functools.partial(
-      ImageNet.set_shapes, True, train_batch_size, params["batch_size"], num_cores))
     return ds
 
 class DanbooruDataset(ImageDatasetV2):
