@@ -36,6 +36,7 @@ import inspect
 from absl import flags
 from absl import logging
 from compare_gan.tpu import tpu_random
+from compare_gan.utils import call_with_accepted_args
 import gin
 import numpy as np
 import tensorflow as tf
@@ -362,7 +363,8 @@ class ImageNetTFExampleInput(object):
     if not 'transpose_input' in options:
       options["transpose_input"] = False
     self.image_preprocessing_fn = preprocess_image
-    def z_generator(shape, minval=-1.0, maxval=1.0, stddev=1.0, name=None):
+    def z_generator(shape, distribution_fn=tf.random.uniform,
+                    minval=-1.0, maxval=1.0, stddev=1.0, name=None):
       """Random noise distributions as TF op.
 
       Args:
@@ -377,8 +379,8 @@ class ImageNetTFExampleInput(object):
       Returns:
         Tensor with the given shape and dtype tf.float32.
       """
-      return tf.random.uniform(
-        shape=shape, minval=minval, maxval=maxval,
+      return call_with_accepted_args(
+        distribution_fn, shape=shape, minval=minval, maxval=maxval,
         stddev=stddev, name=name)
     def _postprocess(images, labels):
       features = {}
