@@ -11,7 +11,7 @@ dataset.name = "danbooru_256"
 options.z_dim = 120
 
 options.architecture = "resnet_biggan_arch"
-ModularGAN.conditional = True
+ModularGAN.conditional = False
 options.batch_size = 2048
 options.gan_class = @ModularGAN
 options.lamba = 1
@@ -32,7 +32,7 @@ standardize_batch.use_moving_averages = False
 # Discriminator
 options.disc_iters = 2
 D.spectral_norm = True
-resnet_biggan.Discriminator.project_y = True
+resnet_biggan.Discriminator.project_y = False
 
 # Loss and optimizer
 loss.fn = @hinge
