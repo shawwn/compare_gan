@@ -550,6 +550,33 @@ class ModularGAN(AbstractGAN):
       raise ValueError("Joining G forward passes is only supported for ",
                        "unrolled graphs.")
 
+    if self._parameters["transpose_input"]:
+
+      # TODO(dehao): Replace the following with params['context'].current_host
+      if 'context' in params:
+        current_host = params['context'].current_input_fn_deployment()[1]
+        num_hosts = params['context'].num_hosts
+      else:
+        if 'dataset_index' in params:
+          current_host = params['dataset_index']
+          num_hosts = params['dataset_num_shards']
+        else:
+          current_host = 0
+          num_hosts = 1
+      num_replicas = params["context"].num_replicas if "context" in params else 1
+      num_cores = num_hosts * 8
+
+      images = features["images"]
+      if self._parameters["batch_size"] // num_cores > 8:
+        images = tf.reshape(images,
+                            [self._dataset._resolution, self._dataset._resolution, self._dataset._colors, -1])
+        images = tf.transpose(images, [3, 0, 1, 2])  # HWCN to NHWC
+      else:
+        images = tf.reshape(images,
+                            [self._dataset._resolution, self._dataset._resolution, -1, self._dataset._colors])
+        images = tf.transpose(images, [2, 0, 1, 3])  # HWNC to NHWC
+      features["images"] = images
+
     # Clean old summaries from previous calls to model_fn().
     self._tpu_summary = tpu_summaries.TpuSummaries(self._model_dir)
 

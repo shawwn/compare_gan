@@ -1091,9 +1091,7 @@ class DanbooruDataset(ImageDatasetV2):
         current_host = 0
         num_hosts = 1
     num_replicas = params["context"].num_replicas if "context" in params else 1
-    num_cores = num_hosts
-    image_size = self.resolution
-    channels = self._colors
+    num_cores = num_hosts * 8
 
     path = os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
     ini = ImageNetInput(
@@ -1108,16 +1106,6 @@ class DanbooruDataset(ImageDatasetV2):
     def _parse_fn(features, label):
       images = features["images"]
       images = images / 255.0
-
-      if self.options["transpose_input"]:
-        if self.options["batch_size"] // num_cores > 8:
-          images = tf.reshape(images,
-                                [image_size, image_size, channels, -1])
-          images = tf.transpose(images, [3, 0, 1, 2])  # HWCN to NHWC
-        else:
-          images = tf.reshape(images,
-                                [image_size, image_size, -1, channels])
-          images = tf.transpose(images, [2, 0, 1, 3])  # HWNC to NHWC
 
       features["images"] = images
       #label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
