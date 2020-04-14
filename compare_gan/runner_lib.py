@@ -307,7 +307,7 @@ def run_with_schedule(schedule, run_config, task_manager, options, use_tpu,
   result_dir = os.path.join(run_config.model_dir, "result")
   utils.check_folder(result_dir)
 
-  dataset = datasets.get_dataset()
+  dataset = datasets.get_dataset(options=options)
   gan = options["gan_class"](dataset=dataset,
                              parameters=options,
                              model_dir=run_config.model_dir)

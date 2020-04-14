@@ -350,13 +350,22 @@ class ImageNetTFExampleInput(object):
   __metaclass__ = abc.ABCMeta
 
   def __init__(self,
+               train_batch_size,
                is_training,
                use_bfloat16,
                num_cores=8,
                image_size=IMAGE_SIZE,
                prefetch_depth_auto_tune=False,
-               transpose_input=False):
+               transpose_input=False,
+               postprocess_fn=None
+               ):
+    self.train_batch_size = train_batch_size
     self.image_preprocessing_fn = preprocess_image
+    def _postprocess(images, label):
+      return {"images": images}, label
+    if postprocess_fn is None:
+      postprocess_fn = _postprocess
+    self.postprocess_fn = postprocess_fn
     self.is_training = is_training
     self.use_bfloat16 = use_bfloat16
     self.num_cores = num_cores
@@ -364,10 +373,11 @@ class ImageNetTFExampleInput(object):
     self.image_size = image_size
     self.prefetch_depth_auto_tune = prefetch_depth_auto_tune
 
-  def set_shapes(self, batch_size, images, labels):
+  def set_shapes(self, batch_size, features, labels):
     """Statically set the batch_size dimension."""
+    images = features["images"]
     if self.transpose_input:
-      if False:#FLAGS.train_batch_size // FLAGS.num_cores > 8:
+      if self.train_batch_size // self.num_cores > 8:
         shape = [None, None, None, batch_size]
       else:
         shape = [None, None, batch_size, None]
@@ -381,7 +391,7 @@ class ImageNetTFExampleInput(object):
       labels.set_shape(labels.get_shape().merge_with(
           tf.TensorShape([batch_size])))
 
-    return images, labels
+    return features, labels
 
   def dataset_parser(self, value):
     """Parses an image and its label from a serialized ResNet-50 TFExample.
@@ -420,7 +430,7 @@ class ImageNetTFExampleInput(object):
             image_size=self.image_size,
             use_bfloat16=self.use_bfloat16))
 
-    return image, label
+    return self.postprocess_fn(image, label)
 
   def dataset_parser_static(self, value):
     """Parses an image and its label from a serialized ResNet-50 TFExample.
@@ -455,11 +465,11 @@ class ImageNetTFExampleInput(object):
     return image_bytes, label
 
   def dataset_parser_dynamic(self, image_bytes, label):
-    return self.image_preprocessing_fn(
+    return self.postprocess_fn(self.image_preprocessing_fn(
         image_bytes=image_bytes,
         is_training=self.is_training,
         image_size=self.image_size,
-        use_bfloat16=self.use_bfloat16), label
+        use_bfloat16=self.use_bfloat16), label)
 
   def pad_dataset(self, dataset, num_hosts):
     """Pad the eval dataset so that eval can have the same batch size as training."""
@@ -555,14 +565,14 @@ class ImageNetTFExampleInput(object):
 
     # Transpose for performance on TPU
     if self.transpose_input:
-      if FLAGS.train_batch_size // FLAGS.num_cores > 8:
+      if self.train_batch_size // self.num_cores > 8:
         transpose_array = [1, 2, 3, 0]
       else:
         transpose_array = [1, 2, 0, 3]
-      dataset = dataset.map(
-          lambda images, labels: (tf.transpose(images, transpose_array), labels
-                                 ),
-          num_parallel_calls=self.num_cores)
+      def transposing(features, labels):
+        features["images"] = tf.transpose(features["images"], transpose_array)
+        return features, labels
+      dataset = dataset.map(transposing, num_parallel_calls=self.num_cores)
 
     # Assign static batch size dimension
     dataset = dataset.map(functools.partial(self.set_shapes, batch_size))
@@ -598,6 +608,7 @@ class ImageNetInput(ImageNetTFExampleInput):
   """
 
   def __init__(self,
+               train_batch_size,
                data_dir,
                is_training=True,
                use_bfloat16=False,
@@ -624,6 +635,7 @@ class ImageNetInput(ImageNetTFExampleInput):
       cache: if true, fill the dataset by repeating from its cache
     """
     super(ImageNetInput, self).__init__(
+        train_batch_size=train_batch_size,
         is_training=is_training,
         image_size=image_size,
         use_bfloat16=use_bfloat16,
@@ -1028,7 +1040,7 @@ class ImageDatasetV2(object):
 
 class DanbooruDataset(ImageDatasetV2):
 
-  def __init__(self, seed, resolution):
+  def __init__(self, train_batch_size, seed, resolution, transpose_input):
     super(DanbooruDataset, self).__init__(
         name="danbooru",
         tfds_name="danbooru",
@@ -1037,8 +1049,10 @@ class DanbooruDataset(ImageDatasetV2):
         num_classes=1,
         eval_test_samples=10000,
         seed=seed)
+    self.train_batch_size = train_batch_size
+    self.transpose_input = transpose_input
     self.resolution = resolution
-    #self._shortcircuit = True
+    self._shortcircuit = True
 
   def _load_dataset(self, split, params):
     if 'context' in params:
@@ -1055,22 +1069,20 @@ class DanbooruDataset(ImageDatasetV2):
 
     path = os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
     ini = ImageNetInput(
-      path,
+      train_batch_size=self.train_batch_size,
+      data_dir=path,
       is_training=True,
       image_size=self.resolution,
       prefetch_depth_auto_tune=True,
       num_cores=num_hosts,
+      transpose_input=self.transpose_input,
     )
-    iparams = dict(params)
-    iparams['batch_size'] = 1
-    dset = ini.input_fn(iparams)
-    def _parse_fn(image, label):
-      # image, label = features[0]
-      # label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
-      label = tf.constant(0, dtype=tf.int32)
-      # image = tf.cast(features["image"], tf.float32) / 255.0
-      #return image / 255.0, label
-      return image[0] / 255.0, label
+    dset = ini.input_fn(params)
+    def _parse_fn(features, label):
+      features["images"] = features["images"] / 255.0
+      #label = tf.random.uniform(shape=[], minval=0, maxval=1000, dtype=tf.int32)
+      #label = tf.constant(0, dtype=tf.int32)
+      return features, label
     dset = dset.map(_parse_fn, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     logging.info('Using dataset(s) for host %d / %d: %s', current_host, num_hosts, path)
     return dset
@@ -1388,11 +1400,17 @@ DATASETS = {
         ImagenetDataset, resolution=128, filter_unlabeled=True),
 }
 
+import inspect
 
 @gin.configurable("dataset")
-def get_dataset(name, seed=547):
+def get_dataset(name, options, seed=547):
   """Instantiates a data set and sets the random seed."""
   if name not in DATASETS:
     raise ValueError("Dataset %s is not available." % name)
-  return DATASETS[name](seed=seed)
+  kws = {'seed': seed}
+  if 'train_batch_size' in inspect.signature(DATASETS[name]).parameters:
+    kws['train_batch_size'] = options['batch_size']
+  if 'transpose_input' in inspect.signature(DATASETS[name]).parameters:
+    kws['transpose_input'] = options['transpose_input'] if 'transpose_input' in options else False
+  return DATASETS[name](**kws)
 
