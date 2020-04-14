@@ -817,10 +817,10 @@ class ImageDatasetV2(object):
   def transpose_dataset(self, ds, params):
     num_cores = ImageNet.get_num_cores(params)
     transpose_input = self._options.get("transpose_input")
+    train_batch_size = self._options.get("batch_size")
     image_size = self._resolution
     channels = self._colors
     if transpose_input:
-      train_batch_size = self._options["batch_size"]
       if train_batch_size // num_cores > 8:
         transpose_array = [1, 2, 3, 0]
       else:
