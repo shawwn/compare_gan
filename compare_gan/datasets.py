@@ -690,7 +690,7 @@ def _eval_imagenet_transform(image, target_image_shape, seed,
 class ImagenetDataset(ImageDatasetV2):
   """ImageNet2012 as defined by TF Datasets."""
 
-  def __init__(self, resolution, seed, filter_unlabeled=False):
+  def __init__(self, resolution, seed, filter_unlabeled=False, num_classes=1000):
     if resolution not in [64, 128, 256, 512]:
       raise ValueError("Unsupported resolution: {}".format(resolution))
     super(ImagenetDataset, self).__init__(
@@ -698,7 +698,7 @@ class ImagenetDataset(ImageDatasetV2):
         tfds_name="imagenet2012",
         resolution=resolution,
         colors=3,
-        num_classes=1000,
+        num_classes=num_classes,
         eval_test_samples=50000,
         seed=seed)
     self._eval_split = tfds.Split.VALIDATION
@@ -811,12 +811,8 @@ class DanbooruDataset(ImagenetDataset):
 
   def __init__(self, options, seed, resolution):
     super(DanbooruDataset, self).__init__(
-      name="danbooru",
-      tfds_name="danbooru",
       resolution=resolution,
-      colors=3,
       num_classes=1,
-      eval_test_samples=10000,
       seed=seed)
     self._options = options
 
