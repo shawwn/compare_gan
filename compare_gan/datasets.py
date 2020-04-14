@@ -350,21 +350,41 @@ class ImageNetTFExampleInput(object):
   __metaclass__ = abc.ABCMeta
 
   def __init__(self,
-               train_batch_size,
+               options,
                is_training,
                use_bfloat16,
                num_cores=8,
                image_size=IMAGE_SIZE,
                prefetch_depth_auto_tune=False,
-               transpose_input=False,
                postprocess_fn=None
                ):
-    self.train_batch_size = train_batch_size
+    self.options = dict(options)
+    if not 'transpose_input' in options:
+      options["transpose_input"] = False
     self.image_preprocessing_fn = preprocess_image
+    def z_generator(shape, minval=-1.0, maxval=1.0, stddev=1.0, name=None):
+      """Random noise distributions as TF op.
+
+      Args:
+        shape: A 1-D integer Tensor or Python array.
+        distribution_fn: Function that create a Tensor. If the function has any
+          of the arguments 'minval', 'maxval' or 'stddev' these are passed to it.
+        minval: The lower bound on the range of random values to generate.
+        maxval: The upper bound on the range of random values to generate.
+        stddev: The standard deviation of a normal distribution.
+        name: A name for the operation.
+
+      Returns:
+        Tensor with the given shape and dtype tf.float32.
+      """
+      return tf.random.uniform(
+        shape=shape, minval=minval, maxval=maxval,
+        stddev=stddev, name=name)
     def _postprocess(images, labels):
       features = {}
       features["images"] = images
       features["sampled_labels"] = labels
+      features["z"] = z_generator(self.options["z_dim"])
       return features, labels
     if postprocess_fn is None:
       postprocess_fn = _postprocess
@@ -372,15 +392,14 @@ class ImageNetTFExampleInput(object):
     self.is_training = is_training
     self.use_bfloat16 = use_bfloat16
     self.num_cores = num_cores
-    self.transpose_input = transpose_input
     self.image_size = image_size
     self.prefetch_depth_auto_tune = prefetch_depth_auto_tune
 
   def set_shapes(self, batch_size, features, labels):
     """Statically set the batch_size dimension."""
     images = features["images"]
-    if self.transpose_input:
-      if self.train_batch_size // self.num_cores > 8:
+    if self.options["transpose_input"]:
+      if self.options["batch_size"] // self.num_cores > 8:
         shape = [None, None, None, batch_size]
       else:
         shape = [None, None, batch_size, None]
@@ -567,8 +586,8 @@ class ImageNetTFExampleInput(object):
               drop_remainder=True))
 
     # Transpose for performance on TPU
-    if self.transpose_input:
-      if self.train_batch_size // self.num_cores > 8:
+    if self.options["transpose_input"]:
+      if self.options["batch_size"] // self.num_cores > 8:
         transpose_array = [1, 2, 3, 0]
       else:
         transpose_array = [1, 2, 0, 3]
@@ -611,11 +630,10 @@ class ImageNetInput(ImageNetTFExampleInput):
   """
 
   def __init__(self,
-               train_batch_size,
+               options,
                data_dir,
                is_training=True,
                use_bfloat16=False,
-               transpose_input=False,
                image_size=224,
                num_parallel_calls=64,
                num_cores=8,
@@ -638,13 +656,12 @@ class ImageNetInput(ImageNetTFExampleInput):
       cache: if true, fill the dataset by repeating from its cache
     """
     super(ImageNetInput, self).__init__(
-        train_batch_size=train_batch_size,
+        options=options,
         is_training=is_training,
         image_size=image_size,
         use_bfloat16=use_bfloat16,
         num_cores=num_cores,
-        prefetch_depth_auto_tune=prefetch_depth_auto_tune,
-        transpose_input=transpose_input)
+        prefetch_depth_auto_tune=prefetch_depth_auto_tune)
     self.data_dir = data_dir
     if self.data_dir == 'null' or not self.data_dir:
       self.data_dir = None
@@ -740,7 +757,7 @@ class ImageNetBigtableInput(ImageNetTFExampleInput):
   """Generates ImageNet input_fn from a Bigtable for training or evaluation.
   """
 
-  def __init__(self, is_training, use_bfloat16, transpose_input, selection):
+  def __init__(self, options, is_training, use_bfloat16, selection):
     """Constructs an ImageNet input from a BigtableSelection.
 
     Args:
@@ -750,9 +767,9 @@ class ImageNetBigtableInput(ImageNetTFExampleInput):
       selection: a BigtableSelection specifying a part of a Bigtable.
     """
     super(ImageNetBigtableInput, self).__init__(
+        options=options,
         is_training=is_training,
-        use_bfloat16=use_bfloat16,
-        transpose_input=transpose_input)
+        use_bfloat16=use_bfloat16)
     self.selection = selection
 
   def make_source_dataset(self, index, num_hosts):
@@ -1043,7 +1060,7 @@ class ImageDatasetV2(object):
 
 class DanbooruDataset(ImageDatasetV2):
 
-  def __init__(self, train_batch_size, seed, resolution, transpose_input):
+  def __init__(self, options, seed, resolution):
     super(DanbooruDataset, self).__init__(
         name="danbooru",
         tfds_name="danbooru",
@@ -1052,8 +1069,7 @@ class DanbooruDataset(ImageDatasetV2):
         num_classes=1,
         eval_test_samples=10000,
         seed=seed)
-    self.train_batch_size = train_batch_size
-    self.transpose_input = transpose_input
+    self.options = dict(options)
     self.resolution = resolution
     self._shortcircuit = True
 
@@ -1072,13 +1088,12 @@ class DanbooruDataset(ImageDatasetV2):
 
     path = os.environ['DATASETS'] if 'DATASETS' in os.environ else "gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
     ini = ImageNetInput(
-      train_batch_size=self.train_batch_size,
+      options=self.options,
       data_dir=path,
       is_training=True,
       image_size=self.resolution,
       prefetch_depth_auto_tune=True,
       num_cores=num_hosts,
-      transpose_input=self.transpose_input,
     )
     dset = ini.input_fn(params)
     def _parse_fn(features, label):
@@ -1415,5 +1430,7 @@ def get_dataset(name, options=None, seed=547):
     kws['train_batch_size'] = options['batch_size']
   if 'transpose_input' in inspect.signature(DATASETS[name]).parameters:
     kws['transpose_input'] = options['transpose_input'] if 'transpose_input' in options else False
+  if 'options' in inspect.signature(DATASETS[name]).parameters:
+    kws['options'] = dict(options)
   return DATASETS[name](**kws)
 
