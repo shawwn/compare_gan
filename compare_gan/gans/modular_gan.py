@@ -554,16 +554,16 @@ class ModularGAN(AbstractGAN):
 
       # TODO(dehao): Replace the following with params['context'].current_host
       if 'context' in params:
-        current_host = params['context'].current_input_fn_deployment()[1]
+        #current_host = params['context'].current_input_fn_deployment()[1]
         num_hosts = params['context'].num_hosts
       else:
         if 'dataset_index' in params:
-          current_host = params['dataset_index']
+          #current_host = params['dataset_index']
           num_hosts = params['dataset_num_shards']
         else:
-          current_host = 0
+          #current_host = 0
           num_hosts = 1
-      num_replicas = params["context"].num_replicas if "context" in params else 1
+      #num_replicas = params["context"].num_replicas if "context" in params else 1
       num_cores = num_hosts * 8
 
       images = features["images"]
