@@ -810,9 +810,12 @@ class SoftLabeledImagenetDataset(ImagenetDataset):
 class DanbooruDataset(ImagenetDataset):
 
   def __init__(self, options, seed, resolution):
+    num_classes = 1
+    if "num_classes" in options:
+      num_classes = options["num_classes"]
     super(DanbooruDataset, self).__init__(
       resolution=resolution,
-      num_classes=1,
+      num_classes=num_classes,
       seed=seed)
     self._options = options
 
