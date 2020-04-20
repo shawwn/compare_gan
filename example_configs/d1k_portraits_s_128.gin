@@ -7,7 +7,7 @@
 
 # Recommended training platform: TPU v3-128.
 
-dataset.name = "d1k_portraits_s_128"
+dataset.name = "danbooru_128"
 options.datasets = "gs://darnbooru-euw4a/datasets/d1k-portraits-s/d1k-portraits-s-0*"
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
