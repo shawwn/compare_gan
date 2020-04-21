@@ -397,9 +397,24 @@ class ModularGAN(AbstractGAN):
   def label_generator(self, shape, name=None):
     if not self.conditional:
       raise ValueError("label_generator() called but GAN is not conditional.")
-    # Assume uniform label distribution.
-    return tf.random.uniform(shape, minval=0, maxval=self._dataset.num_classes,
-                             dtype=tf.int32, name=name)
+    if hasattr(self._dataset, '_options') and "labels" in self._dataset._options:
+      if not hasattr(self._dataset, '_tf_labels_var'):
+        with tf.device(None):
+          label_filenames = self._dataset._options["labels"]
+          logging.info("Loading labels: %s", label_filenames)
+          label_files = [x.strip() for x in label_filenames.split(",") if len(x.strip()) > 0]
+          all_labels = []
+          for label_file in label_files:
+            all_labels.extend([int(x) for x in tf.io.gfile.GFile(label_file).read().splitlines()])
+          self._dataset._tf_labels_var = tf.Variable(all_labels, name="labels_var", dtype=tf.int32)
+      v = self._dataset._tf_labels_var
+      with tf.control_dependencies([v.initializer]):
+        logging.info("Returning real random labels")
+        return tf.gather(v, tf.random_uniform(shape, 0, v.shape[0], dtype=tf.int32))
+    else:
+      # Assume uniform label distribution.
+      return tf.random.uniform(shape, minval=0, maxval=self._dataset.num_classes,
+                               dtype=tf.int32, name=name)
 
   def _preprocess_fn(self, images, labels, seed=None):
     """Creates the feature dictionary with images and z."""
