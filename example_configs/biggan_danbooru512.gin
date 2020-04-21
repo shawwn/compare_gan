@@ -9,6 +9,7 @@
 
 dataset.name = "danbooru_512"
 options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
+options.random_labels = True
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
 options.z_dim = 160

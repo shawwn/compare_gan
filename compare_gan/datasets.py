@@ -844,7 +844,11 @@ class DanbooruDataset(ImagenetDataset):
 
   def _parse_fn(self, features):
     image = tf.cast(features["image"], tf.float32) / 255.0
-    return image, features["label"]
+    label = features["label"]
+    if self._options["random_labels"]:
+      logging.info("Using random labels (0 through %d)", self.num_classes)
+      label = tf.random.uniform(minval=0, maxval=self.num_classes, dtype=tf.int32)
+    return image, label
 
 DATASETS = {
     "celeb_a": CelebaDataset,
