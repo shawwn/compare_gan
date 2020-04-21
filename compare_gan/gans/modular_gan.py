@@ -399,14 +399,13 @@ class ModularGAN(AbstractGAN):
       raise ValueError("label_generator() called but GAN is not conditional.")
     if hasattr(self._dataset, '_options') and "labels" in self._dataset._options:
       if not hasattr(self._dataset, '_tf_labels_var'):
-        with tf.device(None):
-          label_filenames = self._dataset._options["labels"]
-          logging.info("Loading labels: %s", label_filenames)
-          label_files = [x.strip() for x in label_filenames.split(",") if len(x.strip()) > 0]
-          all_labels = []
-          for label_file in label_files:
-            all_labels.extend([int(x) for x in tf.io.gfile.GFile(label_file).read().splitlines()])
-          self._dataset._tf_labels_var = tf.Variable(all_labels, name="labels_var", dtype=tf.int32, trainable=False)
+        label_filenames = self._dataset._options["labels"]
+        logging.info("Loading labels: %s", label_filenames)
+        label_files = [x.strip() for x in label_filenames.split(",") if len(x.strip()) > 0]
+        all_labels = []
+        for label_file in label_files:
+          all_labels.extend([int(x) for x in tf.io.gfile.GFile(label_file).read().splitlines()])
+        self._dataset._tf_labels_var = tf.Variable(all_labels, name="labels_var", dtype=tf.int32, trainable=False)
       v = self._dataset._tf_labels_var
       with tf.control_dependencies([v.initializer]):
         logging.info("Returning real random labels")
