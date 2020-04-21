@@ -8,7 +8,7 @@
 # Recommended training platform: TPU v3-128.
 
 dataset.name = "danbooru_256"
-options.datasets = "gs://darnbooru-euw4a/datasets/danbooru-2019-s/danbooru-2019-s-0*"
+options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
 options.z_dim = 120
