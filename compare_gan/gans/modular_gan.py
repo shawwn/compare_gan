@@ -406,8 +406,8 @@ class ModularGAN(AbstractGAN):
         for label_file in label_files:
           all_labels.extend([int(x) for x in tf.io.gfile.GFile(label_file).read().splitlines()])
         self._dataset._all_labels = all_labels
-      logging.info("Returning real random labels")
       v = tf.Variable(self._dataset._all_labels, name="labels_var", dtype=tf.int32, trainable=False)
+      logging.info("Returning real random labels %s", v)
       with tf.control_dependencies([v.initializer]):
         return tf.gather(v, tf.random_uniform(shape, 0, v.shape[0], dtype=tf.int32))
     else:
