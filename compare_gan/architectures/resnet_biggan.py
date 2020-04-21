@@ -163,6 +163,7 @@ class Generator(abstract_arch.AbstractGenerator):
                embed_y=True,
                embed_y_dim=128,
                embed_bias=False,
+               channel_multipliers=None,
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -182,6 +183,7 @@ class Generator(abstract_arch.AbstractGenerator):
     super(Generator, self).__init__(**kwargs)
     self._ch = ch
     self._blocks_with_attention = set(blocks_with_attention.split(","))
+    self._channel_multipliers = None if channel_multipliers is None else [int(x.strip()) for x in channel_multipliers.split(",")]
     self._hierarchical_z = hierarchical_z
     self._embed_z = embed_z
     self._embed_y = embed_y
@@ -204,7 +206,9 @@ class Generator(abstract_arch.AbstractGenerator):
 
   def _get_in_out_channels(self):
     resolution = self._image_shape[0]
-    if resolution == 512:
+    if self._channel_multipliers is not None:
+      channel_multipliers = self._channel_multipliers
+    elif resolution == 512:
       channel_multipliers = [16, 16, 8, 8, 4, 2, 1, 1]
     elif resolution == 256:
       channel_multipliers = [16, 16, 8, 8, 4, 2, 1]
@@ -310,6 +314,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
                ch=96,
                blocks_with_attention="B1",
                project_y=True,
+               channel_multipliers=None,
                **kwargs):
     """Constructor for BigGAN discriminator.
 
@@ -323,6 +328,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     super(Discriminator, self).__init__(**kwargs)
     self._ch = ch
     self._blocks_with_attention = set(blocks_with_attention.split(","))
+    self._channel_multipliers = None if channel_multipliers is None else [int(x.strip()) for x in channel_multipliers.split(",")]
     self._project_y = project_y
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
@@ -344,7 +350,9 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
   def _get_in_out_channels(self, colors, resolution):
     if colors not in [1, 3]:
       raise ValueError("Unsupported color channels: {}".format(colors))
-    if resolution == 512:
+    if self._channel_multipliers is not None:
+      channel_multipliers = self._channel_multipliers
+    elif resolution == 512:
       channel_multipliers = [1, 1, 2, 4, 8, 8, 16, 16]
     elif resolution == 256:
       channel_multipliers = [1, 2, 4, 8, 8, 16, 16]
