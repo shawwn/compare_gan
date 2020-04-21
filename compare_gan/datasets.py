@@ -771,7 +771,7 @@ class RandomClassImagenetDataset(ImagenetDataset):
 
   def _parse_fn(self, features):
     image, _ = super(RandomClassImagenetDataset, self)._parse_fn(features)
-    label = tf.random.uniform(minval=0, maxval=1000, dtype=tf.int32)
+    label = tf.random.uniform([], minval=0, maxval=1000, dtype=tf.int32)
     return image, label
 
 
@@ -847,7 +847,7 @@ class DanbooruDataset(ImagenetDataset):
     label = features["label"]
     if self._options["random_labels"]:
       logging.info("Using random labels (0 through %d)", self.num_classes)
-      label = tf.random.uniform(minval=0, maxval=self.num_classes, dtype=tf.int32)
+      label = tf.random.uniform([], minval=0, maxval=self.num_classes, dtype=tf.int32)
     return image, label
 
 DATASETS = {
