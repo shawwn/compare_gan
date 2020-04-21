@@ -397,7 +397,7 @@ class ModularGAN(AbstractGAN):
   def label_generator(self, shape, name=None):
     if not self.conditional:
       raise ValueError("label_generator() called but GAN is not conditional.")
-    if hasattr(self._dataset, '_options') and "labels" in self._dataset._options:
+    if hasattr(self._dataset, '_options') and "labels" in self._dataset._options and self._dataset._options["labels"] is not None and len(self._dataset._options["labels"]) > 0:
       if not hasattr(self._dataset, '_tf_labels_var'):
         label_filenames = self._dataset._options["labels"]
         logging.info("Loading labels: %s", label_filenames)
