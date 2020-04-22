@@ -125,7 +125,7 @@ class ImageNet(object):
     return features, labels
 
   @staticmethod
-  def dataset_parser_static(value):
+  def dataset_parser_static(value, num_classes):
     """Parses an image and its label from a serialized ResNet-50 TFExample.
 
        This only decodes the image, which is prepared for caching.
@@ -140,6 +140,7 @@ class ImageNet(object):
         'image/encoded': tf.FixedLenFeature((), tf.string, ''),
         'image/format': tf.FixedLenFeature((), tf.string, 'jpeg'),
         'image/class/label': tf.FixedLenFeature([], tf.int64, -1),
+        'image/class/embedding': tf.VarLenFeature(tf.float32),
         'image/class/text': tf.FixedLenFeature([], tf.string, ''),
         'image/object/bbox/xmin': tf.VarLenFeature(dtype=tf.float32),
         'image/object/bbox/ymin': tf.VarLenFeature(dtype=tf.float32),
@@ -156,9 +157,16 @@ class ImageNet(object):
     label = tf.cast(
         tf.reshape(parsed['image/class/label'], shape=[]), dtype=tf.int32) - 0
 
+    embedding = parsed['image/class/embedding'].values
+
+    embedding = tf.cond(tf.math.greater(tf.shape(embedding)[0], 0),
+        lambda: embedding,
+        lambda: tf.one_hot(label, num_classes))
+
     return {
       'image': image,
       'label': label,
+      'embedding': embedding,
     }
 
   @staticmethod
@@ -185,7 +193,7 @@ class ImageNet(object):
     return 8 * ImageNet.get_num_hosts(params)
 
   @staticmethod
-  def make_dataset(data_dirs, index, num_hosts,
+  def make_dataset(data_dirs, index, num_hosts, num_classes,
                    seed=None, shuffle_filenames=True,
                    num_parallel_calls = 64):
 
@@ -213,8 +221,11 @@ class ImageNet(object):
         tf.contrib.data.parallel_interleave(
             fetch_dataset, cycle_length=num_parallel_calls, sloppy=True))
 
+    def parse_dataset(value):
+      return ImageNet.dataset_parser_static(value, num_classes)
+
     dataset = dataset.map(
-        ImageNet.dataset_parser_static,
+        parse_dataset,
         num_parallel_calls=num_parallel_calls)
 
     return dataset
@@ -837,6 +848,7 @@ class DanbooruDataset(ImagenetDataset):
       self._options["datasets"],
       ImageNet.get_current_host(params),
       ImageNet.get_num_hosts(params),
+      num_classes=self.num_classes,
       seed=seed)
     ds = self._replace_labels(split, ds)
     ds = ds.map(self._parse_fn)
