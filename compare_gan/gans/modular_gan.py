@@ -632,6 +632,7 @@ class ModularGAN(AbstractGAN):
           d_loss = train_disc_fn(features=fs[i], labels=ls[i])
           d_flood = opts.get("d_flood", 0.0)
           if d_flood > 0.0:
+            logging.info("Using d_flood=%f", d_flood)
             d_loss = tf.abs(d_loss - d_flood) + d_flood
           d_losses.append(d_loss)
 
