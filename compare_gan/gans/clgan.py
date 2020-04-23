@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of Self-Supervised GAN with auxiliary rotation loss."""
+"""Implementation of Self-Supervised GAN with contrastive loss."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -39,7 +39,6 @@ class CLGAN(modular_gan.ModularGAN):
   """Self-Supervised GAN with Contrastive Loss"""
 
   def __init__(self,
-               self_supervised_batch_size=gin.REQUIRED,
                weight_contrastive_loss_d=10.0,
                **kwargs):
     """Creates a new Self-Supervised GAN using Contrastive Loss.
@@ -51,7 +50,6 @@ class CLGAN(modular_gan.ModularGAN):
     """
     super(CLGAN, self).__init__(**kwargs)
 
-    self._self_supervised_batch_size = self_supervised_batch_size
     self._weight_contrastive_loss_d = weight_contrastive_loss_d
 
     # To safe memory ModularGAN supports feeding real and fake samples
@@ -117,7 +115,7 @@ class CLGAN(modular_gan.ModularGAN):
     all_images = tf.concat([images, generated, aug_images], 0)
 
     if self.conditional:
-      all_y = tf.concat([y, sampled_y], axis=0)
+      all_y = tf.concat([y, sampled_y, y], axis=0)
 
     # Compute discriminator output for real and fake images in one batch.
 
@@ -129,12 +127,6 @@ class CLGAN(modular_gan.ModularGAN):
     d_real, d_fake, _ = tf.split(d_all, 3)
     d_real_logits, d_fake_logits, _ = tf.split(d_all_logits, 3)
     z_projs_real, _, z_aug_projs_real = tf.split(z_projs, 3)
-
-    # Separate the true/fake scores from whole rotation batch.
-    d_real_logits = d_real_logits[:bs]
-    d_fake_logits = d_fake_logits[:bs]
-    d_real = d_real[:bs]
-    d_fake = d_fake[:bs]
 
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
