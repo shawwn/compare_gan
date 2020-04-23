@@ -500,6 +500,7 @@ class ModularGAN(AbstractGAN):
     tpu_random.set_random_offset_from_features(features)
     # create_loss will set self.d_loss.
     self.create_loss(features, labels, params=params)
+    self.flood_loss()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
       train_op = optimizer.minimize(
@@ -514,6 +515,7 @@ class ModularGAN(AbstractGAN):
     tpu_random.set_random_offset_from_features(features)
     # create_loss will set self.g_loss.
     self.create_loss(features, labels, params=params)
+    self.flood_loss()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
       train_op = optimizer.minimize(
@@ -722,8 +724,14 @@ class ModularGAN(AbstractGAN):
         discriminator=self.discriminator)
     self.d_loss += self._lambda * penalty_loss
 
+  def flood_loss(self):
     opts = {} if not hasattr(self._dataset, '_options') else self._dataset._options
     d_flood = opts.get("d_flood", 0.0)
     if d_flood > 0.0:
       logging.info("Using d_flood=%f", d_flood)
       self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
+
+    g_flood = opts.get("g_flood", 0.0)
+    if g_flood > 0.0:
+      logging.info("Using g_flood=%f", g_flood)
+      self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
