@@ -39,7 +39,6 @@ class CLGAN(modular_gan.ModularGAN):
   """Self-Supervised GAN with Contrastive Loss"""
 
   def __init__(self,
-               self_supervised_batch_size=gin.REQUIRED,
                weight_contrastive_loss_d=10.0,
                **kwargs):
     """Creates a new Self-Supervised GAN using Contrastive Loss.
@@ -51,7 +50,6 @@ class CLGAN(modular_gan.ModularGAN):
     """
     super(CLGAN, self).__init__(**kwargs)
 
-    self._self_supervised_batch_size = self_supervised_batch_size
     self._weight_contrastive_loss_d = weight_contrastive_loss_d
 
     # To safe memory ModularGAN supports feeding real and fake samples
@@ -117,7 +115,7 @@ class CLGAN(modular_gan.ModularGAN):
     all_images = tf.concat([images, generated, aug_images], 0)
 
     if self.conditional:
-      all_y = tf.concat([y, sampled_y], axis=0)
+      all_y = tf.concat([y, sampled_y, y], axis=0)
 
     # Compute discriminator output for real and fake images in one batch.
 
