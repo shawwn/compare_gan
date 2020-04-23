@@ -29,9 +29,40 @@ from compare_gan.gans import utils
 
 import gin
 import numpy as np
+import random
 import tensorflow as tf
 
 FLAGS = flags.FLAGS
+
+# augmentation functions
+
+# augment
+
+def random_crop_and_resize(images, ratio=0.8):
+  b, h, w, c = images.get_shape().as_list()
+  ch, cw = map(lambda x: int(x * ratio), (h, w))
+  crop = tf.random_crop(images, size=[b, ch, cw, 3])
+  crop = tf.image.resize(crop, [h, w])
+  return crop
+
+def random_apply(fn, image, prob=1.):
+  if random.random() > prob:
+    return image
+  return fn(image)
+
+def color_distortion(image, s=1.0):
+  lower, upper, x = (1 - 0.8 * s), (1 + 0.8 * s), image
+  x = tf.image.random_brightness(x, max_delta=0.8*s)
+  x = tf.image.random_contrast(x, lower=lower, upper=upper)
+  x = tf.image.random_saturation(x, lower=lower, upper=upper)
+  x = tf.image.random_hue(x, max_delta=0.2*s)
+  x = tf.clip_by_value(x, 0, 1)
+  return x
+
+def color_drop(image):
+  image = tf.image.rgb_to_grayscale(image)
+  image = tf.tile(image, [1, 1, 3])
+  return image
 
 # pylint: disable=not-callable
 @gin.configurable(blacklist=["kwargs"])
@@ -39,6 +70,8 @@ class CLGAN(modular_gan.ModularGAN):
   """Self-Supervised GAN with Contrastive Loss"""
 
   def __init__(self,
+               aug_color_jitter_prob=0.8,
+               aug_color_drop_prob=0.2,
                weight_contrastive_loss_d=10.0,
                **kwargs):
     """Creates a new Self-Supervised GAN using Contrastive Loss.
@@ -51,6 +84,8 @@ class CLGAN(modular_gan.ModularGAN):
     super(CLGAN, self).__init__(**kwargs)
 
     self._weight_contrastive_loss_d = weight_contrastive_loss_d
+    self._aug_color_jitter_prob = aug_color_jitter_prob
+    self._aug_color_drop_prob = aug_color_drop_prob
 
     # To safe memory ModularGAN supports feeding real and fake samples
     # separately through the discriminator. CLGAN does not support this to
@@ -100,16 +135,9 @@ class CLGAN(modular_gan.ModularGAN):
     # Batch size per core.
     bs = images.shape[0].value
 
-    # augment
-    def random_crop_and_resize(images, ratio=0.8):
-      b, h, w, c = images.get_shape().as_list()
-      ch, cw = map(lambda x: int(x * ratio), (h, w))
-      crop = tf.random_crop(images, size=[b, ch, cw, 3])
-      crop = tf.image.resize(crop, [h, w])
-      crop = tf.image.random_flip_left_right(crop)
-      return crop
-
     aug_images = random_crop_and_resize(images)
+    aug_images = random_apply(color_distortion, aug_images, self._aug_color_jitter_prob)
+    aug_images = random_apply(color_drop, aug_images, self._aug_color_drop_prob)
 
     # concat all images
     all_images = tf.concat([images, generated, aug_images], 0)
