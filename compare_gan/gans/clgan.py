@@ -165,7 +165,9 @@ class CLGAN(modular_gan.ModularGAN):
         discriminator=self.discriminator, architecture=self._architecture)
     self.d_loss += self._lambda * penalty_loss
 
-    sims_logits = tf.matmul(z_projs_real, z_aug_projs_real, transpose_b=True)    
+    sims_logits = tf.matmul(z_projs_real, z_aug_projs_real, transpose_b=True)
+    logits_max = tf.reduce_max(sims_logits,1)
+    sims_logits = sims_logits - tf.reshape(logits_max, [-1, 1])
     sims_probs = tf.nn.softmax(sims_logits)
 
     sim_labels = tf.constant(np.arange(bs, dtype=np.int32))
