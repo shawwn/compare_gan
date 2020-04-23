@@ -65,3 +65,6 @@ CLGAN.weight_contrastive_loss_d = 0.5
 options.g_flood = 0.05
 options.d_flood = 0.20
 ModularGAN.d_lr = 0.0075
+
+options.image_grid_width = 6
+options.image_grid_height = 6
