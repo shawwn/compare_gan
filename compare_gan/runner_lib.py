@@ -85,7 +85,8 @@ def get_options_dict(batch_size=gin.REQUIRED,
                      z_dim=128,
                      d_flood=0.0,
                      g_flood=0.0,
-                     description="Describe your GIN config. (This appears in the tensorboard text tab.)"):
+                     description="Describe your GIN config. (This appears in the tensorboard text tab.)",
+                     model_dir=os.environ['MODEL_DIR'] if 'MODEL_DIR' in os.environ else None):
   """Parse legacy options from Gin configurations into a Python dict.
 
   Args:
@@ -124,6 +125,7 @@ def get_options_dict(batch_size=gin.REQUIRED,
       "d_flood": d_flood,
       "g_flood": g_flood,
       "description": description,
+      "model_dir": model_dir,
   }
 
 
@@ -132,6 +134,8 @@ class TaskManager(object):
 
   def __init__(self, model_dir):
     self._model_dir = model_dir
+    if os.environ["MODEL_DIR"] is None:
+      os.environ["MODEL_DIR"] = model_dir
 
   @property
   def model_dir(self):
