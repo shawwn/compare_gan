@@ -62,3 +62,7 @@ run_config.save_checkpoints_steps = 250
 options.description = "BigGAN 256x256 on danbooru2019-s with g_flood=0.05 and d_flood=0.20"
 options.g_flood = 0.05
 options.d_flood = 0.20
+
+options.image_grid_width = 4
+options.image_grid_height = 4
+options.image_grid_resolution = 1024
