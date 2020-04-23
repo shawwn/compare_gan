@@ -33,6 +33,7 @@ from compare_gan import runner_lib
 from compare_gan.gans.modular_gan import ModularGAN
 from compare_gan.gans.s3gan import S3GAN
 from compare_gan.gans.ssgan import SSGAN
+from compare_gan.gans.clgan import CLGAN
 
 # Required import to configure core TF classes and functions.
 import gin
