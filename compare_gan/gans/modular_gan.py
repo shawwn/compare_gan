@@ -394,12 +394,16 @@ class ModularGAN(AbstractGAN):
         distribution_fn, shape=shape, minval=minval, maxval=maxval,
         stddev=stddev, name=name)
 
+  @property
+  def options(self):
+    return {} if not hasattr(self._dataset, '_options') else self._dataset._options
+
   def label_generator(self, shape, name=None):
     if not self.conditional:
       raise ValueError("label_generator() called but GAN is not conditional.")
-    if hasattr(self._dataset, '_options') and "labels" in self._dataset._options and self._dataset._options["labels"] is not None and len(self._dataset._options["labels"]) > 0:
+    label_filenames = self.options.get("labels", "")
+    if label_filenames is not None and len(label_filenames) > 0:
       if not hasattr(self._dataset, '_all_labels'):
-        label_filenames = self._dataset._options["labels"]
         logging.info("Loading labels: %s", label_filenames)
         label_files = [x.strip() for x in label_filenames.split(",") if len(x.strip()) > 0]
         all_labels = []
@@ -725,13 +729,12 @@ class ModularGAN(AbstractGAN):
     self.d_loss += self._lambda * penalty_loss
 
   def flood_loss(self):
-    opts = {} if not hasattr(self._dataset, '_options') else self._dataset._options
-    d_flood = opts.get("d_flood", 0.0)
+    d_flood = self.options.get("d_flood", 0.0)
     if d_flood > 0.0:
       logging.info("Using d_flood=%f", d_flood)
       self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
 
-    g_flood = opts.get("g_flood", 0.0)
+    g_flood = self.options.get("g_flood", 0.0)
     if g_flood > 0.0:
       logging.info("Using g_flood=%f", g_flood)
       self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
