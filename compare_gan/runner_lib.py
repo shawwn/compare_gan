@@ -82,7 +82,8 @@ def get_options_dict(batch_size=gin.REQUIRED,
                      discriminator_normalization=None,
                      lamba=1,
                      disc_iters=1,
-                     z_dim=128):
+                     z_dim=128,
+                     d_flood=0.0):
   """Parse legacy options from Gin configurations into a Python dict.
 
   Args:
@@ -118,6 +119,7 @@ def get_options_dict(batch_size=gin.REQUIRED,
       "lambda": lamba,  # Different spelling intended.
       "disc_iters": disc_iters,
       "z_dim": z_dim,
+      "d_flood": d_flood,
   }
 
 

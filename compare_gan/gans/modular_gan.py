@@ -625,10 +625,15 @@ class ModularGAN(AbstractGAN):
     # Train D.
     d_losses = []
     d_steps = self._disc_iters if unroll_graph else 1
+    opts = {} if not hasattr(self._dataset, '_options') else self._dataset._options
     for i in range(d_steps):
       with tf.name_scope("disc_step_{}".format(i + 1)):
         with tf.control_dependencies(d_losses):
-          d_losses.append(train_disc_fn(features=fs[i], labels=ls[i]))
+          d_loss = train_disc_fn(features=fs[i], labels=ls[i])
+          d_flood = opts.get("d_flood", 0.0)
+          if d_flood > 0.0:
+            d_loss = tf.abs(d_loss - d_flood) + d_flood
+          d_losses.append(d_loss)
 
     # Train G.
     with tf.control_dependencies(d_losses):
