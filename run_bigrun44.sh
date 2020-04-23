@@ -8,4 +8,4 @@ export LOGDIR="${LOGDIR:-logs44.txt}"
 while true; do
   python3 wrapper.py compare_gan/main.py --use_tpu --tfds_data_dir 'gs://danbooru-euw4a/tensorflow_datasets/' --model_dir "${MODEL_DIR}" --gin_config "$GIN_CONFIG" "$@" 2>&1 | tee -a "${LOGDIR}"
   sleep 30
-don4
+done
