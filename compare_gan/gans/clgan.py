@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of Self-Supervised GAN with auxiliary rotation loss."""
+"""Implementation of Self-Supervised GAN with contrastive loss."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -127,12 +127,6 @@ class CLGAN(modular_gan.ModularGAN):
     d_real, d_fake, _ = tf.split(d_all, 3)
     d_real_logits, d_fake_logits, _ = tf.split(d_all_logits, 3)
     z_projs_real, _, z_aug_projs_real = tf.split(z_projs, 3)
-
-    # Separate the true/fake scores from whole rotation batch.
-    d_real_logits = d_real_logits[:bs]
-    d_fake_logits = d_fake_logits[:bs]
-    d_real = d_real[:bs]
-    d_fake = d_fake[:bs]
 
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
