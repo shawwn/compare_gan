@@ -279,6 +279,7 @@ class Generator(abstract_arch.AbstractGenerator):
         [-1, seed_size, seed_size, in_channels[0]],
         name="fc_reshaped")
 
+    blocks_with_attention = set(self._blocks_with_attention)
     for block_idx in range(num_blocks):
       name = "B{}".format(block_idx + 1)
       scale = "none" if block_idx % 2 == 0 else "up"
@@ -289,10 +290,15 @@ class Generator(abstract_arch.AbstractGenerator):
           scale=scale)
       net = block(net, z=z, y=y, is_training=is_training)
       res = net.shape[1].value
-      if name in self._blocks_with_attention or scale == "up" and str(res) in self._blocks_with_attention:
-        logging.info("[Generator] Applying non-local block to %s", net.shape)
+      if name in blocks_with_attention or str(res) in blocks_with_attention:
+        blocks_with_attention.discard(name)
+        blocks_with_attention.discard(str(res))
+        logging.info("[Generator] Applying non-local block at %dx%d resolution to %s",
+                     res, res, net.shape)
         net = ops.non_local_block(net, "non_local_block",
                                   use_sn=self._spectral_norm)
+    assert len(blocks_with_attention) <= 0
+
     # Final processing of the net.
     # Use unconditional batch norm.
     logging.info("[Generator] before final processing: %s", net.shape)
@@ -399,6 +405,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
                      d_h=1, d_w=1, name="initial_conv",
                      use_sn=self._spectral_norm)
 
+    blocks_with_attention = set(self._blocks_with_attention)
     for block_idx in range(num_blocks):
       name = "B{}".format(block_idx + 1)
       scale = "down" if block_idx % 2 == 0 else "none"
@@ -409,11 +416,14 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
           scale=scale)
       net = block(net, z=None, y=y, is_training=is_training)
       res = net.shape[1].value
-      if name in self._blocks_with_attention or scale == "none" and str(res) in self._blocks_with_attention:
-        logging.info("[Discriminator] Applying non-local block to %s",
-                     net.shape)
+      if name in blocks_with_attention or str(res) in blocks_with_attention:
+        blocks_with_attention.discard(name)
+        blocks_with_attention.discard(str(res))
+        logging.info("[Discriminator] Applying non-local block at %dx%d resolution to %s",
+                     res, res, net.shape)
         net = ops.non_local_block(net, "non_local_block",
                                   use_sn=self._spectral_norm)
+    assert len(blocks_with_attention) <= 0
 
     # Final part
     logging.info("[Discriminator] before final processing: %s", net.shape)
