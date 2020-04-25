@@ -70,13 +70,27 @@ def cluster_spec(cls, *args, **kws):
     r[k] = [reroute(ip, host=os.environ['TPU_HOST']) for ip in v]
   return server_lib.ClusterSpec(r)
 
+__fetch_cloud_tpu_metadata = resolver.TPUClusterResolver._fetch_cloud_tpu_metadata
+
+def _fetch_cloud_tpu_metadata(cls, *args, **kws):
+  while True:
+    try:
+      return __fetch_cloud_tpu_metadata(cls, *args, **kws)
+    except Exception as e:
+      if '[Errno 111] Connection refused' in str(e):
+        # retry
+        time.sleep(1.0)
+      else:
+        raise e
+
 if __name__ == '__main__':
   with mock.patch.object(resolver.TPUClusterResolver, 'master', mock_master):
     with mock.patch.object(resolver.TPUClusterResolver, 'cluster_spec', cluster_spec):
-      res = resolver.TPUClusterResolver(os.environ['TPU_NAME'])
-      spec = res.cluster_spec().as_cluster_def()
-      ip = res.get_master()
-      print(ip, spec)
-      sys.argv = sys.argv[1:]
-      exec(open(sys.argv[0]).read(), globals(), globals())
+      with mock.patch.object(resolver.TPUClusterResolver, '_fetch_cloud_tpu_metadata', _fetch_cloud_tpu_metadata):
+        res = resolver.TPUClusterResolver(os.environ['TPU_NAME'])
+        spec = res.cluster_spec().as_cluster_def()
+        ip = res.get_master()
+        print(ip, spec)
+        sys.argv = sys.argv[1:]
+        exec(open(sys.argv[0]).read(), globals(), globals())
 
