@@ -79,6 +79,7 @@ def _fetch_cloud_tpu_metadata(cls, *args, **kws):
     except Exception as e:
       if '[Errno 111] Connection refused' in str(e):
         # retry
+        import time
         time.sleep(1.0)
       else:
         raise e
