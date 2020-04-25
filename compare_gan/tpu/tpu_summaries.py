@@ -46,6 +46,8 @@ import collections
 from absl import logging
 import tensorflow as tf
 
+import gin
+
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
 
