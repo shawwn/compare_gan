@@ -195,7 +195,7 @@ class ImageNet(object):
   @staticmethod
   def make_dataset(data_dirs, index, num_hosts, num_classes,
                    seed=None, shuffle_filenames=True,
-                   num_parallel_calls = 64):
+                   num_parallel_calls = tf.data.experimental.AUTOTUNE):
 
     if shuffle_filenames:
       assert seed is not None
