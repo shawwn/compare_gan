@@ -206,6 +206,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_y_dim = embed_y_dim
     self._experimental_fast_conv_to_rgb = experimental_fast_conv_to_rgb
     self._blocks_with_attention = set(blocks_with_attention.split(","))
+    self._blocks_with_attention.discard('')
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
@@ -341,6 +342,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     super(Discriminator, self).__init__(**kwargs)
     self._ch = ch
     self._blocks_with_attention = set(blocks_with_attention.split(","))
+    self._blocks_with_attention.discard('')
     self._project_y = project_y
 
   def _resnet_block(self, name, in_channels, out_channels, scale):

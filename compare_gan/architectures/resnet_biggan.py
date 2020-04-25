@@ -192,6 +192,7 @@ class Generator(abstract_arch.AbstractGenerator):
     super(Generator, self).__init__(**kwargs)
     self._ch = ch
     self._blocks_with_attention = set(blocks_with_attention.split(","))
+    self._blocks_with_attention.discard('')
     self._channel_multipliers = None if channel_multipliers is None else [int(x.strip()) for x in channel_multipliers.split(",")]
     self._hierarchical_z = hierarchical_z
     self._embed_z = embed_z
@@ -350,6 +351,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     super(Discriminator, self).__init__(**kwargs)
     self._ch = ch
     self._blocks_with_attention = set(blocks_with_attention.split(","))
+    self._blocks_with_attention.discard('')
     self._channel_multipliers = None if channel_multipliers is None else [int(x.strip()) for x in channel_multipliers.split(",")]
     self._project_y = project_y
 
