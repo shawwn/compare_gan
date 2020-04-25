@@ -217,9 +217,13 @@ class ImageNet(object):
       return dataset
 
     # Read the data from disk in parallel
+    cycle_length = (2048 + (num_hosts - 1)) // num_hosts
+    logging.info("ImageNet.make_dataset(data_dirs=%s, index=%d, num_hosts=%d, "
+                 "num_classes=%d, seed=%s, shuffle_filenames=%s, cycle_length=%d, num_parallel_calls=%s)",
+                 data_dirs, index, num_hosts, num_classes, seed, shuffle_filenames, cycle_length, num_parallel_calls)
     dataset = dataset.apply(
         tf.contrib.data.parallel_interleave(
-            fetch_dataset, cycle_length=num_parallel_calls, sloppy=True))
+            fetch_dataset, cycle_length=cycle_length, sloppy=True))
 
     def parse_dataset(value):
       return ImageNet.dataset_parser_static(value, num_classes)
