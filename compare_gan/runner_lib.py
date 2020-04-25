@@ -89,7 +89,7 @@ def get_options_dict(batch_size=gin.REQUIRED,
                      model_dir=os.environ['MODEL_DIR'] if 'MODEL_DIR' in os.environ else None,
                      image_grid_width=3,
                      image_grid_height=3,
-                     image_grid_resolution=512):
+                     image_grid_resolution=1024):
   """Parse legacy options from Gin configurations into a Python dict.
 
   Args:
