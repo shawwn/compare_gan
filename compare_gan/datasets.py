@@ -195,7 +195,8 @@ class ImageNet(object):
   @staticmethod
   def make_dataset(data_dirs, index, num_hosts, num_classes,
                    seed=None, shuffle_filenames=True,
-                   num_parallel_calls = tf.data.experimental.AUTOTUNE):
+                   num_parallel_calls = tf.data.experimental.AUTOTUNE,
+                   cycle_length_multiplier=16):
 
     if shuffle_filenames:
       assert seed is not None
@@ -217,10 +218,10 @@ class ImageNet(object):
       return dataset
 
     # Read the data from disk in parallel
-    cycle_length = (2048 + (num_hosts - 1)) // num_hosts
+    cycle_length = cycle_length_multiplier * num_hosts
     logging.info("ImageNet.make_dataset(data_dirs=%s, index=%d, num_hosts=%d, "
-                 "num_classes=%d, seed=%s, shuffle_filenames=%s, cycle_length=%d, num_parallel_calls=%s)",
-                 data_dirs, index, num_hosts, num_classes, seed, shuffle_filenames, cycle_length, num_parallel_calls)
+                 "num_classes=%d, seed=%s, shuffle_filenames=%s, cycle_length=%d, cycle_length_multiplier=%d, num_parallel_calls=%s)",
+                 data_dirs, index, num_hosts, num_classes, seed, shuffle_filenames, cycle_length, cycle_length_multiplier, num_parallel_calls)
     dataset = dataset.apply(
         tf.contrib.data.parallel_interleave(
             fetch_dataset, cycle_length=cycle_length, sloppy=True))
