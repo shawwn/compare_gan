@@ -60,7 +60,7 @@ run_config.save_checkpoints_steps = 250
 #resnet_biggan.Generator.channel_multipliers = "16, 16, 8, 8, 4, 2, 1, 1, 1"
 #resnet_biggan.Discriminator.channel_multipliers = "1, 1, 1, 2, 4, 8, 8, 16, 16"
 
-options.description = "BigGAN 1024x1024 on danbooru2019-s with g_flood 0.05, d_flood 0.20"
+options.description = "BigGAN 1024x1024 on danbooru2019-s with ch=128, g_flood 0.05, d_flood 0.20"
 #options.gan_class = @CLGAN
 #CLGAN.weight_contrastive_loss_d = 5.0
 options.g_flood = 0.05
