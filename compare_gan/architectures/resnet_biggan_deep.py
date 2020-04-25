@@ -24,7 +24,7 @@ reproduce the reported FID on ImageNet 128x128.
 Based on "Large Scale GAN Training for High Fidelity Natural Image Synthesys",
 Brock A. et al., 2018 [https://arxiv.org/abs/1809.11096].
 
-Supported resolutions: 32, 64, 128, 256, 512.
+Supported resolutions: 32, 64, 128, 256, 512, 1024.
 
 Differences to original BigGAN:
 - The self-attention block is always applied at a resolution of 64x64.
@@ -181,7 +181,7 @@ class BigGanDeepResNetBlock(object):
 
 @gin.configurable
 class Generator(abstract_arch.AbstractGenerator):
-  """ResNet-based generator supporting resolutions 32, 64, 128, 256, 512."""
+  """ResNet-based generator supporting resolutions 32, 64, 128, 256, 512, 1024."""
 
   def __init__(self,
                ch=96,
@@ -223,7 +223,9 @@ class Generator(abstract_arch.AbstractGenerator):
   def _get_in_out_channels(self):
     # See Table 7-9.
     resolution = self._image_shape[0]
-    if resolution == 512:
+    if resolution == 1024:
+      channel_multipliers = 4 * [16] + 4 * [8] + [4, 4, 2, 2, 1, 1, 1, 1, 1]
+    elif resolution == 512:
       channel_multipliers = 4 * [16] + 4 * [8] + [4, 4, 2, 2, 1, 1, 1]
     elif resolution == 256:
       channel_multipliers = 4 * [16] + 4 * [8] + [4, 4, 2, 2, 1]
@@ -314,7 +316,7 @@ class Generator(abstract_arch.AbstractGenerator):
 
 @gin.configurable
 class Discriminator(abstract_arch.AbstractDiscriminator):
-  """ResNet-based discriminator supporting resolutions 32, 64, 128, 256, 512."""
+  """ResNet-based discriminator supporting resolutions 32, 64, 128, 256, 512, 1024."""
 
   def __init__(self,
                ch=96,
@@ -352,7 +354,9 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     # See Table 7-9.
     if colors not in [1, 3]:
       raise ValueError("Unsupported color channels: {}".format(colors))
-    if resolution == 512:
+    if resolution == 1024:
+      channel_multipliers = [1, 1, 1, 1, 1, 2, 2, 4, 4] + 4 * [8] + 4 * [16]
+    elif resolution == 512:
       channel_multipliers = [1, 1, 1, 2, 2, 4, 4] + 4 * [8] + 4 * [16]
     elif resolution == 256:
       channel_multipliers = [1, 2, 2, 4, 4] + 4 * [8] + 4 * [16]

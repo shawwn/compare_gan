@@ -819,13 +819,13 @@ class SoftLabeledImagenetDataset(ImagenetDataset):
     return feature_dict
 
 
-class DanbooruDataset(ImagenetDataset):
+class ImagesDataset(ImagenetDataset):
 
   def __init__(self, options, seed, resolution):
     num_classes = 1
     if "num_classes" in options:
       num_classes = options["num_classes"]
-    super(DanbooruDataset, self).__init__(
+    super(ImagesDataset, self).__init__(
       resolution=resolution,
       num_classes=num_classes,
       seed=seed)
@@ -868,15 +868,28 @@ DATASETS = {
     "fashion-mnist": FashionMnistDataset,
     "lsun-bedroom": LsunBedroomDataset,
     "mnist": MnistDataset,
+    "imagenet_32": functools.partial(ImagenetDataset, resolution=32),
     "imagenet_64": functools.partial(ImagenetDataset, resolution=64),
     "imagenet_128": functools.partial(ImagenetDataset, resolution=128),
     "imagenet_256": functools.partial(ImagenetDataset, resolution=256),
     "imagenet_512": functools.partial(ImagenetDataset, resolution=512),
     "imagenet_512_hq400": (functools.partial(
         SizeFilteredImagenetDataset, resolution=512, threshold=400)),
-    "danbooru_128": functools.partial(DanbooruDataset,resolution=128),
-    "danbooru_256": functools.partial(DanbooruDataset,resolution=256),
-    "danbooru_512": functools.partial(DanbooruDataset,resolution=512),
+    "imagenet_1024": functools.partial(ImagenetDataset, resolution=1024),
+    "imagenet_1024_hq400": (functools.partial(
+        SizeFilteredImagenetDataset, resolution=1024, threshold=800)),
+    "danbooru_32": functools.partial(ImagesDataset, resolution=32),
+    "danbooru_64": functools.partial(ImagesDataset, resolution=64),
+    "danbooru_128": functools.partial(ImagesDataset, resolution=128),
+    "danbooru_256": functools.partial(ImagesDataset, resolution=256),
+    "danbooru_512": functools.partial(ImagesDataset, resolution=512),
+    "danbooru_1024": functools.partial(ImagesDataset, resolution=1024),
+    "images_32": functools.partial(ImagesDataset, resolution=32),
+    "images_64": functools.partial(ImagesDataset, resolution=64),
+    "images_128": functools.partial(ImagesDataset, resolution=128),
+    "images_256": functools.partial(ImagesDataset, resolution=256),
+    "images_512": functools.partial(ImagesDataset, resolution=512),
+    "images_1024": functools.partial(ImagesDataset, resolution=1024),
     "soft_labeled_imagenet_128": functools.partial(
         SoftLabeledImagenetDataset, resolution=128),
     "single_class_imagenet_128": functools.partial(

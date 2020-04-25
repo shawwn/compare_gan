@@ -106,9 +106,12 @@ class ArchitectureTest(parameterized.TestCase, tf.test.TestCase):
       {"image_shape": (128, 128, 3)},
       {"image_shape": (256, 256, 3)},
       {"image_shape": (512, 512, 3)},
+      {"image_shape": (1024, 1024, 3)},
   )
   def testResNet5BigGan(self, image_shape):
-    if image_shape[0] == 512:
+    if image_shape[0] == 1024:
+      z_dim = 180
+    elif image_shape[0] == 512:
       z_dim = 160
     elif image_shape[0] == 256:
       z_dim = 140

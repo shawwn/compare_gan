@@ -24,7 +24,7 @@ reproduce the reported FID on ImageNet 128x128.
 Based on "Large Scale GAN Training for High Fidelity Natural Image Synthesys",
 Brock A. et al., 2018 [https://arxiv.org/abs/1809.11096].
 
-Supported resolutions: 32, 64, 128, 256, 512. The location of the self-attention
+Supported resolutions: 32, 64, 128, 256, 512, 1024. The location of the self-attention
 block must be set in the Gin config. See below.
 
 Notable differences to resnet5.py:
@@ -60,6 +60,14 @@ Required Gin settings:
 options.z_dim = 160
 resnet_biggan.Generator.blocks_with_attention = "B4"
 resnet_biggan.Discriminator.blocks_with_attention = "B3"
+
+1024x1024
+-------
+Number of parameters: (D)  98,801,378 (G) 82,468,068
+Required Gin settings:
+options.z_dim = 180
+resnet_biggan.Generator.blocks_with_attention = "B4"
+resnet_biggan.Discriminator.blocks_with_attention = "B4"
 """
 
 from __future__ import absolute_import
@@ -153,7 +161,7 @@ class BigGanResNetBlock(resnet_ops.ResNetBlock):
 
 @gin.configurable
 class Generator(abstract_arch.AbstractGenerator):
-  """ResNet-based generator supporting resolutions 32, 64, 128, 256, 512."""
+  """ResNet-based generator supporting resolutions 32, 64, 128, 256, 512, 1024."""
 
   def __init__(self,
                ch=96,
@@ -208,6 +216,8 @@ class Generator(abstract_arch.AbstractGenerator):
     resolution = self._image_shape[0]
     if self._channel_multipliers is not None:
       channel_multipliers = self._channel_multipliers
+    elif resolution == 1024:
+      channel_multipliers = [16, 16, 8, 8, 4, 2, 1, 1, 1]
     elif resolution == 512:
       channel_multipliers = [16, 16, 8, 8, 4, 2, 1, 1]
     elif resolution == 256:
@@ -308,7 +318,7 @@ class Generator(abstract_arch.AbstractGenerator):
 
 @gin.configurable
 class Discriminator(abstract_arch.AbstractDiscriminator):
-  """ResNet-based discriminator supporting resolutions 32, 64, 128, 256, 512."""
+  """ResNet-based discriminator supporting resolutions 32, 64, 128, 256, 512, 1024."""
 
   def __init__(self,
                ch=96,
@@ -352,6 +362,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
       raise ValueError("Unsupported color channels: {}".format(colors))
     if self._channel_multipliers is not None:
       channel_multipliers = self._channel_multipliers
+    elif resolution == 1024:
+      channel_multipliers = [1, 1, 1, 2, 4, 8, 8, 16, 16]
     elif resolution == 512:
       channel_multipliers = [1, 1, 2, 4, 8, 8, 16, 16]
     elif resolution == 256:

@@ -332,7 +332,7 @@ class ModularGAN(AbstractGAN):
     else:
       samples_per_replica = batch_size_per_replica
     image_shape = self._dataset.image_shape[:]
-    sample_res = self.options.get("image_grid_resolution", 512)
+    sample_res = self.options.get("image_grid_resolution", 1024) # TODO: remove this.
     sample_shape = [sample_res, sample_res, image_shape[2]]
     def _merge_images_to_grid(all_images):
       all_images = all_images[:np.prod(grid_shape)]
