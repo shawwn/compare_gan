@@ -1,0 +1,84 @@
+# BigGAN architecture and settings on ImageNet 128.
+# http://arxiv.org/abs/1809.11096
+
+# This should be similar to row 7 in Table 1.
+# It does not include orthogonal regularization (which would be row 8) and uses
+# a different learning rate.
+
+# Recommended training platform: TPU v3-128.
+
+#dataset.name = "images_32"
+#options.z_dim = 80
+#dataset.name = "images_64"
+#options.z_dim = 100
+#dataset.name = "images_128"
+#options.z_dim = 120
+dataset.name = "images_256"
+options.z_dim = 140
+#dataset.name = "images_512"
+#options.z_dim = 160
+#dataset.name = "images_1024"
+#options.z_dim = 180
+options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
+options.random_labels = True
+options.num_classes = 1000
+train_imagenet_transform.crop_method = "random"
+resnet_biggan.Generator.plain_tanh = True
+resnet_biggan.Generator.blocks_with_attention = "64"
+resnet_biggan.Discriminator.blocks_with_attention = "64"
+resnet_biggan.Generator.ch = 128
+resnet_biggan.Discriminator.ch = 128
+
+options.architecture = "resnet_biggan_arch"
+ModularGAN.conditional = True
+options.batch_size = 512
+options.gan_class = @ModularGAN
+options.lamba = 1
+options.training_steps = 250000
+weights.initializer = "orthogonal"
+spectral_norm.singular_value = "auto"
+
+# Generator
+G.batch_norm_fn = @conditional_batch_norm
+G.spectral_norm = True
+ModularGAN.g_use_ema = True
+ModularGAN.ema_start_step = 4000
+resnet_biggan.Generator.hierarchical_z = True
+resnet_biggan.Generator.embed_y = True
+standardize_batch.decay = 0.999
+standardize_batch.epsilon = 1e-5
+standardize_batch.use_moving_averages = False
+
+# Discriminator
+options.disc_iters = 2
+D.spectral_norm = True
+resnet_biggan.Discriminator.project_y = True
+
+# Loss and optimizer
+loss.fn = @hinge
+penalty.fn = @no_penalty
+ModularGAN.g_lr = 0.00005000
+ModularGAN.d_lr = 0.00020000
+ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
+ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
+tf.train.AdamOptimizer.beta1 = 0.0
+tf.train.AdamOptimizer.beta2 = 0.999
+
+z.distribution_fn = @tf.random.normal
+eval_z.distribution_fn = @tf.random.normal
+
+run_config.iterations_per_loop = 250
+run_config.save_checkpoints_steps = 250
+
+#resnet_biggan.Generator.channel_multipliers = "16, 16, 8, 8, 4, 2, 1, 1, 1"
+#resnet_biggan.Discriminator.channel_multipliers = "1, 1, 1, 2, 4, 8, 8, 16, 16"
+
+options.description = "BigGAN 1024x1024 on danbooru2019-s with ch=128, g_flood 0.05, d_flood 0.20"
+#options.gan_class = @CLGAN
+#CLGAN.weight_contrastive_loss_d = 5.0
+options.g_flood = 0.05
+options.d_flood = 0.20
+
+options.image_grid_width = 3
+options.image_grid_height = 3
+
