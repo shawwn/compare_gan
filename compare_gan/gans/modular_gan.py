@@ -67,7 +67,7 @@ class ModularGAN(AbstractGAN):
                experimental_force_graph_unroll=False,
                g_use_ema=False,
                ema_decay=0.9999,
-               ema_start_step=40000,
+               ema_start_step=4000,
                g_optimizer_fn=tf.train.AdamOptimizer,
                d_optimizer_fn=None,
                g_lr=0.0002,
