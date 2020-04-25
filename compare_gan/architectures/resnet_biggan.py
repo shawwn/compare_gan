@@ -319,7 +319,8 @@ class Generator(abstract_arch.AbstractGenerator):
                      d_h=1, d_w=1, name="final_conv",
                      use_sn=self._spectral_norm)
     logging.info("[Generator] after final processing: %s", net.shape)
-    net = (tf.nn.tanh(net) + 1.0) / 2.0
+    #net = (tf.nn.tanh(net) + 1.0) / 2.0
+    net = tf.nn.tanh(net)
     return net
 
 
