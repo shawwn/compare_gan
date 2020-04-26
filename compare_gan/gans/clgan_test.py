@@ -23,6 +23,8 @@ from absl import flags
 from absl.testing import parameterized
 from compare_gan import datasets
 from compare_gan import test_utils
+
+from compare_gan.architectures.arch_ops import evonorm_s0
 from compare_gan.gans import consts as c
 from compare_gan.gans import loss_lib
 from compare_gan.gans import penalty_lib
@@ -47,6 +49,8 @@ class CLGANTest(parameterized.TestCase, test_utils.CompareGanTestCase):
     with gin.unlock_config():
       gin.bind_parameter("penalty.fn", penalty_fn)
       gin.bind_parameter("loss.fn", loss_fn)
+      gin.bind_parameter("G.batch_norm_fn", evonorm_s0)
+
     model_dir = self._get_empty_model_dir()
     run_config = tf.contrib.tpu.RunConfig(
         model_dir=model_dir,
