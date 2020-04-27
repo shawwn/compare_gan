@@ -1,0 +1,1 @@
+ls -1 logs*.txt | grep 'logs[0-9][0-9].txt' | xargs -n 1 -I {} sh -c 'outfeed=$(rg -i " Outfeed finished" {} | last); run=$(rg -i -o "gs://.*?ckpt" {} | last); final=$(echo $outfeed | rg " [0-9][0-9]:[0-9][0-9]:[0-9][0-9]" -o); echo $(date -d @`utcnow`) updated $final $(basename $(dirname $run)) $outfeed'
