@@ -219,7 +219,6 @@ class ImageNet(object):
     # Assume 2048 files per dataset.
     n = 2048 // num_hosts * len(file_patterns)
     dataset = dataset.shuffle(n, seed=seed)
-    #dataset = dataset.repeat()
 
     def fetch_dataset(filename):
       buffer_size = 8 * 1024 * 1024  # 8 MiB per file
@@ -460,6 +459,7 @@ class ImageDatasetV2(object):
 
     ds = self._load_dataset(split=self._train_split, params=params, seed=seed)
     ds = ds.filter(self._train_filter_fn)
+    ds = ds.cache() # Cache the parsed and filtered dataset.
     ds = ds.repeat()
     ds = ds.map(functools.partial(self._train_transform_fn, seed=seed))
     if preprocess_fn is not None:
