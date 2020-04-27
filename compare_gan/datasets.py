@@ -194,7 +194,7 @@ class ImageNet(object):
 
   @staticmethod
   def make_dataset(data_dirs, index, num_hosts, num_classes,
-                   seed=None, shuffle_filenames=True,
+                   seed=None, shuffle_filenames=False,
                    num_parallel_calls = tf.data.experimental.AUTOTUNE,
                    cycle_length_multiplier=16):
 
@@ -208,9 +208,12 @@ class ImageNet(object):
     # allowing us to cache larger datasets in memory.
     dataset = None
     for pattern in file_patterns:
-      x = tf.data.Dataset.list_files(pattern, shuffle=shuffle_filenames, seed=seed)
+      x = tf.data.Dataset.list_files(pattern, shuffle=False, seed=seed)
+      x = x.shard(num_hosts, index)
       dataset = x if dataset is None else dataset.concatenate(x)
-    dataset = dataset.shard(num_hosts, index)
+
+    # For mixing multiple datasets, shuffle list of filenames.
+    dataset = dataset.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
 
     def fetch_dataset(filename):
       buffer_size = 8 * 1024 * 1024  # 8 MiB per file
