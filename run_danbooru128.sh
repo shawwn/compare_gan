@@ -3,7 +3,7 @@ set -ex
 #export TPU_HOST=10.255.128.3
 export TPU_HOST=${TPU_HOST:-10.255.128.2}
 export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-29}"
-export MODEL_DIR="${MODEL_DIR:-gs://darnbooru-euw4a/runs/bigrun36/}"
+export MODEL_DIR="${MODEL_DIR:-gs://darnbooru-euw4a/runs/bigrun36b/}"
 export DATASETS=gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*
 export LABELS=""
 export NUM_CLASSES=1000
