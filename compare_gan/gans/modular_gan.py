@@ -264,7 +264,7 @@ class ModularGAN(AbstractGAN):
     else:
       z = inputs["z"]
       generated = self.generator(z=z, y=y, is_training=is_training)
-      if self._g_use_ema and not is_training:
+      if self._g_use_ema:
         g_vars = [var for var in tf.trainable_variables()
                   if "generator" in var.name]
         ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
@@ -282,7 +282,11 @@ class ModularGAN(AbstractGAN):
           return ema_var
         with tf.variable_scope("", values=[z, y], reuse=True,
                                custom_getter=ema_getter):
-          generated = self.generator(z, y=y, is_training=is_training)
+          ema_generated = self.generator(z, y=y, is_training=is_training)
+          if not is_training:
+            generated = ema_generated
+          else:
+            outputs["generated_ema"] = ema_generated
       outputs["generated"] = generated
 
     hub.add_signature(inputs=inputs, outputs=outputs)
@@ -646,6 +650,7 @@ class ModularGAN(AbstractGAN):
       self._tpu_summary.scalar("loss/d_{}".format(i), d_loss)
     self._tpu_summary.scalar("loss/g", g_loss)
     self._add_images_to_summary(fs[0]["generated"], "fake_images", params)
+    self._add_images_to_summary(fs[0]["generated_ema"], "fake_images_ema", params)
     self._add_images_to_summary(fs[0]["images"], "real_images", params)
 
     self._check_variables()
