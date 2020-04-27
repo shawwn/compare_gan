@@ -65,18 +65,20 @@ class TpuSummaries(object):
   all the TPU cores.
   """
 
-  def __init__(self, log_dir, save_summary_steps=25):
+  def __init__(self, log_dir, save_summary_steps=5, save_image_steps=125):
     self._log_dir = log_dir
-    self._entries = []
+    self._image_entries = []
+    self._scalar_entries = []
     # While False no summary entries will be added. On TPU we unroll the graph
     # and don't want to add multiple summaries per step.
     self.record = True
     self._save_summary_steps = save_summary_steps
+    self._save_image_steps = save_image_steps
     #assert TpuSummaries.inst is None
     TpuSummaries.inst = self
 
   def has(self, name):
-    for entry in self._entries:
+    for entry in self._image_entries + self._scalar_entries:
       if entry.name == name:
         return True
     return False
@@ -88,7 +90,7 @@ class TpuSummaries(object):
     if self.has(name):
       logging.info("TpuSummaries.image: skipping duplicate %s", name)
     else:
-      self._entries.append(
+      self._image_entries.append(
           TpuSummaryEntry(summary.image, name, tensor, reduce_fn))
 
   def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean):
@@ -101,7 +103,7 @@ class TpuSummaries(object):
       tensor = tf.convert_to_tensor(tensor)
       if tensor.shape.ndims == 0:
         tensor = tf.expand_dims(tensor, 0)
-      self._entries.append(
+      self._scalar_entries.append(
           TpuSummaryEntry(summary.scalar, name, tensor, reduce_fn))
 
   def get_host_call(self):
@@ -110,7 +112,8 @@ class TpuSummaries(object):
     # All tensors are streamed to the host machine (mind the band width).
     global_step = tf.train.get_or_create_global_step()
     host_call_args = [tf.expand_dims(global_step, 0)]
-    host_call_args.extend([e.tensor for e in self._entries])
+    host_call_args.extend([e.tensor for e in self._image_entries])
+    host_call_args.extend([e.tensor for e in self._scalar_entries])
     logging.info("host_call_args: %s", host_call_args)
     return (self._host_call_fn, host_call_args)
 
@@ -122,11 +125,16 @@ class TpuSummaries(object):
     logging.info("host_call_fn: args=%s", args)
     with summary.create_file_writer(self._log_dir).as_default():
       with summary.record_summaries_every_n_global_steps(
-          self._save_summary_steps, step):
-        for i, e in enumerate(self._entries):
+              self._save_summary_steps, step):
+        for i, e in enumerate(self._scalar_entries):
           value = e.reduce_fn(args[i])
           e.summary_fn(e.name, value, step=step)
-        return summary.all_summary_ops()
+      with summary.record_summaries_every_n_global_steps(
+              self._save_image_steps, step):
+        for i, e in enumerate(self._image_entries):
+          value = e.reduce_fn(args[i])
+          e.summary_fn(e.name, value, step=step)
+      return summary.all_summary_ops()
 
 
 TpuSummaries.inst = None
