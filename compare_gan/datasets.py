@@ -212,6 +212,9 @@ class ImageNet(object):
       x = x.shard(num_hosts, index)
       dataset = x if dataset is None else dataset.concatenate(x)
 
+    # Memoize the filename list to avoid lots of calls to list_files.
+    dataset = dataset.cache()
+
     # For mixing multiple datasets, shuffle list of filenames.
     dataset = dataset.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
 
