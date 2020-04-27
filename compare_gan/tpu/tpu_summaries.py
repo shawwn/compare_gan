@@ -65,7 +65,7 @@ class TpuSummaries(object):
   all the TPU cores.
   """
 
-  def __init__(self, log_dir, save_summary_steps=5, save_image_steps=125):
+  def __init__(self, log_dir, save_summary_steps=5, save_image_steps=50):
     self._log_dir = log_dir
     self._image_entries = []
     self._scalar_entries = []

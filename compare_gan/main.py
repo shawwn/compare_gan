@@ -84,7 +84,7 @@ def _get_run_config(tf_random_seed=None,
                     save_checkpoints_steps=250,
                     keep_checkpoint_every_n_hours=0.5,
                     keep_checkpoint_max=10,
-                    experimental_host_call_every_n_steps=125):
+                    experimental_host_call_every_n_steps=50):
   """Return `RunConfig` for TPUs."""
   tpu_config = tf.contrib.tpu.TPUConfig(
       num_shards=1 if single_core else None,  # None = all cores.
