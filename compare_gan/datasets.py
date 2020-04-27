@@ -234,10 +234,10 @@ class ImageNet(object):
         tf.contrib.data.parallel_interleave(
             fetch_dataset, cycle_length=cycle_length, sloppy=True))
 
-    def dataset_parser(value):
-      return ImageNet.dataset_parser_static(value, num_classes)
-
     if parse_dataset:
+      def dataset_parser(value):
+        return ImageNet.dataset_parser_static(value, num_classes)
+
       dataset = dataset.map(
           dataset_parser,
           num_parallel_calls=num_parallel_calls)
@@ -918,7 +918,7 @@ class ImagesDataset(ImagenetDataset):
         image, label = preprocess_fn(image, label)
       return image, label
     dataset_parser = functools.partial(
-      fused_parse, seed=seed, preprocess_fn=preprocess_fn,parse_fn=self._parse_fn)
+      fused_parse, seed=seed, preprocess_fn=preprocess_fn, parse_fn=self._parse_fn, num_classes=self.num_classes)
     ds = ds.apply(
       tf.contrib.data.map_and_batch(
         dataset_parser,
