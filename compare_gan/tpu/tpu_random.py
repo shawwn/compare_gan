@@ -62,6 +62,7 @@ def add_random_offset_to_features(dataset, start=1):
   Returns:
     A new `tf.data.Dataset` object with a extra feature for the random offset.
   """
+  return dataset # disabled
   dataset = dataset.apply(tf.data.experimental.enumerate_dataset(start=start))
   def map_fn(offset, data):
     offset = tf.cast(offset, tf.int32)
@@ -80,6 +81,7 @@ def add_random_offset_to_features(dataset, start=1):
 
 def set_random_offset_from_features(features):
   """Set the global random offset from the random offset feature."""
+  return # disabled
   # Take the first index in case the TPU core got multiple examples.
   global _RANDOM_OFFSET_TENSOR
   _RANDOM_OFFSET_TENSOR = features.pop(_RANDOM_OFFSET_FEATURE_KEY)[0]
@@ -152,3 +154,7 @@ def normal(shape, name=None):
     return tf.random.normal(shape, name=name)
   return tf.contrib.stateless.stateless_random_normal(
       shape=shape, seed=_get_seed(name), name=name)
+
+# disable tpu_random for now
+uniform = tf.random.uniform
+normal = tf.random.normal

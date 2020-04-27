@@ -194,7 +194,7 @@ class ImageNet(object):
 
   @staticmethod
   def make_dataset(data_dirs, index, num_hosts, num_classes,
-                   seed=None, shuffle_filenames=False,
+                   seed=None, shuffle_filenames=False, parse_dataset=True,
                    num_parallel_calls = tf.data.experimental.AUTOTUNE,
                    cycle_length_multiplier=16):
 
@@ -212,13 +212,13 @@ class ImageNet(object):
       x = x.shard(num_hosts, index)
       dataset = x if dataset is None else dataset.concatenate(x)
 
-    # Memoize the filename list to avoid lots of calls to list_files.
-    dataset = dataset.cache()
-
-    # For mixing multiple datasets, shuffle list of filenames.
-    # Assume 2048 files per dataset.
-    n = 2048 // num_hosts * len(file_patterns)
-    dataset = dataset.shuffle(n, seed=seed)
+    # # Memoize the filename list to avoid lots of calls to list_files.
+    # dataset = dataset.cache()
+    #
+    # # For mixing multiple datasets, shuffle list of filenames.
+    # # Assume 2048 files per dataset.
+    # n = 2048 // num_hosts * len(file_patterns)
+    # dataset = dataset.shuffle(n, seed=seed)
 
     def fetch_dataset(filename):
       buffer_size = 8 * 1024 * 1024  # 8 MiB per file
@@ -234,12 +234,13 @@ class ImageNet(object):
         tf.contrib.data.parallel_interleave(
             fetch_dataset, cycle_length=cycle_length, sloppy=True))
 
-    def parse_dataset(value):
+    def dataset_parser(value):
       return ImageNet.dataset_parser_static(value, num_classes)
 
-    dataset = dataset.map(
-        parse_dataset,
-        num_parallel_calls=num_parallel_calls)
+    if parse_dataset:
+      dataset = dataset.map(
+          dataset_parser,
+          num_parallel_calls=num_parallel_calls)
 
     return dataset
 
@@ -428,6 +429,9 @@ class ImageDatasetV2(object):
     ds = ds.map(self._parse_fn)
     return ds.prefetch(tf.contrib.data.AUTOTUNE)
 
+  def _shortcut(self, dataset, params, seed, preprocess_fn=None):
+    pass
+
   def _train_filter_fn(self, image, label):
     del image, label
     return True
@@ -458,9 +462,38 @@ class ImageDatasetV2(object):
     logging.info("train_input_fn(): params=%s seed=%s", params, seed)
 
     ds = self._load_dataset(split=self._train_split, params=params, seed=seed)
-    ds = ds.filter(self._train_filter_fn)
-    ds = ds.cache() # Cache the parsed and filtered dataset.
-    ds = ds.repeat()
+    out = self._shortcut(ds, params=params, seed=seed, preprocess_fn=preprocess_fn)
+    if out is not None:
+      return out # completely bypass this pipeline
+    if self._train_filter_fn is not None:
+      ds = ds.filter(self._train_filter_fn)
+    #ds = ds.cache() # cache the unparsed filtered dataset.
+    ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 16)) # fused shuffle and repeat
+    #ds = ds.repeat()
+    # if "batch_size" in params:
+    #   def fused_parse(features, labels, seed, preprocess_fn, parse_fn):
+    #     if parse_fn is not None:
+    #       features = parse_fn(features)
+    #     image = features["image"]
+    #     label = features["label"]
+    #     image, label = self._train_transform_fn(image, label, seed=seed)
+    #     if preprocess_fn is not None:
+    #       if "seed" in inspect.getargspec(preprocess_fn).args:
+    #         features, labels = preprocess_fn(image, label, seed=seed)
+    #     return features, labels
+    #   dataset_parser = functools.partial(fused_parse, seed=seed, preprocess_fn=preprocess_fn)
+    #   ds = ds.apply(
+    #       tf.contrib.data.map_and_batch(
+    #           dataset_parser,
+    #           batch_size=params["batch_size"],
+    #           num_parallel_batches=ImageNet.get_num_cores(params),
+    #           drop_remainder=True))
+    #   ds = ds.prefetch(tf.contrib.data.AUTOTUNE)
+    #   options = tf.data.Options()
+    #   options.experimental_threading.max_intra_op_parallelism = 1
+    #   options.experimental_threading.private_threadpool_size = 48
+    #   ds = ds.with_options(options)
+    #   return ds
     ds = ds.map(functools.partial(self._train_transform_fn, seed=seed))
     if preprocess_fn is not None:
       if "seed" in inspect.getargspec(preprocess_fn).args:
@@ -468,7 +501,7 @@ class ImageDatasetV2(object):
       ds = ds.map(preprocess_fn)
       # Add a feature for the random offset of operations in tpu_random.py.
       ds = tpu_random.add_random_offset_to_features(ds)
-    ds = ds.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
+    #ds = ds.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
     if "batch_size" in params:
       ds = ds.batch(params["batch_size"], drop_remainder=True)
       # Transpose for performance on TPU
@@ -844,6 +877,7 @@ class ImagesDataset(ImagenetDataset):
       num_classes=num_classes,
       seed=seed)
     self._options = options
+    self._train_filter_fn = None
 
   def _load_dataset(self, split, params, seed):
     """Loads the underlying dataset split from disk.
@@ -863,10 +897,40 @@ class ImagesDataset(ImagenetDataset):
       ImageNet.get_current_host(params),
       ImageNet.get_num_hosts(params),
       num_classes=self.num_classes,
-      seed=seed)
+      seed=seed,
+      parse_dataset=False)
     ds = self._replace_labels(split, ds)
-    ds = ds.map(self._parse_fn)
-    return ds.prefetch(tf.contrib.data.AUTOTUNE)
+    #ds = ds.map(self._parse_fn)
+    #return ds.prefetch(tf.contrib.data.AUTOTUNE)
+    return ds
+
+  def _shortcut(self, ds, params, seed, preprocess_fn=None):
+    ds = ds.cache() # cache the unparsed filtered dataset.
+    ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 16)) # fused shuffle and repeat
+    assert "batch_size" in params
+    def fused_parse(image_bytes, seed, preprocess_fn, parse_fn, num_classes):
+      features = ImageNet.dataset_parser_static(image_bytes, num_classes)
+      image, label = parse_fn(features)
+      image, label = self._train_transform_fn(image, label, seed=seed)
+      if preprocess_fn is not None:
+        if "seed" in inspect.getargspec(preprocess_fn).args:
+          preprocess_fn = functools.partial(preprocess_fn, seed=seed)
+        image, label = preprocess_fn(image, label)
+      return image, label
+    dataset_parser = functools.partial(
+      fused_parse, seed=seed, preprocess_fn=preprocess_fn,parse_fn=self._parse_fn)
+    ds = ds.apply(
+      tf.contrib.data.map_and_batch(
+        dataset_parser,
+        batch_size=params["batch_size"],
+        num_parallel_batches=ImageNet.get_num_cores(params),
+        drop_remainder=True))
+    ds = ds.prefetch(tf.contrib.data.AUTOTUNE)
+    options = tf.data.Options()
+    options.experimental_threading.max_intra_op_parallelism = 1
+    options.experimental_threading.private_threadpool_size = 48
+    ds = ds.with_options(options)
+    return ds
 
   def _parse_fn(self, features):
     image = tf.cast(features["image"], tf.float32) / 255.0
