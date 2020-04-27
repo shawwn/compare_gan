@@ -209,16 +209,17 @@ class ImageNet(object):
     dataset = None
     for pattern in file_patterns:
       x = tf.data.Dataset.list_files(pattern, shuffle=False, seed=seed)
-      x = x.shard(num_hosts, index)
+      #x = x.shard(num_hosts, index)
       dataset = x if dataset is None else dataset.concatenate(x)
 
-    # # Memoize the filename list to avoid lots of calls to list_files.
-    # dataset = dataset.cache()
-    #
+    # Memoize the filename list to avoid lots of calls to list_files.
+    dataset = dataset.cache()
+
     # # For mixing multiple datasets, shuffle list of filenames.
     # # Assume 2048 files per dataset.
     # n = 2048 // num_hosts * len(file_patterns)
     # dataset = dataset.shuffle(n, seed=seed)
+    dataset = dataset.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
 
     def fetch_dataset(filename):
       buffer_size = 8 * 1024 * 1024  # 8 MiB per file
