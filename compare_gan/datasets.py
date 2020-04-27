@@ -219,7 +219,7 @@ class ImageNet(object):
     # Assume 2048 files per dataset.
     n = 2048 // num_hosts * len(file_patterns)
     dataset = dataset.shuffle(n, seed=seed)
-    dataset = dataset.repeat()
+    #dataset = dataset.repeat()
 
     def fetch_dataset(filename):
       buffer_size = 8 * 1024 * 1024  # 8 MiB per file
