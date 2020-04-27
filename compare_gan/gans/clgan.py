@@ -29,9 +29,40 @@ from compare_gan.gans import utils
 
 import gin
 import numpy as np
+import random
 import tensorflow as tf
 
 FLAGS = flags.FLAGS
+
+# augmentation functions
+
+# augment
+
+def random_crop_and_resize(images, ratio=0.8):
+  b, h, w, c = images.get_shape().as_list()
+  ch, cw = map(lambda x: int(x * ratio), (h, w))
+  crop = tf.random_crop(images, size=[b, ch, cw, 3])
+  crop = tf.image.resize(crop, [h, w])
+  return crop
+
+def random_apply(fn, image, prob=1.):
+  if random.random() > prob:
+    return image
+  return fn(image)
+
+def color_distortion(image, s=1.0):
+  lower, upper, x = (1 - 0.8 * s), (1 + 0.8 * s), image
+  x = tf.image.random_brightness(x, max_delta=0.8*s)
+  x = tf.image.random_contrast(x, lower=lower, upper=upper)
+  x = tf.image.random_saturation(x, lower=lower, upper=upper)
+  x = tf.image.random_hue(x, max_delta=0.2*s)
+  x = tf.clip_by_value(x, 0, 1)
+  return x
+
+def color_drop(image):
+  image = tf.image.rgb_to_grayscale(image)
+  image = tf.tile(image, [1, 1, 1, 3])
+  return image
 
 # pylint: disable=not-callable
 @gin.configurable(blacklist=["kwargs"])
@@ -39,7 +70,9 @@ class CLGAN(modular_gan.ModularGAN):
   """Self-Supervised GAN with Contrastive Loss"""
 
   def __init__(self,
-               weight_contrastive_loss_d=10.0,
+               aug_color_jitter_prob=0.8,
+               aug_color_drop_prob=0.0,
+               weight_contrastive_loss_d=2.0,
                **kwargs):
     """Creates a new Self-Supervised GAN using Contrastive Loss.
 
@@ -51,6 +84,8 @@ class CLGAN(modular_gan.ModularGAN):
     super(CLGAN, self).__init__(**kwargs)
 
     self._weight_contrastive_loss_d = weight_contrastive_loss_d
+    self._aug_color_jitter_prob = aug_color_jitter_prob
+    self._aug_color_drop_prob = aug_color_drop_prob
 
     # To safe memory ModularGAN supports feeding real and fake samples
     # separately through the discriminator. CLGAN does not support this to
@@ -100,22 +135,19 @@ class CLGAN(modular_gan.ModularGAN):
     # Batch size per core.
     bs = images.shape[0].value
 
-    # augment
-    def random_crop_and_resize(images, ratio=0.8):
-      b, h, w, c = images.get_shape().as_list()
-      ch, cw = map(lambda x: int(x * ratio), (h, w))
-      crop = tf.random_crop(images, size=[b, ch, cw, 3])
-      crop = tf.image.resize(crop, [h, w])
-      crop = tf.image.random_flip_left_right(crop)
-      return crop
+    def augment(imgs):
+      imgs = random_crop_and_resize(imgs)
+      imgs = random_apply(color_distortion, imgs, self._aug_color_jitter_prob)
+      imgs = random_apply(color_drop, imgs, self._aug_color_drop_prob)
+      return imgs
 
-    aug_images = random_crop_and_resize(images)
+    aug_images, aug_generated = augment(images), augment(generated)
 
     # concat all images
-    all_images = tf.concat([images, generated, aug_images], 0)
+    all_images = tf.concat([images, generated, aug_images, aug_generated], 0)
 
     if self.conditional:
-      all_y = tf.concat([y, sampled_y, y], axis=0)
+      all_y = tf.concat([y, sampled_y, y, sampled_y], axis=0)
 
     # Compute discriminator output for real and fake images in one batch.
 
@@ -124,9 +156,9 @@ class CLGAN(modular_gan.ModularGAN):
 
     z_projs = self._latent_projections(d_latents)
 
-    d_real, d_fake, _ = tf.split(d_all, 3)
-    d_real_logits, d_fake_logits, _ = tf.split(d_all_logits, 3)
-    z_projs_real, _, z_aug_projs_real = tf.split(z_projs, 3)
+    d_real, d_fake, _, _ = tf.split(d_all, 4)
+    d_real_logits, d_fake_logits, _, _ = tf.split(d_all_logits, 4)
+    z_projs_real, z_projs_fake, z_aug_projs_real, z_aug_projs_fake = tf.split(z_projs, 4)
 
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
@@ -137,11 +169,16 @@ class CLGAN(modular_gan.ModularGAN):
         discriminator=self.discriminator, architecture=self._architecture)
     self.d_loss += self._lambda * penalty_loss
 
-    sims_logits = tf.matmul(z_projs_real, z_aug_projs_real, transpose_b=True)    
+    z_projs = tf.concat([z_projs_real, z_aug_projs_real], 0)
+    z_aug_projs = tf.concat([z_projs_fake, z_aug_projs_fake], 0)
+
+    sims_logits = tf.matmul(z_projs, z_aug_projs, transpose_b=True)
+    logits_max = tf.reduce_max(sims_logits,1)
+    sims_logits = sims_logits - tf.reshape(logits_max, [-1, 1])
     sims_probs = tf.nn.softmax(sims_logits)
 
-    sim_labels = tf.constant(np.arange(bs, dtype=np.int32))
-    sims_onehot = tf.one_hot(sim_labels, bs)
+    sim_labels = tf.constant(np.arange(bs * 2, dtype=np.int32))
+    sims_onehot = tf.one_hot(sim_labels, bs * 2)
 
     c_real_loss = - tf.reduce_mean(
         tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
