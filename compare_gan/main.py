@@ -72,9 +72,15 @@ def _get_cluster():
     return None
   if "TPU_NAME" not in os.environ:
     raise ValueError("Could not find a TPU. Set TPU_NAME.")
-  return tf.contrib.cluster_resolver.TPUClusterResolver(
+  cluster = tf.contrib.cluster_resolver.TPUClusterResolver(
       tpu=os.environ["TPU_NAME"],
       zone=os.environ.get("TPU_ZONE", None))
+  spec = cluster.cluster_spec()
+  if spec is not None:
+    assert cluster.num_accelerators()['TPU'] == 8
+    num_cores = 8 * len(list(spec.as_dict().values())[0])
+    os.environ["NUM_CORES"] = str(num_cores)
+  return cluster
 
 
 @gin.configurable("run_config")
