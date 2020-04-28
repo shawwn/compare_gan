@@ -169,8 +169,8 @@ class CLGAN(modular_gan.ModularGAN):
         discriminator=self.discriminator, architecture=self._architecture)
     self.d_loss += self._lambda * penalty_loss
 
-    z_projs = tf.concat([z_projs_real, z_aug_projs_real], 0)
-    z_aug_projs = tf.concat([z_projs_fake, z_aug_projs_fake], 0)
+    z_projs = tf.concat([z_projs_real, z_projs_fake], 0)
+    z_aug_projs = tf.concat([z_aug_projs_real, z_aug_projs_fake], 0)
 
     sims_logits = tf.matmul(z_projs, z_aug_projs, transpose_b=True)
     logits_max = tf.reduce_max(sims_logits,1)
