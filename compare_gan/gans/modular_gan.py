@@ -72,6 +72,8 @@ class ModularGAN(AbstractGAN):
                d_optimizer_fn=None,
                g_lr=0.0002,
                d_lr=None,
+               g_lr_mul=1.0,
+               d_lr_mul=1.0,
                conditional=False,
                fit_label_distribution=False):
     """ModularGAN  is a Gin configurable implementation of AbstractGAN.
@@ -130,6 +132,8 @@ class ModularGAN(AbstractGAN):
       self._d_optimizer_fn = g_optimizer_fn
     self._g_lr = g_lr
     self._d_lr = g_lr if d_lr is None else d_lr
+    self._g_lr *= g_lr_mul
+    self._d_lr *= d_lr_mul
 
     if conditional and not self._dataset.num_classes:
       raise ValueError(
