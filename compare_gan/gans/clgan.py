@@ -146,7 +146,8 @@ class CLGAN(modular_gan.ModularGAN):
     c_real_loss = - tf.reduce_mean(
         tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
 
-    self.d_loss += c_real_loss * self._weight_contrastive_loss_d
+    weight = self.get_var("CLGAN.weight_contrastive_loss_d", self._weight_contrastive_loss_d)
+    self.d_loss += c_real_loss * weight
 
     self._tpu_summary.scalar("loss/c_real_loss", c_real_loss)
     self._tpu_summary.scalar("loss/penalty", penalty_loss)

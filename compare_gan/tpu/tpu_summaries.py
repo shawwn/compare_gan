@@ -48,6 +48,8 @@ import tensorflow as tf
 
 import gin
 
+from compare_gan import tensorfork_tf as ttf
+
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
 
@@ -77,27 +79,32 @@ class TpuSummaries(object):
     #assert TpuSummaries.inst is None
     TpuSummaries.inst = self
 
-  def has(self, name):
+  def has(self, name, scope=None):
+    name = ttf.scoped_name(name, scope=scope)
     for entry in self._image_entries + self._scalar_entries:
       if entry.name == name:
         return True
     return False
 
-  def image(self, name, tensor, reduce_fn):
+  def image(self, name, tensor, reduce_fn, scope=None):
     """Add a summary for images. Tensor must be of 4-D tensor."""
     if not self.record:
       return
-    if self.has(name):
+    name = ttf.scoped_name(name, scope=scope)
+    scope = ''
+    if self.has(name, scope=scope):
       logging.info("TpuSummaries.image: skipping duplicate %s", name)
     else:
       self._image_entries.append(
           TpuSummaryEntry(summary.image, name, tensor, reduce_fn))
 
-  def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean):
+  def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean, scope=None):
     """Add a summary for a scalar tensor."""
     if not self.record:
       return
-    if self.has(name):
+    name = ttf.scoped_name(name, scope=scope)
+    scope = ''
+    if self.has(name, scope=scope):
       logging.info("TpuSummaries.scalar: skipping duplicate %s", name)
     else:
       tensor = tf.convert_to_tensor(tensor)

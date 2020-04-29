@@ -41,6 +41,7 @@ from compare_gan.gans import penalty_lib
 from compare_gan.gans.abstract_gan import AbstractGAN
 from compare_gan.tpu import tpu_random
 from compare_gan.tpu import tpu_summaries
+from compare_gan import tensorfork_tf as ttf
 import gin
 import numpy as np
 from six.moves import range
@@ -132,8 +133,8 @@ class ModularGAN(AbstractGAN):
       self._d_optimizer_fn = g_optimizer_fn
     self._g_lr = g_lr
     self._d_lr = g_lr if d_lr is None else d_lr
-    self._g_lr *= g_lr_mul
-    self._d_lr *= d_lr_mul
+    self._g_lr_mul = g_lr_mul
+    self._d_lr_mul = d_lr_mul
 
     if conditional and not self._dataset.num_classes:
       raise ValueError(
@@ -677,14 +678,27 @@ class ModularGAN(AbstractGAN):
         loss=d_losses[0],
         train_op=g_loss.op)
 
+  def get_var(self, name, *args):
+    v = ttf.get_var(name, *args)
+    self._tpu_summary.scalar(v.name, v, scope='')
+    return v
+
   def get_disc_optimizer(self, use_tpu=True):
-    opt = self._d_optimizer_fn(self._d_lr, name="d_opt")
+    lr_base = ttf.get_var("ModularGAN.d_lr", self._d_lr)
+    lr_mul = ttf.get_var("ModularGAN.d_lr_mul", self._d_lr_mul)
+    lr = lr_base * lr_mul
+    self._tpu_summary.scalar(lr_base.name, lr, scope='')
+    opt = self._d_optimizer_fn(lr, name="d_opt")
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
     return opt
 
   def get_gen_optimizer(self, use_tpu=True):
-    opt = self._g_optimizer_fn(self._g_lr, name="g_opt")
+    lr_base = ttf.get_var("ModularGAN.g_lr", self._g_lr)
+    lr_mul = ttf.get_var("ModularGAN.g_lr_mul", self._g_lr_mul)
+    lr = lr_base * lr_mul
+    self._tpu_summary.scalar(lr_base.name, lr, scope='')
+    opt = self._g_optimizer_fn(lr, name="g_opt")
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
     return opt
@@ -746,10 +760,16 @@ class ModularGAN(AbstractGAN):
   def flood_loss(self):
     d_flood = self.options.get("d_flood", 0.0)
     if d_flood > 0.0:
+      flood = ttf.get_var("options.d_flood", d_flood)
+      self._tpu_summary.scalar(flood.name, flood)
+      d_flood = ttf.eval(flood)
       logging.info("Using d_flood=%f", d_flood)
-      self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
+      self.d_loss = tf.abs(self.d_loss - flood) + flood
 
     g_flood = self.options.get("g_flood", 0.0)
     if g_flood > 0.0:
+      flood = ttf.get_var("options.g_flood", g_flood)
+      self._tpu_summary.scalar(flood.name, flood)
+      g_flood = ttf.eval(flood)
       logging.info("Using g_flood=%f", g_flood)
-      self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+      self.g_loss = tf.abs(self.g_loss - flood) + flood
