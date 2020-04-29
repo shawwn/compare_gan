@@ -23,7 +23,7 @@ ModularGAN.conditional = True
 options.batch_size = 2048
 options.gan_class = @ModularGAN
 options.lamba = 1
-options.training_steps = 250000
+options.training_steps = 2500000
 weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 
@@ -46,10 +46,12 @@ resnet_biggan.Discriminator.project_y = True
 # Loss and optimizer
 loss.fn = @hinge
 penalty.fn = @no_penalty
-ModularGAN.g_lr = 0.0000666
 ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
-ModularGAN.d_lr = 0.0005
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
+#ModularGAN.g_lr = 0.0000666
+#ModularGAN.d_lr = 0.0005
+ModularGAN.g_lr = 0.00001666
+ModularGAN.d_lr = 0.000125
 tf.train.AdamOptimizer.beta1 = 0.0
 tf.train.AdamOptimizer.beta2 = 0.999
 
