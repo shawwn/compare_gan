@@ -40,7 +40,7 @@ import gin
 import gin.tf.external_configurables
 import tensorflow as tf
 
-from . import tensorfork
+from compare_gan import tensorfork
 
 FLAGS = flags.FLAGS
 
