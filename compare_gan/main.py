@@ -119,7 +119,7 @@ def _get_task_manager():
       model_dir=FLAGS.model_dir, score_file=score_file)
 
 def main(unused_argv):
-  tensorfork.fetch(FLAGS.tensorfork_run)
+  tensorfork.get(FLAGS.tensorfork_run)
   os.environ["MODEL_DIR"] = FLAGS.model_dir
   FLAGS.model_dir = tensorfork.get()['meta']['logdir']
   gin_config = FLAGS.gin_config
