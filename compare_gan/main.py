@@ -123,7 +123,7 @@ def main(unused_argv):
   os.environ["MODEL_DIR"] = FLAGS.model_dir
   FLAGS.model_dir = tensorfork.get()['meta']['logdir']
   gin_config = FLAGS.gin_config
-  gin_bindings = tensorfork.get()['bindings']
+  gin_bindings = tensorfork.get()['gin_bindings']
   gin_bindings += FLAGS.gin_bindings
   logging.info("Gin config: %s\nGin bindings: %s", gin_config, gin_bindings)
   gin.parse_config_files_and_bindings(gin_config, gin_bindings)
