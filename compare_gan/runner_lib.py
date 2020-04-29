@@ -359,7 +359,7 @@ def run_with_schedule(schedule, run_config, task_manager, options, use_tpu,
         run_config, batch_size=options["batch_size"], use_tpu=use_tpu)
     estimator.train(
         input_fn=gan.input_fn,
-        max_steps=options["training_steps"],
+        max_steps=1e6*options["training_steps"],
         hooks=train_hooks)
     task_manager.mark_training_done()
 
