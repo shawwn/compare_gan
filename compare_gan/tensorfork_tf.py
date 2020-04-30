@@ -142,7 +142,7 @@ def get_var(name, default_value=None, update=False, scope=None, dtype=None, shap
     if initializer is None:
       initializer = tf.constant_initializer(default_value) if default_value is not None else None
     logging.info("tf.get_variable(name=%s, shape=%s, initializer=%s, default_value=%s)", name, shape, initializer, default_value)
-    var = tf.get_variable(name=name, dtype=dtype, shape=shape, trainable=trainable, collections=collections, use_resource=use_resource, initializer, **kws)
+    var = tf.get_variable(name=name, dtype=dtype, shape=shape, trainable=trainable, collections=collections, use_resource=use_resource, initializer=initializer, **kws)
   state.vars[var.name.split(':')[0]] = {'knob': knob, 'variable': var}
   if update or default_value is None:
     load_lightweight(var, value)
