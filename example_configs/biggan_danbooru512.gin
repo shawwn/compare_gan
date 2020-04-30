@@ -7,8 +7,8 @@
 
 # Recommended training platform: TPU v3-128.
 
-dataset.name = "danbooru_512"
-options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://darnbooru-euw4a/datasets/e621-s/e621-s-0*,gs://darnbooru-euw4a/datasets/portraits/portraits-0*,gs://darnbooru-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*"
+dataset.name = "images_512"
+options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
 options.random_labels = True
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
@@ -47,8 +47,10 @@ resnet_biggan.Discriminator.project_y = True
 loss.fn = @hinge
 penalty.fn = @no_penalty
 ModularGAN.g_lr = 0.0000666
-ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.d_lr = 0.0005
+ModularGAN.g_lr_mul = 1.0
+ModularGAN.d_lr_mul = 1.0
+ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 tf.train.AdamOptimizer.beta1 = 0.0
 tf.train.AdamOptimizer.beta2 = 0.999
@@ -62,4 +64,11 @@ run_config.save_checkpoints_steps = 250
 #resnet_biggan.Generator.channel_multipliers = "16, 16, 8, 4, 2, 1"
 #resnet_biggan.Discriminator.channel_multipliers = "1, 2, 4, 8, 16, 16"
 
+
+# Mix in anime portraits, e621-s, and e621 portraits
+options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://darnbooru-euw4a/datasets/e621-s/e621-s-0*,gs://darnbooru-euw4a/datasets/portraits/portraits-0*,gs://darnbooru-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*"
+
+# Increase discriminator LR by 3x
+ModularGAN.g_lr_mul = 1.0
+ModularGAN.d_lr_mul = 3.0
 
