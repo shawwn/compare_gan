@@ -1,4 +1,3 @@
-from tensorfork import EasyDict
 from . import tensorfork
 import tensorflow as tf
 import tensorflow.compat.v1 as tf1
@@ -155,9 +154,9 @@ def update_vars(name=None, skip_unknown=False):
     knob = entry['knob']
     variable = entry['variable']
     vm_value = tensorfork.knobs(knob)
-    logging.info('Knob CPU value: %s %s', vm_value, knob)
+    #logging.info('Knob CPU value: %s %s', vm_value, knob)
     tf_value = eval_lightweight(variable)
-    logging.info('Knob TPU value: %s %s', tf_value, variable)
+    #logging.info('Knob TPU value: %s %s', tf_value, variable)
     if compare_values(vm_value, tf_value) != 0:
       logging.info("Setting knob %s to %s (was %s)", knob, vm_value, tf_value)
       load_lightweight(variable, vm_value)
