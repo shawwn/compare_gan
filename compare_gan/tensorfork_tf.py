@@ -31,12 +31,16 @@ else:
 
 def eval_lightweight(variable, session=None, timeout_in_ms=None):
   session = session or tf.get_default_session()
+  if session is None:
+    return None
   if timeout_in_ms is None:
     timeout_in_ms = state.eval_lightweight_timeout
   return eval(variable, session=session, timeout_in_ms=state.eval_lightweight_timeout)
 
 def load_lightweight(variable, value, session=None, timeout_in_ms=None):
   session = session or tf.get_default_session()
+  if session is None:
+    return
   if timeout_in_ms is None:
     timeout_in_ms = state.load_lightweight_timeout
   return load(variable, value, session=session, timeout_in_ms=timeout_in_ms)
@@ -45,6 +49,8 @@ from tensorflow.core.protobuf import config_pb2
 
 def load(variable, value, session=None, timeout_in_ms=None):
   session = session or tf.get_default_session()
+  if session is None:
+    return
   ops = variable.initializer
   vals = dict([(variable.initializer.inputs[1], value)])
   #for x, (k, v) in zip(variables, vals.items()):
@@ -56,6 +62,8 @@ def load(variable, value, session=None, timeout_in_ms=None):
 
 def eval(variable, session=None, timeout_in_ms=None):
   session = session or tf.get_default_session()
+  if session is None:
+    return None
   options = None
   if timeout_in_ms:
     options=config_pb2.RunOptions(timeout_in_ms=timeout_in_ms)
@@ -135,7 +143,7 @@ def get_var(name, default_value=None, update=False, scope=None, dtype=None, shap
   if update or default_value is None:
     load_lightweight(var, value)
   v = eval_lightweight(var)
-  if v != value:
+  if v is not None and v != value:
     tensorfork.knobs(name, v, update=True)
   return var
 
@@ -154,9 +162,9 @@ def update_vars(name=None, skip_unknown=False):
     knob = entry['knob']
     variable = entry['variable']
     vm_value = tensorfork.knobs(knob)
-    #logging.info('Knob CPU value: %s %s', vm_value, knob)
+    logging.info('Knob CPU value: %s %s', vm_value, knob)
     tf_value = eval_lightweight(variable)
-    #logging.info('Knob TPU value: %s %s', tf_value, variable)
+    logging.info('Knob TPU value: %s %s', tf_value, variable)
     if compare_values(vm_value, tf_value) != 0:
       logging.info("Setting knob %s to %s (was %s)", knob, vm_value, tf_value)
       load_lightweight(variable, vm_value)
