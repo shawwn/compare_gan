@@ -505,6 +505,8 @@ class ModularGAN(AbstractGAN):
         sampled_y = fs[-1].get("sampled_y", None)
         fs[-1]["generated"] = self.generator(fs[-1]["z"], y=sampled_y, is_training=True)
         if self._g_use_ema:
+          z = fs[-1]["z"]
+          y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
             g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
             ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
@@ -520,14 +522,14 @@ class ModularGAN(AbstractGAN):
                   logging.warning("Could not find EMA variable for %s.", name)
                 return var
               return ema_var
-            z = fs[-1]["z"]
-            y = sampled_y
             fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
         f["generated"] = self.generator(f["z"], y=sampled_y, is_training=True)
         if self._g_use_ema:
+          z = f["z"]
+          y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
             g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
             ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
@@ -543,8 +545,6 @@ class ModularGAN(AbstractGAN):
                   logging.warning("Could not find EMA variable for %s.", name)
                 return var
               return ema_var
-            z = f["z"]
-            y = sampled_y
             f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
 
     return fs, ls
