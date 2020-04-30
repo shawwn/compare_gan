@@ -166,9 +166,17 @@ class UpdateVariablesHook(EveryNSteps):
     self.start_time = None
     self.start_step = None
 
+  def after_create_session(self, session=None, coord=None):
+    assert session is not None
+    with session.as_default():
+      logging.info("Updating vars...")
+      ttf.update_vars()
+
   def every_n_steps_after_run(self, step, run_context, run_values):
+    logging.info("Updating vars. every_n_steps_after_run(step=%s, session=%s)", step, run_context.session)
     if self.start_time is None:
       # First call.
       self.start_time = time.time()
       self.start_step = step
-    ttf.update_vars()
+    with run_context.session.as_default():
+      ttf.update_vars()
