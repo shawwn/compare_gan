@@ -147,7 +147,7 @@ class ReportProgressHook(EveryNSteps):
     logging.info("Reporting progress: %s", message)
     self.task_manager.report_progress(message)
 
-from compare_gan import tensorfork_tf as ttf
+from . import tensorfork_tf as ttf
 
 class UpdateVariablesHook(EveryNSteps):
   """SessionRunHook that reports progress to a `TaskManager` instance."""
