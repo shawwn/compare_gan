@@ -505,46 +505,46 @@ class ModularGAN(AbstractGAN):
         sampled_y = fs[-1].get("sampled_y", None)
         fs[-1]["generated"] = self.generator(fs[-1]["z"], y=sampled_y, is_training=True)
         if self._g_use_ema:
-          g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
-          ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
-          # Create the variables that will be loaded from the checkpoint.
-          ema.apply(g_vars)
-          def ema_getter(getter, name, *args, **kwargs):
-            var = getter(name, *args, **kwargs)
-            ema_var = ema.average(var)
-            if ema_var is None:
-              var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
-                                       "accu_counter", "update_accus"}
-              if name.split("/")[-1] not in var_names_without_ema:
-                logging.warning("Could not find EMA variable for %s.", name)
-              return var
-            return ema_var
-          z = fs[-1]["z"]
-          y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
+            g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
+            ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
+            # Create the variables that will be loaded from the checkpoint.
+            ema.apply(g_vars)
+            def ema_getter(getter, name, *args, **kwargs):
+              var = getter(name, *args, **kwargs)
+              ema_var = ema.average(var)
+              if ema_var is None:
+                var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
+                                         "accu_counter", "update_accus"}
+                if name.split("/")[-1] not in var_names_without_ema:
+                  logging.warning("Could not find EMA variable for %s.", name)
+                return var
+              return ema_var
+            z = fs[-1]["z"]
+            y = sampled_y
             fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
         f["generated"] = self.generator(f["z"], y=sampled_y, is_training=True)
         if self._g_use_ema:
-          g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
-          ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
-          # Create the variables that will be loaded from the checkpoint.
-          ema.apply(g_vars)
-          def ema_getter(getter, name, *args, **kwargs):
-            var = getter(name, *args, **kwargs)
-            ema_var = ema.average(var)
-            if ema_var is None:
-              var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
-                                       "accu_counter", "update_accus"}
-              if name.split("/")[-1] not in var_names_without_ema:
-                logging.warning("Could not find EMA variable for %s.", name)
-              return var
-            return ema_var
-          z = f["z"]
-          y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
+            g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
+            ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
+            # Create the variables that will be loaded from the checkpoint.
+            ema.apply(g_vars)
+            def ema_getter(getter, name, *args, **kwargs):
+              var = getter(name, *args, **kwargs)
+              ema_var = ema.average(var)
+              if ema_var is None:
+                var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
+                                         "accu_counter", "update_accus"}
+                if name.split("/")[-1] not in var_names_without_ema:
+                  logging.warning("Could not find EMA variable for %s.", name)
+                return var
+              return ema_var
+            z = f["z"]
+            y = sampled_y
             f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
 
     return fs, ls
