@@ -45,6 +45,7 @@ def parse_string(s, included=[]):
         k = '{}.{}'.format(statement.selector, statement.arg_name)
       else:
         k = statement.selector
+      k = os.path.join(statement.scope or '', k)
       v = statement.value
       yield k, v
     else:
@@ -392,10 +393,11 @@ def knobs(*args, **keys):
 
 def reload(name=None, finalize_config=False, skip_unknown=False):
   name = get_name(name)
+  res = fetch(name)
   with gin.config.unlock_config():
-    bindings = fetch(name)['gin_bindings']
+    bindings = res['gin_bindings']
     gin.parse_config_files_and_bindings([], bindings, finalize_config=finalize_config, skip_unknown=skip_unknown)
-  #return knobs("main")
+  return res
 
 @gin.configurable("foo")
 def f(bork=99, baz=100, quux=101, bar=21, wow=0, *args, **keys):

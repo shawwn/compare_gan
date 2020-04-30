@@ -120,7 +120,6 @@ def _get_task_manager():
 
 def main(unused_argv):
   tensorfork.get(FLAGS.tensorfork_run)
-  os.environ["MODEL_DIR"] = FLAGS.model_dir
   FLAGS.model_dir = tensorfork.get()['meta']['logdir']
   gin_config = FLAGS.gin_config
   gin_bindings = tensorfork.get()['gin_bindings']

@@ -146,3 +146,29 @@ class ReportProgressHook(EveryNSteps):
         100 * step / self.max_steps, step, steps_per_sec, eta_seconds / 60)
     logging.info("Reporting progress: %s", message)
     self.task_manager.report_progress(message)
+
+from compare_gan import tensorfork_tf as ttf
+
+class UpdateVariablesHook(EveryNSteps):
+  """SessionRunHook that reports progress to a `TaskManager` instance."""
+
+  def __init__(self, every_n_steps=25):
+    """Create a new instance of UpdateVariablesHook.
+
+    Args:
+      task_manager: A `TaskManager` instance that implements report_progress().
+      max_steps: Maximum number of training steps.
+      every_n_steps: How frequently the hook should report progress.
+    """
+    super(UpdateVariablesHook, self).__init__(every_n_steps=every_n_steps)
+    logging.info("Creating UpdateVariablesHook to update variables every %d "
+                 "steps.", every_n_steps)
+    self.start_time = None
+    self.start_step = None
+
+  def every_n_steps_after_run(self, step, run_context, run_values):
+    if self.start_time is None:
+      # First call.
+      self.start_time = time.time()
+      self.start_step = step
+    ttf.update_vars()

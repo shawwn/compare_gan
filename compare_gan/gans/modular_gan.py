@@ -688,7 +688,11 @@ class ModularGAN(AbstractGAN):
     lr_mul = ttf.get_var("ModularGAN.d_lr_mul", self._d_lr_mul)
     lr = lr_base * lr_mul
     self._tpu_summary.scalar(lr_base.name, lr, scope='')
-    opt = self._d_optimizer_fn(lr, name="d_opt")
+    kws = {}
+    if issubclass(self._d_optimizer_fn, tf.train.AdamOptimizer):
+      kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="discriminator")
+      kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="discriminator")
+    opt = self._d_optimizer_fn(lr, name="d_opt", **kws)
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
     return opt
@@ -698,7 +702,11 @@ class ModularGAN(AbstractGAN):
     lr_mul = ttf.get_var("ModularGAN.g_lr_mul", self._g_lr_mul)
     lr = lr_base * lr_mul
     self._tpu_summary.scalar(lr_base.name, lr, scope='')
-    opt = self._g_optimizer_fn(lr, name="g_opt")
+    kws = {}
+    if issubclass(self._g_optimizer_fn, tf.train.AdamOptimizer):
+      kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="generator")
+      kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="generator")
+    opt = self._g_optimizer_fn(lr, name="g_opt", **kws)
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
     return opt
