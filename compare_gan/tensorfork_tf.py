@@ -153,7 +153,7 @@ def get_var(name, default_value=None, update=False, scope=None, dtype=None, shap
 
 from absl import logging
 
-def compare_values(a, b, eps=1e-5):
+def compare_values(a, b, eps=1e-10):
   if abs(a - b) < eps:
     return 0
   if a > b:
