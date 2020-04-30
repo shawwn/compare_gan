@@ -772,7 +772,6 @@ class ModularGAN(AbstractGAN):
     if d_flood > 0.0:
       flood = ttf.get_var("options.d_flood", d_flood)
       self._tpu_summary.scalar(flood.name, flood)
-      d_flood = ttf.eval(flood)
       logging.info("Using d_flood=%f", d_flood)
       self.d_loss = tf.abs(self.d_loss - flood) + flood
 
@@ -780,6 +779,5 @@ class ModularGAN(AbstractGAN):
     if g_flood > 0.0:
       flood = ttf.get_var("options.g_flood", g_flood)
       self._tpu_summary.scalar(flood.name, flood)
-      g_flood = ttf.eval(flood)
       logging.info("Using g_flood=%f", g_flood)
       self.g_loss = tf.abs(self.g_loss - flood) + flood
