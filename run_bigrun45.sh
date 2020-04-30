@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
-export TPU_HOST="${TPU_HOST:-10.255.128.3}"
+#export TPU_HOST="${TPU_HOST:-10.255.128.3}"
+export TPU_HOST="${TPU_HOST:-10.255.128.2}"
 export TPU_NAME="${TPU_NAME:-tpu-v2-128-euw4a-7}"
 export MODEL_DIR="${MODEL_DIR:-gs://darnbooru-euw4a/runs/bigrun45/}"
 export GIN_CONFIG="${GIN_CONFIG:-example_configs/bigrun45.gin}"
