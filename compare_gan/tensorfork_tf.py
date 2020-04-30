@@ -1,5 +1,5 @@
 from tensorfork import EasyDict
-import tensorfork
+from . import tensorfork
 import tensorflow as tf
 import tensorflow.compat.v1 as tf1
 import importlib
