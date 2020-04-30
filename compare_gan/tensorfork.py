@@ -373,9 +373,9 @@ def has_knob(name):
   result = knobs_query(name, unset=unbound)
   return result is not unbound
 
-@gin.configurable("options")
-def options(*args, **keys):
-  return EasyDict(keys)
+# @gin.configurable("options")
+# def options(*args, **keys):
+#   return EasyDict(keys)
 
 @gin.configurable("knobs")
 def knobs(*args, **keys):
@@ -399,9 +399,9 @@ def reload(name=None, finalize_config=False, skip_unknown=False):
     gin.parse_config_files_and_bindings([], bindings, finalize_config=finalize_config, skip_unknown=skip_unknown)
   return res
 
-@gin.configurable("foo")
-def f(bork=99, baz=100, quux=101, bar=21, wow=0, *args, **keys):
-  return [keys, bork, baz, quux, bar, wow, *args]
+# @gin.configurable("foo")
+# def f(bork=99, baz=100, quux=101, bar=21, wow=0, *args, **keys):
+#   return [keys, bork, baz, quux, bar, wow, *args]
 
 def main():
   import sys
