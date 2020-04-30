@@ -678,8 +678,8 @@ class ModularGAN(AbstractGAN):
         loss=d_losses[0],
         train_op=g_loss.op)
 
-  def get_var(self, name, *args):
-    v = ttf.get_var(name, *args)
+  def get_var(self, name, *args, **kws):
+    v = ttf.get_var(name, *args, **kws)
     self._tpu_summary.scalar(v.name, v, scope='')
     return v
 
