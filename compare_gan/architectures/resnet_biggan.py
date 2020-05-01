@@ -291,6 +291,18 @@ class Generator(abstract_arch.AbstractGenerator):
         name="fc_reshaped")
 
     blocks_with_attention = set(self._blocks_with_attention)
+    def try_non_local_block(net, name=None):
+      res = net.shape[1].value
+      if name is not None and name in blocks_with_attention or str(res) in blocks_with_attention:
+        blocks_with_attention.discard(name)
+        blocks_with_attention.discard(str(res))
+        logging.info("[Generator] Applying non-local block at %dx%d resolution to %s",
+                     res, res, net.shape)
+        net = ops.non_local_block(net, "non_local_block",
+                                  use_sn=self._spectral_norm)
+      return net
+
+    net = try_non_local_block(net)
     for block_idx in range(num_blocks):
       name = "B{}".format(block_idx + 1)
       block = self._resnet_block(
@@ -303,14 +315,7 @@ class Generator(abstract_arch.AbstractGenerator):
           z=z_per_block[block_idx],
           y=y_per_block[block_idx],
           is_training=is_training)
-      res = net.shape[1].value
-      if name in blocks_with_attention or str(res) in blocks_with_attention:
-        blocks_with_attention.discard(name)
-        blocks_with_attention.discard(str(res))
-        logging.info("[Generator] Applying non-local block at %dx%d resolution to %s",
-                     res, res, net.shape)
-        net = ops.non_local_block(net, "non_local_block",
-                                  use_sn=self._spectral_norm)
+      net = try_non_local_block(net, name)
     assert len(blocks_with_attention) <= 0
 
     # Final processing of the net.
@@ -417,8 +422,19 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
         colors=x.shape[-1].value, resolution=x.shape[1].value)
     num_blocks = len(in_channels)
 
-    net = x
     blocks_with_attention = set(self._blocks_with_attention)
+    def try_non_local_block(net, name=None):
+      res = net.shape[1].value
+      if name is not None and name in blocks_with_attention or str(res) in blocks_with_attention:
+        blocks_with_attention.discard(name)
+        blocks_with_attention.discard(str(res))
+        logging.info("[Discriminator] Applying non-local block at %dx%d resolution to %s",
+                     res, res, net.shape)
+        net = ops.non_local_block(net, "non_local_block",
+                                  use_sn=self._spectral_norm)
+      return net
+
+    net = try_non_local_block(x)
     for block_idx in range(num_blocks):
       name = "B{}".format(block_idx + 1)
       is_last_block = block_idx == num_blocks - 1
@@ -428,14 +444,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
           out_channels=out_channels[block_idx],
           scale="none" if is_last_block else "down")
       net = block(net, z=None, y=y, is_training=is_training)
-      res = net.shape[1].value
-      if name in blocks_with_attention or str(res) in blocks_with_attention:
-        blocks_with_attention.discard(name)
-        blocks_with_attention.discard(str(res))
-        logging.info("[Discriminator] Applying non-local block at %dx%d resolution to %s",
-                     res, res, net.shape)
-        net = ops.non_local_block(net, "non_local_block",
-                                  use_sn=self._spectral_norm)
+      net = try_non_local_block(net)
     assert len(blocks_with_attention) <= 0
 
     # Final part
