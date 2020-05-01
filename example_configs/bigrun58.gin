@@ -1,4 +1,4 @@
-options.description = "BigGAN 128x128 on combined datasets with CLGAN + color augmentation, g_flood=0.05, and d_flood=0.20, self-attention at 128px, ch=128, and evonorm_s0"
+options.description = "BigGAN 128x128 on combined datasets with CLGAN + color augmentation, g_flood=0.05, d_flood=0.20, self-attention at 128px for G / at 64px for D, ch=128, and envnorm"
 
 dataset.name = "images_128"
 options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
@@ -7,7 +7,7 @@ options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
 options.z_dim = 120
 resnet_biggan.Generator.blocks_with_attention = "128"
-resnet_biggan.Discriminator.blocks_with_attention = "128"
+resnet_biggan.Discriminator.blocks_with_attention = "64"
 resnet_biggan.Generator.ch = 128
 resnet_biggan.Discriminator.ch = 128
 
