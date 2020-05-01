@@ -419,6 +419,84 @@ def self_modulated_batch_norm(inputs, z, is_training, use_sn,
         outputs += beta
       return outputs
 
+# evonorm functions
+
+def evonorm_s0(inputs,
+              is_training,
+              data_format="NHWC",
+              nonlinearity=True,
+              name="evonorm-s0"):
+
+  with tf.variable_scope(name, values=[inputs]):
+    if data_format not in {"NCHW", "NHWC"}:
+      raise ValueError(
+          "Invalid data_format {}. Allowed: NCHW, NHWC.".format(data_format))
+
+    inputs = tf.convert_to_tensor(inputs)
+    inputs_dtype = inputs.dtype
+    inputs_shape = inputs.get_shape()
+
+    num_channels = inputs.shape[-1].value
+    if num_channels is None:
+      raise ValueError("`C` dimension must be known but is None")
+
+    inputs_rank = inputs_shape.ndims
+    if inputs_rank is None:
+      raise ValueError("Inputs %s has undefined rank" % inputs.name)
+    elif inputs_rank not in [2, 4]:
+      raise ValueError(
+          "Inputs %s has unsupported rank."
+          " Expected 2 or 4 but got %d" % (inputs.name, inputs_rank))
+
+    if inputs_rank == 2:
+      new_shape = [-1, 1, 1, num_channels]
+      if data_format == "NCHW":
+        new_shape = [-1, num_channels, 1, 1]
+      inputs = tf.reshape(inputs, new_shape)
+
+    with tf.variable_scope("evonorm-s0", values=[inputs]):
+      collections = [tf.GraphKeys.MODEL_VARIABLES,
+                     tf.GraphKeys.GLOBAL_VARIABLES]
+
+      gamma = tf.get_variable(
+          "gamma",
+          [num_channels],
+          collections=collections,
+          initializer=tf.ones_initializer())
+
+      beta = tf.get_variable(
+          "beta",
+          [num_channels],
+          collections=collections,
+          initializer=tf.zeros_initializer())
+
+      if nonlinearity:
+        v = trainable_variable_ones(shape=gamma.shape)
+        num = inputs * tf.nn.sigmoid(v * inputs)
+        outputs = num / group_std(inputs) * gamma + beta
+      else:
+        outputs = inputs * gamma + beta
+
+      outputs = tf.cast(outputs, inputs_dtype)
+
+    return outputs
+
+def instance_std(x, eps=1e-5):
+  _, var = tf.nn.moments(x, axes=[1, 2], keepdims=True)
+  return tf.sqrt(var + eps)
+
+def group_std(x, groups=32, eps=1e-5):
+  N, H, W, C = x.shape
+  x = tf.reshape(x, [N, H, W, groups, C // groups])
+  _, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
+  std = tf.sqrt(var + eps)
+  std = tf.broadcast_to(std, x.shape)
+  return tf.reshape(std, [N, H, W, C])
+
+def trainable_variable_ones(shape, name="v"):
+  return tf.get_variable(name, shape=shape, initializer=tf.ones_initializer())
+
+#/ evonorm functions
 
 @gin.configurable(whitelist=["use_bias"])
 def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
