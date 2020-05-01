@@ -421,6 +421,7 @@ def self_modulated_batch_norm(inputs, z, is_training, use_sn,
 
 # evonorm functions
 
+@gin.configurable(whitelist=["nonlinearity"])
 def evonorm_s0(inputs,
               is_training,
               data_format="NHWC",
