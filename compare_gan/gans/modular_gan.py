@@ -790,35 +790,35 @@ class ModularGAN(AbstractGAN):
     d_flood = self.options.get("d_flood", 0.0)
     if d_flood > 0.0:
       logging.info("Using d_flood=%f", d_flood)
-      #self.d_loss = tf.tuple(tf.abs(loss - d_flood) + d_flood, control_inputs=[loss])
-      loss = self.d_loss
-      d_flood_var = tf.get_variable(
-        "d_flood_loss",
-        shape=loss.shape,
-        dtype=loss.dtype,
-        initializer=tf.random_normal_initializer(),
-        collections=[tf.GraphKeys.LOCAL_VARIABLES],
-        trainable=False)
-      with tf.control_dependencies([tf.assign(d_flood_var, loss)]):
-        with tf.control_dependencies([tf.assign_sub(d_flood_var, d_flood)]):
-          with tf.control_dependencies([tf.assign(d_flood_var, tf.abs(d_flood_var))]):
-            with tf.control_dependencies([tf.assign_add(d_flood_var, d_flood)]):
-              self.d_loss = tf.identity(d_flood_var)
+      loss = tf.identity(self.d_loss)
+      self.d_loss = tf.tuple(tf.abs(loss - d_flood) + d_flood, control_inputs=[loss])
+      # d_flood_var = tf.get_variable(
+      #   "d_flood_loss",
+      #   shape=loss.shape,
+      #   dtype=loss.dtype,
+      #   initializer=tf.random_normal_initializer(),
+      #   collections=[tf.GraphKeys.LOCAL_VARIABLES],
+      #   trainable=False)
+      # with tf.control_dependencies([tf.assign(d_flood_var, loss)]):
+      #   with tf.control_dependencies([tf.assign_sub(d_flood_var, d_flood)]):
+      #     with tf.control_dependencies([tf.assign(d_flood_var, tf.abs(d_flood_var))]):
+      #       with tf.control_dependencies([tf.assign_add(d_flood_var, d_flood)]):
+      #         self.d_loss = tf.identity(d_flood_var)
 
     g_flood = self.options.get("g_flood", 0.0)
     if g_flood > 0.0:
       logging.info("Using g_flood=%f", g_flood)
-      #self.g_loss = tf.tuple(tf.abs(loss - d_flood) + d_flood, control_inputs=[loss])
-      loss = self.g_loss
-      g_flood_var = tf.get_variable(
-        "g_flood_loss",
-        shape=loss.shape,
-        dtype=loss.dtype,
-        initializer=tf.random_normal_initializer(),
-        collections=[tf.GraphKeys.LOCAL_VARIABLES],
-        trainable=False)
-      with tf.control_dependencies([tf.assign(g_flood_var, loss)]):
-        with tf.control_dependencies([tf.assign_sub(g_flood_var, g_flood)]):
-          with tf.control_dependencies([tf.assign(g_flood_var, tf.abs(g_flood_var))]):
-            with tf.control_dependencies([tf.assign_add(g_flood_var, g_flood)]):
-              self.g_loss = tf.identity(g_flood_var)
+      loss = tf.identity(self.g_loss)
+      self.g_loss = tf.tuple(tf.abs(loss - g_flood) + g_flood, control_inputs=[loss])
+      # g_flood_var = tf.get_variable(
+      #   "g_flood_loss",
+      #   shape=loss.shape,
+      #   dtype=loss.dtype,
+      #   initializer=tf.random_normal_initializer(),
+      #   collections=[tf.GraphKeys.LOCAL_VARIABLES],
+      #   trainable=False)
+      # with tf.control_dependencies([tf.assign(g_flood_var, loss)]):
+      #   with tf.control_dependencies([tf.assign_sub(g_flood_var, g_flood)]):
+      #     with tf.control_dependencies([tf.assign(g_flood_var, tf.abs(g_flood_var))]):
+      #       with tf.control_dependencies([tf.assign_add(g_flood_var, g_flood)]):
+      #         self.g_loss = tf.identity(g_flood_var)
