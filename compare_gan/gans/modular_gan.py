@@ -271,9 +271,10 @@ class ModularGAN(AbstractGAN):
       if self._g_use_ema:
         g_vars = [var for var in tf.trainable_variables()
                   if "generator" in var.name]
-        ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
-        # Create the variables that will be loaded from the checkpoint.
-        ema.apply(g_vars)
+        with tf.variable_scope("", reuse=tf.AUTO_REUSE):
+          ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
+          # Create the variables that will be loaded from the checkpoint.
+          ema.apply(g_vars)
         def ema_getter(getter, name, *args, **kwargs):
           var = getter(name, *args, **kwargs)
           ema_var = ema.average(var)
