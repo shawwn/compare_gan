@@ -791,7 +791,7 @@ class ModularGAN(AbstractGAN):
     if d_flood > 0.0:
       logging.info("Using d_flood=%f", d_flood)
       loss = tf.identity(self.d_loss)
-      self.d_loss = tf.tuple(tf.abs(loss - d_flood) + d_flood, control_inputs=[loss])
+      self.d_loss = tf.tuple([tf.abs(loss - d_flood) + d_flood], control_inputs=[loss])[0]
       # d_flood_var = tf.get_variable(
       #   "d_flood_loss",
       #   shape=loss.shape,
@@ -809,7 +809,7 @@ class ModularGAN(AbstractGAN):
     if g_flood > 0.0:
       logging.info("Using g_flood=%f", g_flood)
       loss = tf.identity(self.g_loss)
-      self.g_loss = tf.tuple(tf.abs(loss - g_flood) + g_flood, control_inputs=[loss])
+      self.g_loss = tf.tuple([tf.abs(loss - g_flood) + g_flood], control_inputs=[loss])[0]
       # g_flood_var = tf.get_variable(
       #   "g_flood_loss",
       #   shape=loss.shape,
