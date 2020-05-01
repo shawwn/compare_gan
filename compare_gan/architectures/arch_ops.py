@@ -199,7 +199,8 @@ def standardize_batch(inputs,
                       epsilon=1e-3,
                       data_format="NHWC",
                       use_moving_averages=True,
-                      use_cross_replica_mean=None):
+                      use_cross_replica_mean=None,
+                      use_evonorm=False):
   """Adds TPU-enabled batch normalization layer.
 
   This version does not apply trainable scale or offset!
@@ -252,6 +253,10 @@ def standardize_batch(inputs,
   Returns:
     The normalized tensor with the same type and shape as `inputs`.
   """
+  if use_evonorm:
+    return evonorm_s0(inputs,
+              is_training=is_training,
+              data_format=data_format)
   if data_format not in {"NCHW", "NHWC"}:
     raise ValueError(
         "Invalid data_format {}. Allowed: NCHW, NHWC.".format(data_format))

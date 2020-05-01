@@ -21,11 +21,12 @@ weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 
 # Generator
-G.batch_norm_fn = @evonorm_s0
+G.batch_norm_fn = @conditional_batch_norm
 G.spectral_norm = True
 ModularGAN.g_use_ema = True
 resnet_biggan.Generator.hierarchical_z = True
 resnet_biggan.Generator.embed_y = True
+standardize_batch.use_evonorm = True
 
 # Discriminator
 options.disc_iters = 2
