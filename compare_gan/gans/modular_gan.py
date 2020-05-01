@@ -798,10 +798,10 @@ class ModularGAN(AbstractGAN):
         initializer=tf.random_normal_initializer(),
         collections=[tf.GraphKeys.LOCAL_VARIABLES],
         trainable=False)
-      with tf.control_inputs([tf.assign(d_flood_var, loss)]):
-        with tf.control_inputs([tf.assign_sub(d_flood_var, d_flood)]):
-          with tf.control_inputs([tf.assign(d_flood_var, tf.abs(d_flood_var))]):
-            with tf.control_inputs([tf.assign_add(d_flood_var, d_flood)]):
+      with tf.control_dependencies([tf.assign(d_flood_var, loss)]):
+        with tf.control_dependencies([tf.assign_sub(d_flood_var, d_flood)]):
+          with tf.control_dependencies([tf.assign(d_flood_var, tf.abs(d_flood_var))]):
+            with tf.control_dependencies([tf.assign_add(d_flood_var, d_flood)]):
               self.d_loss = tf.identity(d_flood_var)
 
     g_flood = self.options.get("g_flood", 0.0)
@@ -816,8 +816,8 @@ class ModularGAN(AbstractGAN):
         initializer=tf.random_normal_initializer(),
         collections=[tf.GraphKeys.LOCAL_VARIABLES],
         trainable=False)
-      with tf.control_inputs([tf.assign(g_flood_var, loss)]):
-        with tf.control_inputs([tf.assign_sub(g_flood_var, g_flood)]):
-          with tf.control_inputs([tf.assign(g_flood_var, tf.abs(g_flood_var))]):
-            with tf.control_inputs([tf.assign_add(g_flood_var, g_flood)]):
+      with tf.control_dependencies([tf.assign(g_flood_var, loss)]):
+        with tf.control_dependencies([tf.assign_sub(g_flood_var, g_flood)]):
+          with tf.control_dependencies([tf.assign(g_flood_var, tf.abs(g_flood_var))]):
+            with tf.control_dependencies([tf.assign_add(g_flood_var, g_flood)]):
               self.g_loss = tf.identity(g_flood_var)
