@@ -34,11 +34,25 @@ import tensorflow as tf
 FLAGS = flags.FLAGS
 
 
-random_brightness = gin.configurable(tf.image.random_brightness)
-random_contrast = gin.configurable(tf.image.random_contrast)
-random_saturation = gin.configurable(tf.image.random_saturation)
-random_hue = gin.configurable(tf.image.random_hue)
-clip_by_value = gin.configurable(tf.clip_by_value)
+@gin.configurable
+def random_brightness(images, max_delta=0.8):
+  return tf.image.random_brightness(images, max_delta=max_delta)
+
+@gin.configurable
+def random_contrast(images, lower=0.2, upper=1.8):
+  return tf.image.random_contrast(images, lower=0.2, upper=1.8)
+
+@gin.configurable
+def random_saturation(images, lower=0.2, upper=1.8):
+  return tf.image.random_saturation(images, lower=0.2, upper=1.8)
+
+@gin.configurable
+def random_hue(images, max_delta=0.2):
+  return tf.image.random_hue(images, max_delta=max_delta)
+
+def clip_by_value(x, clip_value_min=0.0, clip_value_max=1.0):
+  return tf.clip_by_value(x, clip_value_min=clip_value_min, clip_value_max=clip_value_max)
+
 random_flip_left_right = gin.configurable(tf.image.random_flip_left_right)
 random_flip_up_down = gin.configurable(tf.image.random_flip_up_down)
 
@@ -240,6 +254,83 @@ def motionblur(image, size_min=2, size_max=10):
   x = tf.stop_gradient(x)
   return x
 
+
+def tf_equalize_rgb(image):
+  """Implements Equalize function from PIL using TF ops."""
+  def scale_channel(im, c):
+    """Scale the data in the channel to implement equalize."""
+    im = tf.cast(im[:, :, c], tf.int32)
+    # Compute the histogram of the image channel.
+    histo = tf.histogram_fixed_width(im, [0, 255], nbins=256)
+
+    # For the purposes of computing the step, filter out the nonzeros.
+    nonzero = tf.where(tf.not_equal(histo, 0))
+    nonzero_histo = tf.reshape(tf.gather(histo, nonzero), [-1])
+    step = (tf.reduce_sum(nonzero_histo) - nonzero_histo[-1]) // 255
+
+    def build_lut(histo, step):
+      # Compute the cumulative sum, shifting by step // 2
+      # and then normalization by step.
+      lut = (tf.cumsum(histo) + (step // 2)) // step
+      # Shift lut, prepending with 0.
+      lut = tf.concat([[0], lut[:-1]], 0)
+      # Clip the counts to be in range.  This is done
+      # in the C code for image.point.
+      return tf.clip_by_value(lut, 0, 255)
+
+    # If step is zero, return the original image.  Otherwise, build
+    # lut from the full histogram and step and then index from it.
+    result = tf.cond(tf.equal(step, 0),
+                     lambda: im,
+                     lambda: tf.gather(build_lut(histo, step), im))
+
+    return tf.cast(result, tf.uint8)
+
+  # Assumes RGB for now.  Scales each channel independently
+  # and then stacks the result.
+  s1 = scale_channel(image, 0)
+  s2 = scale_channel(image, 1)
+  s3 = scale_channel(image, 2)
+  image = tf.stack([s1, s2, s3], 2)
+  return image
+
+@gin.configurable
+def equalize(image):
+  return tf.map_fn(lambda x: tf.cast(tf_equalize_rgb(x), tf.float32), image*255.0) / 255.0
+
+def tf_equalize_histogram(image):
+  values_range = tf.constant([0., 255.], dtype = tf.float32)
+  histogram = tf.histogram_fixed_width(tf.to_float(image), values_range, 256)
+  cdf = tf.cumsum(histogram)
+  cdf_min = cdf[tf.reduce_min(tf.where(tf.greater(cdf, 0)))]
+
+  b, h, w, c = image.get_shape().as_list()
+  pix_cnt = h * w
+  px_map = tf.round(tf.to_float(cdf - cdf_min) * 255. / tf.to_float(pix_cnt - 1))
+  px_map = tf.cast(px_map, tf.uint8)
+
+  eq_hist = tf.expand_dims(tf.gather_nd(px_map, tf.cast(image, tf.int32)), 3)
+  return eq_hist
+
+@gin.configurable
+def equalize2(image):
+  x = image
+  yiq = tf.image.rgb_to_yiq(x)
+  y = tf.slice(yiq, [0, 0, 0, 0], tf.concat([tf.shape(x)[0:3],[1]], axis=0))
+  iq = tf.slice(yiq, [0, 0, 0, 1], tf.concat([tf.shape(x)[0:3],[2]], axis=0))
+  y = tf.cast(tf_equalize_histogram(255.0*y), tf.float32) / 255.0
+  yiq = tf.concat([y, iq], axis=3)
+  x = tf.image.yiq_to_rgb(yiq)
+  return x
+
+@gin.configurable
+def solarize(image, threshold=0.5, upper=1.0):
+  # For each pixel in the image, select the pixel
+  # if the value is less than the threshold.
+  # Otherwise, subtract 255 from the pixel.
+  image = tf.where(image < threshold, image, upper - image)
+  return image
+
 @gin.configurable
 def resize(x, size, method=tf.image.ResizeMethod.AREA):
   if isinstance(size, int) or isinstance(size, float):
@@ -302,8 +393,33 @@ def call_maybe(prob, f, x, seed=None):
 #   selector = tf.cast(tf.less_equal(random_uniform(x, 0.0, 1.0, seed=seed), prob), tf.float32)
 #   return a * selector + b * (1.0 - selector)
 
+color_jitter = [
+  0.8,
+  [
+    random_brightness,
+    random_contrast,
+    random_saturation,
+    random_hue,
+    clip_by_value,
+  ]
+]
+
+distort_geometry = [
+  1.0,
+  [
+    random_crop_and_resize,
+    random_flip_left_right,
+  ]
+]
+
+default_transforms = [
+  equalize,
+  distort_geometry,
+  color_jitter,
+]
+
 @gin.configurable
-def augment(x, transforms=gin.REQUIRED, evaluate=call_dynamic):
+def augment(x, transforms=default_transforms, evaluate=call_dynamic):
   return evaluate(x, transforms)
 
 # pylint: disable=not-callable
