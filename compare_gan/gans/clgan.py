@@ -421,7 +421,7 @@ distort_geometry = [
   1.0,
   [
     random_crop_and_resize,
-    random_flip_left_right,
+    #random_flip_left_right,
   ]
 ]
 

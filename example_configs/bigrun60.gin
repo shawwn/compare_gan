@@ -1,4 +1,4 @@
-options.description = "BigGAN 256x256 on combined datasets with CLGAN + color augmentation, g_flood=0.05, and d_flood=0.20, self-attention at 64px, ch=128, and evonorm_s0"
+options.description = "BigGAN 256x256 on combined datasets with g_flood=0.05, and d_flood=0.20, self-attention at 64px, and ch=128"
 
 dataset.name = "images_256"
 options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*"
@@ -59,10 +59,10 @@ run_config.save_checkpoints_steps = 250
 #resnet_biggan.Discriminator.channel_multipliers = "1, 2, 4, 8, 8, 16, 16"
 
 # Use SimCLR
-options.gan_class = @CLGAN
+#options.gan_class = @CLGAN
 
 # Set SimCLR multiplier to 1.0
-CLGAN.weight_contrastive_loss_d = 1.0
+#CLGAN.weight_contrastive_loss_d = 10.0
 
 # Turn on flood loss
 options.g_flood = 0.05
