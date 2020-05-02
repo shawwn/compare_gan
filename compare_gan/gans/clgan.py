@@ -130,11 +130,20 @@ def transform_image(image, target_image_shape, crop_method="distorted", seed=Non
   image.set_shape(target_image_shape)
   return image
 
+# @gin.configurable
+# def random_crop_and_resize(x, crop_method="distorted"):
+#   b, h, w, c = x.get_shape().as_list()
+#   crop = tf.map_fn(lambda x: transform_image(x, [h, w, c], crop_method), x)
+#   return crop
+
 @gin.configurable
-def random_crop_and_resize(x, crop_method="distorted"):
-  b, h, w, c = x.get_shape().as_list()
-  crop = tf.map_fn(lambda x: transform_image(x, [h, w, c], crop_method), x)
+def random_crop_and_resize(images, ratio=0.08):
+  b, h, w, c = images.get_shape().as_list()
+  ch, cw = map(lambda x: int(x * ratio), (h, w))
+  crop = tf.image.random_crop(images, size=[b, ch, cw, 3])
+  crop = tf.image.resize(crop, [h, w])
   return crop
+
 
 @gin.configurable
 def distort_exposure(image, lower=1.0/2.2, upper=2.2, invert=False):
