@@ -491,11 +491,13 @@ class CLGAN(modular_gan.ModularGAN):
 
     with gin.config_scope("reals"):
       aug_images = augment(images)
-      self._add_images_to_summary(aug_images, "real_images_aug", params)
+      features["real_images_aug"] = aug_images
+      #self._add_images_to_summary(aug_images, "real_images_aug", params)
 
     with gin.config_scope("fakes"):
       aug_generated = augment(generated)
-      self._add_images_to_summary(aug_images, "fake_images_aug", params)
+      features["fake_images_aug"] = aug_generated
+      #self._add_images_to_summary(aug_images, "fake_images_aug", params)
 
     # concat all images
     all_images = tf.concat([images, generated, aug_images, aug_generated], 0)
