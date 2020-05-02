@@ -78,6 +78,8 @@ def random_lerp(a, b, lower, upper):
 def transform_image(image, target_image_shape, crop_method="distorted", seed=None,
     aspect_ratio_range=[4.0/3.0, 3.0/4.0],
     area_range=[0.08, 1.00],
+    #resize_method=tf.image.ResizeMethod.AREA,
+    resize_method=tf.image.ResizeMethod.BILINEAR,
     ):
   """Preprocesses ImageNet images to have a target image shape.
 
@@ -124,7 +126,7 @@ def transform_image(image, target_image_shape, crop_method="distorted", seed=Non
     raise ValueError("Unsupported crop method: {}".format(crop_method))
   image = tf.image.resize_images(
       image, [target_image_shape[0], target_image_shape[1]],
-      method=tf.image.ResizeMethod.AREA)
+      method=resize_method)
   image.set_shape(target_image_shape)
   return image
 
