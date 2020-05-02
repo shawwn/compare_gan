@@ -413,7 +413,7 @@ distort_geometry = [
 ]
 
 default_transforms = [
-  equalize,
+  #equalize,
   distort_geometry,
   color_jitter,
 ]
