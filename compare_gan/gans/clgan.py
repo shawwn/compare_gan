@@ -407,37 +407,28 @@ def call_maybe(prob, f, x, seed=None):
 stop_gradient = gin.configurable(tf.stop_gradient)
 
 color_jitter = [
-  0.8,
+  0.0,
   [
-    stop_gradient,
     random_brightness,
-    stop_gradient,
     random_contrast,
-    stop_gradient,
     random_saturation,
-    stop_gradient,
     random_hue,
-    stop_gradient,
     clip_by_value,
-    stop_gradient,
   ]
 ]
 
 distort_geometry = [
   1.0,
   [
-    stop_gradient,
     random_crop_and_resize,
-    stop_gradient,
     random_flip_left_right,
-    stop_gradient,
   ]
 ]
 
 default_transforms = [
   #equalize,
   distort_geometry,
-  color_jitter,
+  #color_jitter,
 ]
 
 @gin.configurable
