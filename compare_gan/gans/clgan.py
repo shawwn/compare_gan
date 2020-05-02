@@ -393,14 +393,22 @@ def call_maybe(prob, f, x, seed=None):
 #   selector = tf.cast(tf.less_equal(random_uniform(x, 0.0, 1.0, seed=seed), prob), tf.float32)
 #   return a * selector + b * (1.0 - selector)
 
+stop_gradient = gin.configurable(tf.stop_gradient)
+
 color_jitter = [
   0.8,
   [
+    stop_gradient,
     random_brightness,
+    stop_gradient,
     random_contrast,
+    stop_gradient,
     random_saturation,
+    stop_gradient,
     random_hue,
+    stop_gradient,
     clip_by_value,
+    stop_gradient,
   ]
 ]
 
