@@ -415,8 +415,11 @@ color_jitter = [
 distort_geometry = [
   1.0,
   [
+    stop_gradient,
     random_crop_and_resize,
+    stop_gradient,
     random_flip_left_right,
+    stop_gradient,
   ]
 ]
 
