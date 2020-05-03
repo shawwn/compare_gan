@@ -50,6 +50,8 @@ import tensorflow_hub as hub
 
 import os
 
+import contextlib
+
 FLAGS = flags.FLAGS
 
 
@@ -134,6 +136,7 @@ class ModularGAN(AbstractGAN):
     self._d_lr = g_lr if d_lr is None else d_lr
     self._g_lr *= g_lr_mul
     self._d_lr *= d_lr_mul
+    self._disc_step = -1
 
     if conditional and not self._dataset.num_classes:
       raise ValueError(
@@ -596,6 +599,23 @@ class ModularGAN(AbstractGAN):
       with tf.control_dependencies([train_op]):
         return tf.identity(self.g_loss)
 
+  @property
+  def disc_step(self):
+    return self._disc_step
+
+  @contextlib.contextmanager
+  def with_disc_step(self, n):
+    prev = self._disc_step
+    self._disc_step = n
+    try:
+      with tf.name_scope("disc_step_{}".format(n + 1)):
+        yield
+
+    finally:
+      self._disc_step = prev
+
+
+
   def model_fn(self, features, labels, params, mode):
     """Constructs the model for the given features and mode.
 
@@ -688,7 +708,7 @@ class ModularGAN(AbstractGAN):
     d_losses = []
     d_steps = self._disc_iters if unroll_graph else 1
     for i in range(d_steps):
-      with tf.name_scope("disc_step_{}".format(i + 1)):
+      with self.with_disc_step(i):
         with tf.control_dependencies(d_losses):
           d_loss = train_disc_fn(features=fs[i], labels=ls[i])
           d_losses.append(d_loss)
