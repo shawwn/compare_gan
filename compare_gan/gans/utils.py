@@ -378,4 +378,5 @@ def transform(images, seed=None):
   images = transform_images(images, seed=seed)
   images = tf.image.random_flip_left_right(images)
   images = random_color_jitter(images, seed=seed)
+  images = clip_by_value(images)
   return images
