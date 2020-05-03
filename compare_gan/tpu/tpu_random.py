@@ -76,14 +76,14 @@ def add_random_offset_to_features(dataset, start=1):
   Returns:
     A new `tf.data.Dataset` object with a extra feature for the random offset.
   """
-  #return dataset # disabled
+  return dataset # disabled
   dataset = dataset.apply(tf.data.experimental.enumerate_dataset(start=start))
   return dataset.map(add_random_offset)
 
 
 def set_random_offset_from_features(features):
   """Set the global random offset from the random offset feature."""
-  #return # disabled
+  return # disabled
   # Take the first index in case the TPU core got multiple examples.
   global _RANDOM_OFFSET_TENSOR
   _RANDOM_OFFSET_TENSOR = features.pop(_RANDOM_OFFSET_FEATURE_KEY)[0]
@@ -120,6 +120,7 @@ def _get_seed(name=None):
 
 
 def uniform(shape, name=None):
+  assert False # disable tpu_random for now
   """Outputs pseudorandom random values from a uniform distribution.
 
   If the _RANDOM_OFFSET_TENSOR is set these output is deterministic based on the
@@ -149,6 +150,7 @@ def uniform(shape, name=None):
 
 
 def normal(shape, name=None):
+  assert False # disable tpu_random for now
   if _RANDOM_OFFSET_TENSOR is None:
     logging.warning("No global random offset set, falling back to "
                     "un-deterministic pseudorandom numbers for operation %s.",

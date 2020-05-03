@@ -447,7 +447,7 @@ class ModularGAN(AbstractGAN):
         "images": images,
         "images_aug": gan_utils.transform(images, seed=seed),
         "z": self.z_generator([self._z_dim], name="z"),
-        "z_fixed": tpu_random.uniform([self._z_dim], name="z_fixed"),
+        #"z_fixed": tpu_random.uniform([self._z_dim], name="z_fixed"),
     }
     if self.conditional:
       if self._fit_label_distribution:
