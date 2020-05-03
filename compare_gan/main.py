@@ -66,6 +66,11 @@ flags.DEFINE_integer(
 
 flags.DEFINE_bool("use_tpu", None, "Whether running on TPU or not.")
 
+flags.DEFINE_string(
+  "verbose", os.environ.get("VERBOSE", "debug"),
+  "Logging verbosity."
+)
+
 
 def _get_cluster():
   if not FLAGS.use_tpu:  # pylint: disable=unreachable
@@ -115,11 +120,19 @@ def _get_task_manager():
       model_dir=FLAGS.model_dir, score_file=score_file)
 
 
+from logging import _nameToLevel
+
 def main(unused_argv):
   logging.info("Gin config: %s\nGin bindings: %s",
                FLAGS.gin_config, FLAGS.gin_bindings)
   gin.parse_config_files_and_bindings(FLAGS.gin_config, FLAGS.gin_bindings)
-
+  verbosity = FLAGS.verbose
+  try:
+    verbosity = int(verbosity) * 10
+  except:
+    verbosity = _nameToLevel[verbosity.upper()]
+  tf.get_logger().setLevel(verbosity)
+  logging.set_verbosity(FLAGS.verbosity)
 
   if FLAGS.use_tpu is None:
     FLAGS.use_tpu = bool(os.environ.get("TPU_NAME", ""))
