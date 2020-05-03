@@ -897,25 +897,25 @@ class ModularGAN(AbstractGAN):
     if g_flood_min is None:
       g_flood_min = self.options.get("g_flood", None)
 
-    if d_flood_min != None:
-      logging.info("Using d_flood_min=%f", d_flood_min)
-      self.scalar(100, "loss", "d_flood_min", d_flood_min)
-      self.d_loss = tf.abs(self.d_loss - d_flood_min) + d_flood_min
-
     if d_flood_max != None:
       logging.info("Using d_flood_max=%f", d_flood_max)
       self.scalar(105, "loss", "d_flood_max", d_flood_max)
       self.d_loss = d_flood_max - tf.abs(d_flood_max - self.d_loss)
 
-    if g_flood_min != None:
-      logging.info("Using g_flood_min=%f", g_flood_min)
-      self.scalar(110, "loss", "g_flood_min", g_flood_min)
-      self.g_loss = tf.abs(self.g_loss - g_flood_min) + g_flood_min
+    if d_flood_min != None:
+      logging.info("Using d_flood_min=%f", d_flood_min)
+      self.scalar(100, "loss", "d_flood_min", d_flood_min)
+      self.d_loss = tf.abs(self.d_loss - d_flood_min) + d_flood_min
 
     if g_flood_max != None:
       logging.info("Using g_flood_max=%f", g_flood_max)
       self.scalar(115, "loss", "g_flood_max", g_flood_max)
       self.g_loss = g_flood_max - tf.abs(g_flood_max - self.g_loss)
+
+    if g_flood_min != None:
+      logging.info("Using g_flood_min=%f", g_flood_min)
+      self.scalar(110, "loss", "g_flood_min", g_flood_min)
+      self.g_loss = tf.abs(self.g_loss - g_flood_min) + g_flood_min
 
     self.scalar(0, "loss", "g_final_loss", self.g_loss)
     self.scalar(5, "loss", "d_final_loss", self.d_loss)
