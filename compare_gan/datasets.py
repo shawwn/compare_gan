@@ -908,9 +908,10 @@ class ImagesDataset(ImagenetDataset):
 
   def _shortcut(self, ds, params, seed, preprocess_fn=None):
     ds = ds.cache() # cache the unparsed filtered dataset.
+    ds = ds.apply(tf.data.experimental.enumerate_dataset(start=1))
     ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 16)) # fused shuffle and repeat
     assert "batch_size" in params
-    def fused_parse(image_bytes, seed, preprocess_fn, parse_fn, num_classes):
+    def fused_parse(offset, image_bytes, seed, preprocess_fn, parse_fn, num_classes):
       features = ImageNet.dataset_parser_static(image_bytes, num_classes)
       image, label = parse_fn(features)
       image, label = self._train_transform_fn(image, label, seed=seed)
@@ -918,6 +919,8 @@ class ImagesDataset(ImagenetDataset):
         if "seed" in inspect.getargspec(preprocess_fn).args:
           preprocess_fn = functools.partial(preprocess_fn, seed=seed)
         image, label = preprocess_fn(image, label)
+      logging.info("Passing random offset: %s", offset)
+      image[tpu_random._RANDOM_OFFSET_FEATURE_KEY] = offset
       return image, label
     dataset_parser = functools.partial(
       fused_parse, seed=seed, preprocess_fn=preprocess_fn, parse_fn=self._parse_fn, num_classes=self.num_classes)

@@ -51,6 +51,20 @@ _RANDOM_OFFSET_FEATURE_KEY = "_RANDOM_OFFSET"
 _RANDOM_OFFSET_TENSOR = None
 
 
+def add_random_offset(offset, data):
+  offset = tf.cast(offset, tf.int32)
+  if isinstance(data, tuple) and len(data) == 2 and isinstance(data[0], dict):
+    # dd Data is a tuple (features, labels) as expected by the Estimator
+    # interface.
+    logging.info("Passing random offset: %s with data %s.", offset, data)
+    features, labels = data
+    features[_RANDOM_OFFSET_FEATURE_KEY] = offset
+    return features, labels
+  raise ValueError("Data in dataset must be a tuple (features, labels) and "
+                   "features must be a Python dictionary. data was {}".format(
+    data))
+
+
 def add_random_offset_to_features(dataset, start=1):
   """Add a random offset to the dataset.
 
@@ -62,26 +76,14 @@ def add_random_offset_to_features(dataset, start=1):
   Returns:
     A new `tf.data.Dataset` object with a extra feature for the random offset.
   """
-  return dataset # disabled
+  #return dataset # disabled
   dataset = dataset.apply(tf.data.experimental.enumerate_dataset(start=start))
-  def map_fn(offset, data):
-    offset = tf.cast(offset, tf.int32)
-    if isinstance(data, tuple) and len(data) == 2 and isinstance(data[0], dict):
-      # Data is a tuple (features, labels) as expected by the Estimator
-      # interface.
-      logging.info("Passing random offset: %s with data %s.", offset, data)
-      features, labels = data
-      features[_RANDOM_OFFSET_FEATURE_KEY] = offset
-      return features, labels
-    raise ValueError("Data in dataset must be a tuple (features, labels) and "
-                     "features must be a Python dictionary. data was {}".format(
-                         data))
-  return dataset.map(map_fn)
+  return dataset.map(add_random_offset)
 
 
 def set_random_offset_from_features(features):
   """Set the global random offset from the random offset feature."""
-  return # disabled
+  #return # disabled
   # Take the first index in case the TPU core got multiple examples.
   global _RANDOM_OFFSET_TENSOR
   _RANDOM_OFFSET_TENSOR = features.pop(_RANDOM_OFFSET_FEATURE_KEY)[0]
@@ -156,5 +158,5 @@ def normal(shape, name=None):
       shape=shape, seed=_get_seed(name), name=name)
 
 # disable tpu_random for now
-uniform = tf.random.uniform
-normal = tf.random.normal
+#uniform = tf.random.uniform
+#normal = tf.random.normal
