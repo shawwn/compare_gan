@@ -116,7 +116,6 @@ def transform_images(images, **kws):
   else:
     b, h, w, c = shape
     crop = tf.map_fn(lambda x: transform_image(x, [h, w, c], **kws), images)
-  crop = tf.image.random_flip_left_right(crop)
   return crop
 
 def lerp(a, b, t):
@@ -161,3 +160,222 @@ def random_crop_and_resize(images,
   #crop = tf.map_fn(lambda x: transform_image(x, [h, w, c]), images)
   crop = tf.image.random_flip_left_right(crop)
   return crop
+
+
+@gin.configurable
+def random_brightness(images, max_delta=0.8):
+  return tf.image.random_brightness(images, max_delta=max_delta)
+
+@gin.configurable
+def random_contrast(images, lower=0.2, upper=1.8):
+  return tf.image.random_contrast(images, lower=0.2, upper=1.8)
+
+@gin.configurable
+def random_saturation(images, lower=0.2, upper=1.8):
+  return tf.image.random_saturation(images, lower=0.2, upper=1.8)
+
+@gin.configurable
+def random_hue(images, max_delta=0.2):
+  return tf.image.random_hue(images, max_delta=max_delta)
+
+@gin.configurable
+def clip_by_value(x, clip_value_min=0.0, clip_value_max=1.0):
+  return tf.clip_by_value(x, clip_value_min=clip_value_min, clip_value_max=clip_value_max)
+
+
+
+
+def random_apply(func, p, x):
+  """Randomly apply function func to x with probability p."""
+  return tf.cond(
+      tf.less(tf.random_uniform([], minval=0, maxval=1, dtype=tf.float32),
+              tf.cast(p, tf.float32)),
+      lambda: func(x),
+      lambda: x)
+
+
+def to_grayscale(image, keep_channels=True):
+  image = tf.image.rgb_to_grayscale(image)
+  if keep_channels:
+    image = tf.tile(image, [1, 1, 3])
+  return image
+
+
+@gin.configurable
+def color_jitter(image,
+                 strength,
+                 random_order=True,
+                 seed=None):
+  """Distorts the color of the image.
+  Args:
+    image: The input image tensor.
+    strength: the floating number for the strength of the color augmentation.
+    random_order: A bool, specifying whether to randomize the jittering order.
+  Returns:
+    The distorted image tensor.
+  """
+  brightness = 0.8 * strength
+  contrast = 0.8 * strength
+  saturation = 0.8 * strength
+  hue = 0.2 * strength
+  if random_order:
+    return color_jitter_rand(image, brightness, contrast, saturation, hue, seed=seed)
+  else:
+    return color_jitter_nonrand(image, brightness, contrast, saturation, hue)
+
+
+
+
+def color_jitter_nonrand(image, brightness=0, contrast=0, saturation=0, hue=0):
+  """Distorts the color of the image (jittering order is fixed).
+  Args:
+    image: The input image tensor.
+    brightness: A float, specifying the brightness for color jitter.
+    contrast: A float, specifying the contrast for color jitter.
+    saturation: A float, specifying the saturation for color jitter.
+    hue: A float, specifying the hue for color jitter.
+  Returns:
+    The distorted image tensor.
+  """
+  with tf.name_scope('distort_color'):
+    def apply_transform(i, x, brightness, contrast, saturation, hue):
+      """Apply the i-th transformation."""
+      if brightness != 0 and i == 0:
+        x = tf.image.random_brightness(x, max_delta=brightness)
+      elif contrast != 0 and i == 1:
+        x = tf.image.random_contrast(
+            x, lower=1-contrast, upper=1+contrast)
+      elif saturation != 0 and i == 2:
+        x = tf.image.random_saturation(
+            x, lower=1-saturation, upper=1+saturation)
+      elif hue != 0:
+        x = tf.image.random_hue(x, max_delta=hue)
+      return x
+
+    for i in range(4):
+      image = apply_transform(i, image, brightness, contrast, saturation, hue)
+      image = tf.clip_by_value(image, 0., 1.)
+    return image
+
+
+
+def color_jitter_rand(image, brightness=0, contrast=0, saturation=0, hue=0, seed=None):
+  """Distorts the color of the image (jittering order is random).
+  Args:
+    image: The input image tensor.
+    brightness: A float, specifying the brightness for color jitter.
+    contrast: A float, specifying the contrast for color jitter.
+    saturation: A float, specifying the saturation for color jitter.
+    hue: A float, specifying the hue for color jitter.
+  Returns:
+    The distorted image tensor.
+  """
+  with tf.name_scope('distort_color'):
+    def apply_transform(i, x):
+      """Apply the i-th transformation."""
+      def brightness_foo():
+        if brightness == 0:
+          return x
+        else:
+          return tf.image.random_brightness(x, max_delta=brightness, seed=seed)
+      def contrast_foo():
+        if contrast == 0:
+          return x
+        else:
+          return tf.image.random_contrast(x, lower=1-contrast, upper=1+contrast, seed=seed)
+      def saturation_foo():
+        if saturation == 0:
+          return x
+        else:
+          return tf.image.random_saturation(
+              x, lower=1-saturation, upper=1+saturation, seed=seed)
+      def hue_foo():
+        if hue == 0:
+          return x
+        else:
+          return tf.image.random_hue(x, max_delta=hue, seed=seed)
+      x = tf.cond(tf.less(i, 2),
+                  lambda: tf.cond(tf.less(i, 1), brightness_foo, contrast_foo),
+                  lambda: tf.cond(tf.less(i, 3), saturation_foo, hue_foo))
+      return x
+
+    perm = tf.random_shuffle(tf.range(4), seed=seed)
+    for i in range(4):
+      image = apply_transform(perm[i], image)
+      image = tf.clip_by_value(image, 0., 1.)
+    return image
+
+
+def gaussian_blur(image, kernel_size, sigma, padding='SAME'):
+  """Blurs the given image with separable convolution.
+  Args:
+    image: Tensor of shape [height, width, channels] and dtype float to blur.
+    kernel_size: Integer Tensor for the size of the blur kernel. This is should
+      be an odd number. If it is an even number, the actual kernel size will be
+      size + 1.
+    sigma: Sigma value for gaussian operator.
+    padding: Padding to use for the convolution. Typically 'SAME' or 'VALID'.
+  Returns:
+    A Tensor representing the blurred image.
+  """
+  radius = tf.to_int32(kernel_size / 2)
+  kernel_size = radius * 2 + 1
+  x = tf.to_float(tf.range(-radius, radius + 1))
+  blur_filter = tf.exp(
+      -tf.pow(x, 2.0) / (2.0 * tf.pow(tf.to_float(sigma), 2.0)))
+  blur_filter /= tf.reduce_sum(blur_filter)
+  # One vertical and one horizontal filter.
+  blur_v = tf.reshape(blur_filter, [kernel_size, 1, 1, 1])
+  blur_h = tf.reshape(blur_filter, [1, kernel_size, 1, 1])
+  num_channels = tf.shape(image)[-1]
+  blur_h = tf.tile(blur_h, [1, 1, num_channels, 1])
+  blur_v = tf.tile(blur_v, [1, 1, num_channels, 1])
+  expand_batch_dim = image.shape.ndims == 3
+  if expand_batch_dim:
+    # Tensorflow requires batched input to convolutions, which we can fake with
+    # an extra dimension.
+    image = tf.expand_dims(image, axis=0)
+  blurred = tf.nn.depthwise_conv2d(
+      image, blur_h, strides=[1, 1, 1, 1], padding=padding)
+  blurred = tf.nn.depthwise_conv2d(
+      blurred, blur_v, strides=[1, 1, 1, 1], padding=padding)
+  if expand_batch_dim:
+    blurred = tf.squeeze(blurred, axis=0)
+  return blurred
+
+
+import functools
+
+@gin.configurable
+def random_color_jitter(image, p=1.0, color_jitter_strength=1.0, seed=None):
+  def _transform(image):
+    color_jitter_t = functools.partial(
+        color_jitter, strength=color_jitter_strength, seed=seed)
+    image = random_apply(color_jitter_t, p=0.8, x=image)
+    return random_apply(to_grayscale, p=0.2, x=image)
+  return random_apply(_transform, p=p, x=image)
+
+
+def random_blur(image, height, width, p=1.0):
+  """Randomly blur an image.
+  Args:
+    image: `Tensor` representing an image of arbitrary size.
+    height: Height of output image.
+    width: Width of output image.
+    p: probability of applying this transformation.
+  Returns:
+    A preprocessed image `Tensor`.
+  """
+  del width
+  def _transform(image):
+    sigma = tf.random.uniform([], 0.1, 2.0, dtype=tf.float32)
+    return gaussian_blur(
+        image, kernel_size=height//10, sigma=sigma, padding='SAME')
+  return random_apply(_transform, p=p, x=image)
+
+
+def transform(images, seed=None):
+  images = transform_images(images, seed=seed)
+  images = tf.image.random_flip_left_right(images)
+  images = random_color_jitter(images, seed=seed)
+  return images

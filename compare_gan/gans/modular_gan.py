@@ -445,7 +445,7 @@ class ModularGAN(AbstractGAN):
     tf.set_random_seed(seed)
     features = {
         "images": images,
-        "images_aug": gan_utils.transform_images(images, seed=seed),
+        "images_aug": gan_utils.transform(images, seed=seed),
         "z": self.z_generator([self._z_dim], name="z"),
         "z_fixed": tpu_random.uniform([self._z_dim], name="z_fixed"),
     }
