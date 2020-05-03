@@ -356,7 +356,8 @@ def random_color_jitter(image, p=1.0, color_jitter_strength=1.0, seed=None):
   return random_apply(_transform, p=p, x=image)
 
 
-def random_blur(image, height, width, p=1.0):
+@gin.configurable(blacklist=["image", "seed"])
+def random_blur(image, image_size=gin.REQUIRED, p=1.0, seed=None):
   """Randomly blur an image.
   Args:
     image: `Tensor` representing an image of arbitrary size.
@@ -366,18 +367,19 @@ def random_blur(image, height, width, p=1.0):
   Returns:
     A preprocessed image `Tensor`.
   """
-  del width
   def _transform(image):
-    sigma = tf.random.uniform([], 0.1, 2.0, dtype=tf.float32)
+    sigma = tf.random.uniform([], 0.1, 2.0, dtype=tf.float32, seed=seed)
     return gaussian_blur(
-        image, kernel_size=height//10, sigma=sigma, padding='SAME')
+        image, kernel_size=image_size//10, sigma=sigma, padding='SAME')
   return random_apply(_transform, p=p, x=image)
 
 
 @gin.configurable(blacklist=["images", "seed"])
-def transform(images, crop=True, flip=True, color=True, clip=True, seed=None):
+def transform(images, crop=True, flip=True, color=True, clip=True, blur=False, seed=None):
   if crop:
     images = transform_images(images, seed=seed)
+  if blur:
+    images = random_blur(images, seed=seed)
   if flip:
     images = tf.image.random_flip_left_right(images)
   if color:
