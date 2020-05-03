@@ -47,6 +47,7 @@ from absl import logging
 import tensorflow as tf
 
 import gin
+import os
 
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
@@ -65,7 +66,7 @@ class TpuSummaries(object):
   all the TPU cores.
   """
 
-  def __init__(self, log_dir, save_summary_steps=5, save_image_steps=50):
+  def __init__(self, log_dir, save_summary_steps=1, save_image_steps=50):
     self._log_dir = log_dir
     self._image_entries = []
     self._scalar_entries = []
@@ -123,7 +124,8 @@ class TpuSummaries(object):
     # batch dimension). Step is the same for all cores.
     step = step[0]
     logging.info("host_call_fn: args=%s", args)
-    with summary.create_file_writer(self._log_dir).as_default():
+    ops = []
+    with summary.create_file_writer(os.path.join(self._log_dir, 'images')).as_default():
       offset = 0
       with summary.record_summaries_every_n_global_steps(
               self._save_image_steps, step):
@@ -131,12 +133,16 @@ class TpuSummaries(object):
           value = e.reduce_fn(args[i + offset])
           e.summary_fn(e.name, value, step=step)
       offset += len(self._image_entries)
+      ops.append(summary.all_summary_ops())
+    with summary.create_file_writer(os.path.join(self._log_dir, 'scalars')).as_default():
       with summary.record_summaries_every_n_global_steps(
-              self._save_summary_steps, step):
-        for i, e in enumerate(self._scalar_entries):
-          value = e.reduce_fn(args[i + offset])
-          e.summary_fn(e.name, value, step=step)
-      return summary.all_summary_ops()
+            self._save_summary_steps, step):
+      for i, e in enumerate(self._scalar_entries):
+        value = e.reduce_fn(args[i + offset])
+        e.summary_fn(e.name, value, step=step)
+      offset += len(self._scalar_entries)
+      ops.append(summary.all_summary_ops())
+    return tf.group(ops)
 
 
 TpuSummaries.inst = None
