@@ -374,9 +374,14 @@ def random_blur(image, height, width, p=1.0):
   return random_apply(_transform, p=p, x=image)
 
 
-def transform(images, seed=None):
-  images = transform_images(images, seed=seed)
-  images = tf.image.random_flip_left_right(images)
-  images = random_color_jitter(images, seed=seed)
-  images = clip_by_value(images)
+@gin.configurable(blacklist=["images", "seed"])
+def transform(images, crop=True, flip=True, color=True, clip=True, seed=None):
+  if crop:
+    images = transform_images(images, seed=seed)
+  if flip:
+    images = tf.image.random_flip_left_right(images)
+  if color:
+    images = random_color_jitter(images, seed=seed)
+  if clip:
+    images = clip_by_value(images)
   return images
