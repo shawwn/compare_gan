@@ -168,11 +168,11 @@ def random_brightness(images, max_delta=0.8):
 
 @gin.configurable
 def random_contrast(images, lower=0.2, upper=1.8):
-  return tf.image.random_contrast(images, lower=0.2, upper=1.8)
+  return tf.image.random_contrast(images, lower=lower, upper=upper)
 
 @gin.configurable
 def random_saturation(images, lower=0.2, upper=1.8):
-  return tf.image.random_saturation(images, lower=0.2, upper=1.8)
+  return tf.image.random_saturation(images, lower=lower, upper=upper)
 
 @gin.configurable
 def random_hue(images, max_delta=0.2):
@@ -185,10 +185,14 @@ def clip_by_value(x, clip_value_min=0.0, clip_value_max=1.0):
 
 
 
-def random_apply(func, p, x):
+def random_apply(func, p, x, seed=None):
   """Randomly apply function func to x with probability p."""
+  if p == 1.0:
+    return func(x)
+  if p == 0.0:
+    return x
   return tf.cond(
-      tf.less(tf.random_uniform([], minval=0, maxval=1, dtype=tf.float32),
+      tf.less(tf.random_uniform([], minval=0, maxval=1, dtype=tf.float32, seed=seed),
               tf.cast(p, tf.float32)),
       lambda: func(x),
       lambda: x)
@@ -197,13 +201,18 @@ def random_apply(func, p, x):
 def to_grayscale(image, keep_channels=True):
   image = tf.image.rgb_to_grayscale(image)
   if keep_channels:
-    image = tf.tile(image, [1, 1, 3])
+    #image = tf.tile(image, [1, 1, 3])
+    image = tf.image.grayscale_to_rgb(image)
   return image
 
 
 @gin.configurable
 def color_jitter(image,
                  strength,
+                 brightness_strength=0.8,
+                 contrast_strength=0.8,
+                 saturation_strength=0.8,
+                 hue_strength=0.2,
                  random_order=True,
                  seed=None):
   """Distorts the color of the image.
@@ -214,10 +223,10 @@ def color_jitter(image,
   Returns:
     The distorted image tensor.
   """
-  brightness = 0.8 * strength
-  contrast = 0.8 * strength
-  saturation = 0.8 * strength
-  hue = 0.2 * strength
+  brightness = 0 if brightness_strength == 0 else brightness_strength * strength
+  contrast = 0 if contrast_strength == 0 else contrast_strength * strength
+  saturation = 0 if saturation_strength == 0 else saturation_strength * strength
+  hue = 0 if hue_strength == 0 else hue_strength * strength
   if random_order:
     return color_jitter_rand(image, brightness, contrast, saturation, hue, seed=seed)
   else:
@@ -347,13 +356,17 @@ def gaussian_blur(image, kernel_size, sigma, padding='SAME'):
 import functools
 
 @gin.configurable
-def random_color_jitter(image, p=1.0, color_jitter_strength=1.0, seed=None):
+def random_color_jitter(image, p=1.0,
+                        color_jitter_strength=1.0,
+                        color_jitter_chance=0.8,
+                        color_drop_chance=0.2,
+                        seed=None):
   def _transform(image):
     color_jitter_t = functools.partial(
         color_jitter, strength=color_jitter_strength, seed=seed)
-    image = random_apply(color_jitter_t, p=0.8, x=image)
-    return random_apply(to_grayscale, p=0.2, x=image)
-  return random_apply(_transform, p=p, x=image)
+    image = random_apply(color_jitter_t, p=color_jitter_chance, x=image, seed=seed)
+    return random_apply(to_grayscale, p=color_drop_chance, x=image, seed=seed)
+  return random_apply(_transform, p=p, x=image, seed=seed)
 
 
 @gin.configurable(blacklist=["image", "seed"])
@@ -371,7 +384,7 @@ def random_blur(image, image_size=gin.REQUIRED, p=1.0, seed=None):
     sigma = tf.random.uniform([], 0.1, 2.0, dtype=tf.float32, seed=seed)
     return gaussian_blur(
         image, kernel_size=image_size//10, sigma=sigma, padding='SAME')
-  return random_apply(_transform, p=p, x=image)
+  return random_apply(_transform, p=p, x=image, seed=seed)
 
 
 @gin.configurable(blacklist=["images", "seed"])
