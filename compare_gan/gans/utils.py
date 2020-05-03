@@ -263,7 +263,6 @@ def color_jitter_nonrand(image, brightness=0, contrast=0, saturation=0, hue=0):
 
     for i in range(4):
       image = apply_transform(i, image, brightness, contrast, saturation, hue)
-      image = tf.clip_by_value(image, 0., 1.)
     return image
 
 
@@ -311,7 +310,6 @@ def color_jitter_rand(image, brightness=0, contrast=0, saturation=0, hue=0, seed
     perm = tf.random_shuffle(tf.range(4), seed=seed)
     for i in range(4):
       image = apply_transform(perm[i], image)
-      image = tf.clip_by_value(image, 0., 1.)
     return image
 
 
