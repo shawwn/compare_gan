@@ -70,10 +70,13 @@ class CLGAN(modular_gan.ModularGAN):
 
 
   def random_crop_and_resize(self, images, ratio=0.08):
-    b, h, w, c = images.get_shape().as_list()
-    ch, cw = map(lambda x: int(x * ratio), (h, w))
-    crop = tf.random_crop(images, size=[b, ch, cw, 3])
-    crop = tf.image.resize(crop, [h, w])
+    def take_random_crop(img):
+      h, w, c = img.get_shape().as_list()
+      u = tf.random.uniform((), minval=ratio, maxval=1.0)
+      ch, cw = map(lambda x: tf.cast(x * ratio * u, dtype=tf.int32), (h, w))
+      crop = tf.random_crop(img, size=[ch, cw, 3])
+      return crop
+    crop = tf.map_fn(take_random_crop, images)
     crop = tf.image.random_flip_left_right(crop)
     return crop
 
