@@ -76,6 +76,14 @@ class CLGAN(modular_gan.ModularGAN):
     #fakes = utils.random_crop_and_resize(fakes)
     return fakes
 
+  def _preprocess_fn(self, images, labels, seed=None):
+    features, labels = super(CLGAN, self)._preprocess_fn(images, labels, seed=seed)
+    """Creates the feature dictionary with images and z."""
+    logging.info("CLGAN _preprocess_fn(): images=%s, labels=%s, seed=%s",
+                 images, labels, seed)
+    features["images_aug"] = utils.transform(images, seed=seed)
+    return features, labels
+
   def create_loss(self, features, labels, params, is_training=True):
     """Build the loss tensors for discriminator and generator.
 

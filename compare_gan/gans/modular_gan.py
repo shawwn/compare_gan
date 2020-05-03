@@ -38,7 +38,6 @@ from compare_gan.architectures import sndcgan
 from compare_gan.gans import consts as c
 from compare_gan.gans import loss_lib
 from compare_gan.gans import penalty_lib
-from compare_gan.gans import utils as gan_utils
 from compare_gan.gans.abstract_gan import AbstractGAN
 from compare_gan.tpu import tpu_random
 from compare_gan.tpu import tpu_summaries
@@ -445,7 +444,6 @@ class ModularGAN(AbstractGAN):
     tf.set_random_seed(seed)
     features = {
         "images": images,
-        "images_aug": gan_utils.transform(images, seed=seed),
         "z": self.z_generator([self._z_dim], name="z"),
         #"z_fixed": tpu_random.uniform([self._z_dim], name="z_fixed"),
     }
