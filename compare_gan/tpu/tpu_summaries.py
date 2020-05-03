@@ -124,15 +124,17 @@ class TpuSummaries(object):
     step = step[0]
     logging.info("host_call_fn: args=%s", args)
     with summary.create_file_writer(self._log_dir).as_default():
-      with summary.record_summaries_every_n_global_steps(
-              self._save_summary_steps, step):
-        for i, e in enumerate(self._scalar_entries):
-          value = e.reduce_fn(args[i])
-          e.summary_fn(e.name, value, step=step)
+      offset = 0
       with summary.record_summaries_every_n_global_steps(
               self._save_image_steps, step):
         for i, e in enumerate(self._image_entries):
-          value = e.reduce_fn(args[i])
+          value = e.reduce_fn(args[i + offset])
+          e.summary_fn(e.name, value, step=step)
+      offset += len(self._image_entries)
+      with summary.record_summaries_every_n_global_steps(
+              self._save_summary_steps, step):
+        for i, e in enumerate(self._scalar_entries):
+          value = e.reduce_fn(args[i + offset])
           e.summary_fn(e.name, value, step=step)
       return summary.all_summary_ops()
 
