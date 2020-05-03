@@ -33,6 +33,67 @@ import tensorflow as tf
 
 FLAGS = flags.FLAGS
 
+
+@gin.configurable(whitelist=["crop_method", "aspect_ratio_range", "area_range"])
+def transform_image(image, target_image_shape, crop_method="distorted", seed=None,
+                    aspect_ratio_range=[4.0 / 3.0, 3.0 / 4.0],
+                    area_range=[0.08, 1.00],
+                    ):
+  """Preprocesses ImageNet images to have a target image shape.
+
+  Args:
+    image: 3-D tensor with a single image.
+    target_image_shape: List/Tuple with target image shape.
+    crop_method: Method for cropping the image:
+      One of: distorted, random, middle, none
+    seed: Random seed, only used for `crop_method=distorted`.
+
+  Returns:
+    Image tensor with shape `target_image_shape`.
+  """
+  if crop_method == "distorted":
+    begin, size, _ = tf.image.sample_distorted_bounding_box(
+      tf.shape(image),
+      tf.zeros([0, 0, 4], tf.float32),
+      aspect_ratio_range=aspect_ratio_range,
+      area_range=area_range,
+      use_image_if_no_bounding_boxes=True,
+      seed=seed)
+    image = tf.slice(image, begin, size)
+    # Unfortunately, the above operation loses the depth-dimension. So we need
+    # to restore it the manual way.
+    image.set_shape([None, None, target_image_shape[-1]])
+  elif crop_method == "random":
+    tf.set_random_seed(seed)
+    shape = tf.shape(image)
+    h, w = shape[0], shape[1]
+    size = tf.minimum(h, w)
+    begin = [h - size, w - size] * tf.random.uniform([2], 0, 1)
+    begin = tf.cast(begin, tf.int32)
+    begin = tf.concat([begin, [0]], axis=0)  # Add channel dimension.
+    image = tf.slice(image, begin, [size, size, 3])
+  elif crop_method == "middle":
+    shape = tf.shape(image)
+    h, w = shape[0], shape[1]
+    size = tf.minimum(h, w)
+    begin = tf.cast([h - size, w - size], tf.float32) / 2.0
+    begin = tf.cast(begin, tf.int32)
+    begin = tf.concat([begin, [0]], axis=0)  # Add channel dimension.
+    image = tf.slice(image, begin, [size, size, 3])
+  elif crop_method != "none":
+    raise ValueError("Unsupported crop method: {}".format(crop_method))
+  image = tf.image.resize_images(
+    image, [target_image_shape[0], target_image_shape[1]],
+    method=tf.image.ResizeMethod.AREA)
+  image.set_shape(target_image_shape)
+  return image
+
+def transform_images(images):
+  b, h, w, c = images.get_shape().as_list()
+  crop = tf.map_fn(lambda x: transform_image(x, [h, w, c]), images)
+  crop = tf.image.random_flip_left_right(crop)
+  return crop
+
 # pylint: disable=not-callable
 @gin.configurable(blacklist=["kwargs"])
 class CLGAN(modular_gan.ModularGAN):
@@ -70,18 +131,20 @@ class CLGAN(modular_gan.ModularGAN):
 
 
   def random_crop_and_resize(self, images, ratio=0.08):
+    b, h, w, c = images.get_shape().as_list()
     def take_random_crop(img):
-      h, w, c = img.get_shape().as_list()
       u = tf.random.uniform((), minval=ratio, maxval=1.0)
       ch, cw = map(lambda x: tf.cast(x * ratio * u, dtype=tf.int32), (h, w))
-      crop = tf.random_crop(img, size=[ch, cw, 3])
-      return crop
-    crop = tf.map_fn(take_random_crop, images)
+      img = tf.random_crop(img, size=[ch, cw, 3])
+      return img
+    #crop = tf.map_fn(take_random_crop, images)
+    crop = tf.map_fn(lambda x: transform_image(x, [h, w, c]), images)
     crop = tf.image.random_flip_left_right(crop)
     return crop
 
   def _augment_reals(self, reals):
-    reals = self.random_crop_and_resize(reals)
+    #reals = self.random_crop_and_resize(reals)
+    reals = transform_images(reals)
     return reals
 
   def _augment_fakes(self, fakes):
