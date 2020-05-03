@@ -94,6 +94,40 @@ def transform_images(images):
   crop = tf.image.random_flip_left_right(crop)
   return crop
 
+def random_crop_and_resize(images,
+                           aspect_ratio_range = [4.0 / 3.0, 3.0 / 4.0],
+                           area_range = [0.08, 1.00],
+                           resize_method = tf.image.ResizeMethod.BILINEAR):
+  b, h, w, c = images.get_shape().as_list()
+  # def take_random_crop(img):
+  #   u = tf.random.uniform((), minval=ratio, maxval=1.0)
+  #   ch, cw = map(lambda x: tf.cast(x * ratio * u, dtype=tf.int32), (h, w))
+  #   img = tf.random_crop(img, size=[ch, cw, 3])
+  #   return img
+  def take_random_crop(img):
+    rmax, rmin = aspect_ratio_range
+    amin, amax = area_range
+    a = w * h
+    area = tf.random.uniform((), amin * a, amax * a)
+    d = tf.math.sqrt(area)
+    u = tf.random.uniform((), rmin, rmax)
+    fh = d * d / tf.math.sqrt(d * d / u);
+    fw = tf.math.sqrt(d * d / u)
+    ih = tf.cast(fh, tf.int32)
+    iw = tf.cast(fw, tf.int32)
+    #img = tf.random_crop(img, size=[ih, iw, 3])
+    begin = [h - ih, w - iw] * tf.random.uniform([2], 0, 1)
+    begin = tf.cast(begin, tf.int32)
+    begin = tf.concat([begin, [0]], axis=0)  # Add channel dimension.
+    img = tf.slice(img, begin, [ih, iw, 3])
+    img = tf.image.resize_images(img, [h, w], method=resize_method)
+    return img
+  crop = tf.map_fn(take_random_crop, images)
+  crop.set_shape([b, h, w, 3])
+  #crop = tf.map_fn(lambda x: transform_image(x, [h, w, c]), images)
+  crop = tf.image.random_flip_left_right(crop)
+  return crop
+
 # pylint: disable=not-callable
 @gin.configurable(blacklist=["kwargs"])
 class CLGAN(modular_gan.ModularGAN):
@@ -129,22 +163,8 @@ class CLGAN(modular_gan.ModularGAN):
       z_proj = z_proj / tf.reshape(tf.norm(z_proj, ord=2, axis=-1), [bs, 1])
       return z_proj
 
-
-  def random_crop_and_resize(self, images, ratio=0.08):
-    b, h, w, c = images.get_shape().as_list()
-    def take_random_crop(img):
-      u = tf.random.uniform((), minval=ratio, maxval=1.0)
-      ch, cw = map(lambda x: tf.cast(x * ratio * u, dtype=tf.int32), (h, w))
-      img = tf.random_crop(img, size=[ch, cw, 3])
-      return img
-    #crop = tf.map_fn(take_random_crop, images)
-    crop = tf.map_fn(lambda x: transform_image(x, [h, w, c]), images)
-    crop = tf.image.random_flip_left_right(crop)
-    return crop
-
   def _augment_reals(self, reals):
-    #reals = self.random_crop_and_resize(reals)
-    reals = transform_images(reals)
+    reals = random_crop_and_resize(reals)
     return reals
 
   def _augment_fakes(self, fakes):
