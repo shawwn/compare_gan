@@ -472,12 +472,25 @@ class ModularGAN(AbstractGAN):
     return self._dataset.input_fn(mode=mode, params=params,
                                   preprocess_fn=self._preprocess_fn)
 
-  def _split_inputs_and_generate_samples(self, features, labels, num_sub_steps):
+  def _augment_reals(self, reals):
+    return reals
+
+  def _augment_fakes(self, fakes):
+    return fakes
+
+  def _split_inputs(self, features, labels, num_sub_steps, params):
     # Encode labels.
     if self.conditional:
       assert "sampled_labels" in features
-      features["sampled_y"] = self._get_one_hot_labels(
-          features["sampled_labels"])
+      features["y"] = self._get_one_hot_labels(features["sampled_labels"])
+
+    # we augment here in order to augment all reals in a pass
+    assert "images" in features
+    images = features["images"]
+    images_aug = self._augment_reals(images)
+    if images != images_aug:
+      images_aug = tf.stop_gradient(images_aug)
+      features["images_aug"] = images_aug
 
     # Split inputs for sub-steps.
     fs = [(k, tf.split(features[k], num_sub_steps)) for k in features]
@@ -488,75 +501,116 @@ class ModularGAN(AbstractGAN):
     assert total_batch_size % num_sub_steps == 0
     batch_size = total_batch_size // num_sub_steps
 
-    if self._experimental_joint_gen_for_disc:
-      # Generate samples from G for D steps.
-      with tf.name_scope("gen_for_disc"):
+    for i, f in enumerate(fs):
+      assert "batch_labels" not in f
+      assert "batch_size" not in f
+      f["batch_labels"] = ls[i]
+      f["batch_total"] = total_batch_size
+      f["batch_size"] = batch_size
+      f["batch_index"] = i
+      f["batch_steps"] = num_sub_steps
+      f["batch_start"] = i * batch_size
+      f["batch_end"] = (i + 1) * batch_size
+      f["params"] = params.copy()
+      if "y" not in f:
+        f["y"] = None
+
+    ls_d = ls[0:-1]
+    fs_d = fs[0:-1]
+    for i, f in enumerate(fs_d):
+      f["disc_step"] = i
+      f["gen_step"] = -i - 1
+
+    ls_g = ls[-1:]
+    fs_g = fs[-1:]
+    for i, f in enumerate(fs_g):
+      f["gen_step"] = i
+      f["disc_step"] = -i - 1
+
+    features["split"] = (fs, ls)
+    features["split_d"] = (fs_d, ls_d)
+    features["split_g"] = (fs_g, ls_g)
+
+  def _generate_samples(self, features, labels, num_sub_steps, params):
+    fs_d, ls_d = features["split_d"]
+    fs_g, ls_g = features["split_g"]
+    with tf.name_scope("gen_for_disc"):
+      if self._experimental_joint_gen_for_disc:
+        d_batch_end = fs_d[-1]["batch_end"]
+        d_iters = len(fs_d)
+        # Generate samples from G for D steps.
         # Only the last sub-step changes the generator weights. Thus we can
         # combine all forward passes through G to achieve better efficiency.
         # The forward pass for G's step needs to be separated since compute
         # gradients for it.
-        z = features["z"][:batch_size * self._disc_iters]
+        z = features["z"][:d_batch_end]
         sampled_y = None
         if self.conditional:
-          sampled_y = features["sampled_y"][:batch_size * self._disc_iters]
-        generated = self.generator(z, y=sampled_y, is_training=True)
-        generated = tf.split(generated, self._disc_iters)
-        for i in range(self._disc_iters):
-          fs[i]["generated"] = generated[i]
-      # Generate samples from G for G step.
-      with tf.name_scope("gen_for_gen"):
-        sampled_y = fs[-1].get("sampled_y", None)
-        fs[-1]["generated"] = self.generator(fs[-1]["z"], y=sampled_y, is_training=True)
+          sampled_y = features["y"][:d_batch_end]
+        generated_d = self.generator(z, y=sampled_y, is_training=True)
+        generated_d = tf.stop_gradient(generated_d)
+        generated_ds = tf.split(generated_d, d_iters)
+        for i, f in enumerate(fs_d):
+          f["generated"] = generated_ds[i]
+        generated_d_aug = self._augment_fakes(generated_d)
+        if generated_d_aug != generated_d:
+          generated_d_aug = tf.stop_gradient(generated_d_aug)
+          generated_ds_aug = tf.split(generated_d_aug, d_iters)
+          for i, f in enumerate(fs_d):
+            f["generated_aug"] = generated_ds_aug[i]
+      else:
+        for f in fs_d:
+          generated_d = self.generator(f["z"], y=f["y"], is_training=True)
+          generated_d = tf.stop_gradient(generated_d)
+          f["generated"] = generated_d
+          generated_d_aug = self._augment_fakes(generated_d)
+          if generated_d_aug != generated_d:
+            generated_d_aug = tf.stop_gradient(generated_d_aug)
+            f["generated_aug"] = generated_d_aug
+    # Generate samples from G for G step.
+    with tf.name_scope("gen_for_gen"):
+      for i, f in enumerate(fs_g):
+        f["generated"] = self.generator(f["z"], y=f["y"], is_training=True)
+    # Log images.
+    for i, f in enumerate(fs_d):
+      self._add_images_to_summary(f["generated"], "d_{}_fake_images".format(i), params)
+      self._add_images_to_summary(f["images"], "d_{}_real_images".format(i), params)
+      if "generated_aug" in f:
+        self._add_images_to_summary(f["generated_aug"], "d_{}_fake_images_aug".format(i), params)
+      if "images_aug" in f:
+        self._add_images_to_summary(f["images_aug"], "d_{}_real_images_aug".format(i), params)
+    for i, f in enumerate(fs_g):
+      if i <= 0:
         if self._g_use_ema:
-          g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
-          with tf.variable_scope("", reuse=tf.AUTO_REUSE):
-            ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
-            # Create the variables that will be loaded from the checkpoint.
-            ema.apply(g_vars)
-          def ema_getter(getter, name, *args, **kwargs):
-            var = getter(name, *args, **kwargs)
-            ema_var = ema.average(var)
-            if ema_var is None:
-              var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
-                                       "accu_counter", "update_accus"}
-              if name.split("/")[-1] not in var_names_without_ema:
-                logging.warning("Could not find EMA variable for %s.", name)
-              return var
-            return ema_var
-          z = fs[-1]["z"]
-          y = sampled_y
-          with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
-            fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
-    else:
-      for f in fs:
-        sampled_y = f.get("sampled_y", None)
-        f["generated"] = self.generator(f["z"], y=sampled_y, is_training=True)
-        if self._g_use_ema:
-          g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
-          with tf.variable_scope("", reuse=tf.AUTO_REUSE):
-            ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
-            # Create the variables that will be loaded from the checkpoint.
-            ema.apply(g_vars)
-          def ema_getter(getter, name, *args, **kwargs):
-            var = getter(name, *args, **kwargs)
-            ema_var = ema.average(var)
-            if ema_var is None:
-              var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
-                                       "accu_counter", "update_accus"}
-              if name.split("/")[-1] not in var_names_without_ema:
-                logging.warning("Could not find EMA variable for %s.", name)
-              return var
-            return ema_var
-          z = f["z"]
-          y = sampled_y
-          with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
-            f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
+          generated_ema = self.generator_ema(f["z"], y=f["y"], is_training=True)
+          generated_ema = tf.stop_gradient(generated_ema)
+          self._add_images_to_summary(generated_ema, "fake_images_ema", params)
+        self._add_images_to_summary(f["generated"], "fake_images", params)
+        self._add_images_to_summary(f["images"], "real_images", params)
 
-    return fs, ls
+  def generator_ema(self, z, y, is_training):
+    if self._g_use_ema:
+      g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
+      with tf.variable_scope("", reuse=tf.AUTO_REUSE):
+        ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
+        # Create the variables that will be loaded from the checkpoint.
+        ema.apply(g_vars)
+
+      def ema_getter(getter, name, *args, **kwargs):
+        var = getter(name, *args, **kwargs)
+        ema_var = ema.average(var)
+        if ema_var is None:
+          var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
+                                   "accu_counter", "update_accus"}
+          if name.split("/")[-1] not in var_names_without_ema:
+            logging.warning("Could not find EMA variable for %s.", name)
+          return var
+        return ema_var
+
+      with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
+        return self.generator(z, y=y, is_training=is_training)
 
   def _train_discriminator(self, features, labels, step, optimizer, params):
-    features = features.copy()
-    features["generated"] = tf.stop_gradient(features["generated"])
     # Set the random offset tensor for operations in tpu_random.py.
     tpu_random.set_random_offset_from_features(features)
     # create_loss will set self.d_loss.
@@ -608,12 +662,31 @@ class ModularGAN(AbstractGAN):
     self._disc_step = n
     try:
       with tf.name_scope("disc_step_{}".format(n + 1)):
-        yield
-
+        with gin.config_scope("d_{}".format(n)):
+          yield
     finally:
       self._disc_step = prev
 
+  @contextlib.contextmanager
+  def with_gen_step(self, n):
+    prev = self._disc_step
+    self._disc_step = -n - 1
+    try:
+      with tf.name_scope("gen_step_{}".format(n + 1)):
+        with gin.config_scope("g_{}".format(n)):
+          yield
+    finally:
+      self._disc_step = prev
 
+  def scalar(self, i, category, name, op):
+    if self.disc_step < 0:
+      j = -self.disc_step - 1
+      fqn = "{}_g_step_{}/{:03d}_{}".format(category, j, i, name)
+    else:
+      j = self.disc_step
+      fqn = "{}_d_step_{}/{:03d}_{}".format(category, j, i, name)
+    self._tpu_summary.scalar(fqn, tf.identity(op, name=name))
+    return i + 5
 
   def model_fn(self, features, labels, params, mode):
     """Constructs the model for the given features and mode.
@@ -676,8 +749,10 @@ class ModularGAN(AbstractGAN):
     self._tpu_summary = tpu_summaries.TpuSummaries(self._model_dir)
 
     # Get features for each sub-step.
-    fs, ls = self._split_inputs_and_generate_samples(
-        features, labels, num_sub_steps=num_sub_steps)
+    self._split_inputs(features, labels, num_sub_steps=num_sub_steps, params=params)
+    self._generate_samples(features, labels, num_sub_steps=num_sub_steps, params=params)
+    fs_d, ls_d = features["split_d"]
+    fs_g, ls_g = features["split_g"]
 
     disc_optimizer = self.get_disc_optimizer(params["use_tpu"])
     disc_step = tf.get_variable(
@@ -688,12 +763,13 @@ class ModularGAN(AbstractGAN):
         optimizer=disc_optimizer,
         params=params)
 
+    assert len(fs_g) == 1 and len(ls_g) == 1
     gen_optimizer = self.get_gen_optimizer(params["use_tpu"])
     gen_step = tf.train.get_or_create_global_step()
     train_gen_fn = functools.partial(
         self._train_generator,
-        features=fs[-1],
-        labels=ls[-1],
+        features=fs_g[-1],
+        labels=ls_g[-1],
         step=gen_step,
         optimizer=gen_optimizer,
         params=params)
@@ -709,21 +785,15 @@ class ModularGAN(AbstractGAN):
     for i in range(d_steps):
       with self.with_disc_step(i):
         with tf.control_dependencies(d_losses):
-          d_loss = train_disc_fn(features=fs[i], labels=ls[i])
+          d_loss = train_disc_fn(features=fs_d[i], labels=ls_d[i])
           d_losses.append(d_loss)
+          self._tpu_summary.scalar("loss/d_{}".format(i), d_loss)
 
     # Train G.
     with tf.control_dependencies(d_losses):
       with tf.name_scope("gen_step"):
         g_loss = train_gen_fn()
-
-    for i, d_loss in enumerate(d_losses):
-      self._tpu_summary.scalar("loss/d_{}".format(i), d_loss)
-    self._tpu_summary.scalar("loss/g", g_loss)
-    if self._g_use_ema:
-      self._add_images_to_summary(fs[0]["generated_ema"], "fake_images_ema", params)
-    self._add_images_to_summary(fs[0]["generated"], "fake_images", params)
-    self._add_images_to_summary(fs[0]["images"], "real_images", params)
+        self._tpu_summary.scalar("loss/g", g_loss)
 
     self._check_variables()
     utils.log_parameter_overview(self.generator.trainable_variables,
@@ -799,19 +869,49 @@ class ModularGAN(AbstractGAN):
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
         d_fake_logits=d_fake_logits)
+    self.scalar(10, "loss", "d_orig_loss", self.d_loss)
+    self.scalar(15, "loss", "g_orig_loss", self.g_loss)
 
     penalty_loss = penalty_lib.get_penalty_loss(
         x=images, x_fake=generated, y=y, is_training=is_training,
         discriminator=self.discriminator)
-    self.d_loss += self._lambda * penalty_loss
+    if penalty_loss != 0.0:
+      penalty_loss *= self._lambda
+      self.d_loss += penalty_loss
+      self.scalar(50, "loss", "penalty", penalty_loss)
 
-  def flood_loss(self):
-    d_flood = self.options.get("d_flood", 0.0)
-    if d_flood > 0.0:
-      logging.info("Using d_flood=%f", d_flood)
-      self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
+  @gin.configurable
+  def flood_loss(self,
+                 d_flood_min=None,
+                 g_flood_min=None,
+                 d_flood_max=None,
+                 g_flood_max=None):
 
-    g_flood = self.options.get("g_flood", 0.0)
-    if g_flood > 0.0:
-      logging.info("Using g_flood=%f", g_flood)
-      self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+    # legacy config names
+    if d_flood_min is None:
+      d_flood_min = self.options.get("d_flood", None)
+    if g_flood_min is None:
+      g_flood_min = self.options.get("g_flood", None)
+
+    if d_flood_min != None:
+      logging.info("Using d_flood_min=%f", d_flood_min)
+      self.scalar(100, "loss", "d_flood_min", d_flood_min)
+      self.d_loss = tf.abs(self.d_loss - d_flood_min) + d_flood_min
+
+    if d_flood_max != None:
+      logging.info("Using d_flood_max=%f", d_flood_max)
+      self.scalar(105, "loss", "d_flood_max", d_flood_max)
+      self.d_loss = d_flood_max - tf.abs(d_flood_max - self.d_loss)
+
+    if g_flood_min != None:
+      logging.info("Using g_flood_min=%f", g_flood_min)
+      self.scalar(110, "loss", "g_flood_min", g_flood_min)
+      self.g_loss = tf.abs(self.g_loss - g_flood_min) + g_flood_min
+
+    if g_flood_max != None:
+      logging.info("Using g_flood_max=%f", g_flood_max)
+      self.scalar(115, "loss", "g_flood_max", g_flood_max)
+      self.g_loss = g_flood_max - tf.abs(g_flood_max - self.g_loss)
+
+    self.scalar(0, "loss", "g_final_loss", self.g_loss)
+    self.scalar(5, "loss", "d_final_loss", self.d_loss)

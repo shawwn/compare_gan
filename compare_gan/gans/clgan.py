@@ -68,6 +68,23 @@ class CLGAN(modular_gan.ModularGAN):
       z_proj = z_proj / tf.reshape(tf.norm(z_proj, ord=2, axis=-1), [bs, 1])
       return z_proj
 
+
+  def random_crop_and_resize(self, images, ratio=0.08):
+    b, h, w, c = images.get_shape().as_list()
+    ch, cw = map(lambda x: int(x * ratio), (h, w))
+    crop = tf.random_crop(images, size=[b, ch, cw, 3])
+    crop = tf.image.resize(crop, [h, w])
+    crop = tf.image.random_flip_left_right(crop)
+    return crop
+
+  def _augment_reals(self, reals):
+    reals = self.random_crop_and_resize(reals)
+    return reals
+
+  def _augment_fakes(self, fakes):
+    #fakes = self.random_crop_and_resize(fakes)
+    return fakes
+
   def create_loss(self, features, labels, params, is_training=True):
     """Build the loss tensors for discriminator and generator.
 
@@ -89,6 +106,8 @@ class CLGAN(modular_gan.ModularGAN):
     """
     images = features["images"]  # Input images.
     generated = features["generated"]  # Fake images.
+    images_aug = features["images_aug"] # Augmented real images.
+    #generated_aug = features["generated_aug"] # Augmented fake images.
     if self.conditional:
       y = self._get_one_hot_labels(labels)
       sampled_y = self._get_one_hot_labels(features["sampled_labels"])
@@ -100,19 +119,8 @@ class CLGAN(modular_gan.ModularGAN):
     # Batch size per core.
     bs = images.shape[0].value
 
-    # augment
-    def random_crop_and_resize(images, ratio=0.8):
-      b, h, w, c = images.get_shape().as_list()
-      ch, cw = map(lambda x: int(x * ratio), (h, w))
-      crop = tf.random_crop(images, size=[b, ch, cw, 3])
-      crop = tf.image.resize(crop, [h, w])
-      crop = tf.image.random_flip_left_right(crop)
-      return crop
-
-    aug_images = random_crop_and_resize(images)
-
     # concat all images
-    all_images = tf.concat([images, generated, aug_images], 0)
+    all_images = tf.concat([images, generated, images_aug], 0)
 
     if self.conditional:
       all_y = tf.concat([y, sampled_y, y], axis=0)
@@ -131,11 +139,16 @@ class CLGAN(modular_gan.ModularGAN):
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
         d_fake_logits=d_fake_logits)
+    self.scalar(10, "loss", "d_orig_loss", self.d_loss)
+    self.scalar(15, "loss", "g_orig_loss", self.g_loss)
 
     penalty_loss = penalty_lib.get_penalty_loss(
         x=images, x_fake=generated, y=y, is_training=is_training,
         discriminator=self.discriminator, architecture=self._architecture)
-    self.d_loss += self._lambda * penalty_loss
+    if penalty_loss != 0.0:
+      penalty_loss *= self._lambda
+      self.d_loss += penalty_loss
+      self.scalar(50, "loss", "penalty", penalty_loss)
 
     sims_logits = tf.matmul(z_projs_real, z_aug_projs_real, transpose_b=True)    
     sims_probs = tf.nn.softmax(sims_logits)
@@ -147,11 +160,7 @@ class CLGAN(modular_gan.ModularGAN):
       tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
     c_real_loss *= self._weight_contrastive_loss_d
 
-    name = "loss/d_{}_".format(self.disc_step)
-    self._tpu_summary.scalar(name + "without_simclr", tf.identity(self.d_loss, name="d_loss_without_simclr"))
+    self.scalar(40, "loss", "simclr_loss", c_real_loss)
+    self.scalar(45, "loss", "simclr_weight", self._weight_contrastive_loss_d)
     self.d_loss += c_real_loss
-
-    self._tpu_summary.scalar(name + "simclr", c_real_loss)
-    self._tpu_summary.scalar(name + "simclr_weight", self._weight_contrastive_loss_d)
-    self._tpu_summary.scalar(name + "penalty", penalty_loss)
 

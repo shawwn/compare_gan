@@ -27,7 +27,7 @@ import tensorflow as tf
 
 @gin.configurable
 def no_penalty():
-  return tf.constant(0.0)
+  return 0.0
 
 
 @gin.configurable(whitelist=[])
