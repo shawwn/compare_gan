@@ -137,9 +137,9 @@ class TpuSummaries(object):
     with summary.create_file_writer(os.path.join(self._log_dir, 'scalars')).as_default():
       with summary.record_summaries_every_n_global_steps(
             self._save_summary_steps, step):
-      for i, e in enumerate(self._scalar_entries):
-        value = e.reduce_fn(args[i + offset])
-        e.summary_fn(e.name, value, step=step)
+        for i, e in enumerate(self._scalar_entries):
+          value = e.reduce_fn(args[i + offset])
+          e.summary_fn(e.name, value, step=step)
       offset += len(self._scalar_entries)
       ops.append(summary.all_summary_ops())
     return tf.group(ops)
