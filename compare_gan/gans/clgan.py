@@ -144,10 +144,14 @@ class CLGAN(modular_gan.ModularGAN):
     sims_onehot = tf.one_hot(sim_labels, bs)
 
     c_real_loss = - tf.reduce_mean(
-        tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
+      tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
+    c_real_loss *= self._weight_contrastive_loss_d
 
-    self.d_loss += c_real_loss * self._weight_contrastive_loss_d
+    name = "loss/d_{}_".format(self.disc_step)
+    self._tpu_summary.scalar(name + "without_simclr", tf.identity(self.d_loss, name="d_loss_without_simclr"))
+    self.d_loss += c_real_loss
 
-    self._tpu_summary.scalar("loss/c_real_loss", c_real_loss)
-    self._tpu_summary.scalar("loss/penalty", penalty_loss)
+    self._tpu_summary.scalar(name + "simclr", c_real_loss)
+    self._tpu_summary.scalar(name + "simclr_weight", self._weight_contrastive_loss_d)
+    self._tpu_summary.scalar(name + "penalty", penalty_loss)
 
