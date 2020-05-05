@@ -148,6 +148,8 @@ class CLGAN(modular_gan.ModularGAN):
     c_real_loss *= self._weight_contrastive_loss_d
 
     name = "loss/d_{}_".format(self.disc_step)
+    self._tpu_summary.scalar(name + "without_flooding", tf.identity(self.d_loss, name="d_loss_without_flooding"))
+    self.flood_loss()
     self._tpu_summary.scalar(name + "without_simclr", tf.identity(self.d_loss, name="d_loss_without_simclr"))
     self.d_loss += c_real_loss
 
