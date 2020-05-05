@@ -5,6 +5,7 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 export TPU_HOST=${TPU_HOST:-10.255.128.2}
 #export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-24}"
 export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-28}"
+printf '\033]2;%s\033\\' "bigrun38 ${TPU_NAME}" # set tmux title
 export MODEL_DIR="${MODEL_DIR:-gs://darnbooru-euw4a/runs/bigrun38/}"
 export DATASETS=gs://danbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*
 export LABELS=""
