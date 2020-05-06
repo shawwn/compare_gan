@@ -67,7 +67,7 @@ run_config.save_checkpoints_steps = 250
 options.gan_class = @CLGAN
 CLGAN.weight_contrastive_loss_d = 5.0
 options.g_flood = 0.05
-options.d_flood = 0.20
+options.d_flood = 0.40
 
 options.image_grid_width = 4
 options.image_grid_height = 4
