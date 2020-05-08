@@ -404,12 +404,12 @@ def to_gray(img, c=None, axis=-1):
 
 def tf_similarity(images, **kws):
   #n, c, h, w = images.shape.as_list()
+  images = to_gray(images, c=3, axis=1)
   imgs1 = images
   imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
-  imgs1 = to_gray(imgs1, c=3, axis=1)
-  imgs2 = to_gray(imgs2, c=3, axis=1)
   #imgs2.set_shape([n, c, h, w])
-  return tf_ssim_multiscale(imgs1, imgs2, **kws)
+  #return tf_ssim_multiscale(imgs1, imgs2, **kws)
+  return tf_ssim(imgs1, imgs2, **kws)
   # result = tf.image.ssim_multiscale(_i(imgs1), _i(imgs2), 1.0)
   # result = tf.stop_gradient(result)
   # return result
