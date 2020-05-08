@@ -406,7 +406,8 @@ def tf_similarity(images, **kws):
   #n, c, h, w = images.shape.as_list()
   images = to_gray(images, c=3, axis=1)
   imgs1 = images
-  imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
+  #imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
+  imgs2 = tf.roll(images, 1, axis=0)
   #imgs2.set_shape([n, c, h, w])
   #return tf_ssim_multiscale(imgs1, imgs2, **kws)
   return tf_ssim(imgs1, imgs2, **kws)
