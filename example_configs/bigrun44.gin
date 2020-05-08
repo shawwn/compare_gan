@@ -82,3 +82,9 @@ ModularGAN.d_lr_mul = 1.0
 # Set SimCLR multiplier to 1.0
 CLGAN.weight_contrastive_loss_d = 1.0
 
+# Set SimCLR multiplier to 0.0
+CLGAN.weight_contrastive_loss_d = 0.0
+
+
+options.d_stop_g_above = 0.5
+options.g_fake_sim = 0.5

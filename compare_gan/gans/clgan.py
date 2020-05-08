@@ -155,14 +155,21 @@ class CLGAN(modular_gan.ModularGAN):
     real_sim = tf.reduce_mean(utils.tf_similarity(tf.transpose(images_all, [0, 3, 1, 2])))
     real_sim = tf.stop_gradient(real_sim)
     fake_sim = tf.reduce_mean(utils.tf_similarity(tf.transpose(generated_all, [0, 3, 1, 2])))
-    fake_sim = tf.stop_gradient(fake_sim)
+    #fake_sim = tf.stop_gradient(fake_sim)
     self._tpu_summary.scalar(name + "similarity_reals", tf.identity(real_sim, name="d_loss_similarity_reals"))
     self._tpu_summary.scalar(name + "similarity_fakes", tf.identity(fake_sim, name="d_loss_similarity_fakes"))
     self._tpu_summary.scalar(name + "without_flooding", tf.identity(self.d_loss, name="d_loss_without_flooding"))
     self.flood_loss()
     self._tpu_summary.scalar(name + "without_simclr", tf.identity(self.d_loss, name="d_loss_without_simclr"))
     self.d_loss += c_real_loss
-
+    g_fake_sim = self.options.get("g_fake_sim", 0.0)
+    d_fake_sim = self.options.get("d_fake_sim", 0.0)
+    if g_fake_sim != 0.0:
+      self.g_loss += g_fake_sim * fake_sim
+      self._tpu_summary.scalar(name + "fake_sim_loss_g", g_fake_sim * fake_sim)
+    if d_fake_sim != 0.0:
+      self.d_loss += d_fake_sim * fake_sim
+      self._tpu_summary.scalar(name + "fake_sim_loss_d", d_fake_sim * fake_sim)
     self._tpu_summary.scalar(name + "simclr", c_real_loss)
     self._tpu_summary.scalar(name + "simclr_weight", self._weight_contrastive_loss_d)
     self._tpu_summary.scalar(name + "penalty", penalty_loss)

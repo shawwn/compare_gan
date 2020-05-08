@@ -815,3 +815,20 @@ class ModularGAN(AbstractGAN):
     if g_flood > 0.0:
       logging.info("Using g_flood=%f", g_flood)
       self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+
+    d_stop_d_below = self.options.get("d_stop_d_below", None)
+    d_stop_g_above = self.options.get("d_stop_g_above", None)
+    g_stop_g_below = self.options.get("g_stop_g_below", None)
+    g_stop_d_above = self.options.get("g_stop_d_above", None)
+    if d_stop_d_below is not None:
+      logging.info("Using d_stop_d_below=%f", d_stop_d_below)
+      self.d_loss = tf.cond(tf.less(self.d_loss, d_stop_d_below), lambda: 0.0, lambda: self.d_loss)
+    if d_stop_g_above is not None:
+      logging.info("Using d_stop_g_above=%f", d_stop_g_above)
+      self.d_loss = tf.cond(tf.greater(self.g_loss, d_stop_g_above), lambda: 0.0, lambda: self.d_loss)
+    if g_stop_g_below is not None:
+      logging.info("Using g_stop_g_below=%f", g_stop_g_below)
+      self.g_loss = tf.cond(tf.less(self.g_loss, g_stop_g_below), lambda: 0.0, lambda: self.g_loss)
+    if g_stop_d_above is not None:
+      logging.info("Using g_stop_d_above=%f", g_stop_d_above)
+      self.g_loss = tf.cond(tf.greater(self.d_loss, g_stop_d_above), lambda: 0.0, lambda: self.g_loss)
