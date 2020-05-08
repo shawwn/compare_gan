@@ -399,8 +399,9 @@ def rgb_yiq(rgb):
   y1q = (0.212*p1r - 0.523*p1g + 0.311*p1b)
   return y1y, y1i, y1q
 
-def to_gray(img):
-  c = channels(img)
+def to_gray(img, c=None):
+  if c is None:
+    c = channels(img)
   if c == 3:
     y, i, q = rgb_yiq(img)
     return y
@@ -412,8 +413,8 @@ def tf_similarity(images, **kws):
   #n, c, h, w = images.shape.as_list()
   imgs1 = images
   imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
-  imgs1 = to_gray(imgs1)
-  imgs2 = to_gray(imgs2)
+  imgs1 = to_gray(imgs1, c=3)
+  imgs2 = to_gray(imgs2, c=3)
   #imgs2.set_shape([n, c, h, w])
   return tf_ssim_multiscale(imgs1, imgs2, **kws)
   # result = tf.image.ssim_multiscale(_i(imgs1), _i(imgs2), 1.0)
