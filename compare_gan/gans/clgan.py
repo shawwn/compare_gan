@@ -89,8 +89,10 @@ class CLGAN(modular_gan.ModularGAN):
     """
     images = features["images"]  # Input images.
     generated = features["generated"]  # Fake images.
-    images_all = utils.tpu_cross_replica_concat(features["images"], params["context"] if is_training else None)
-    generated_all = utils.tpu_cross_replica_concat(features["generated"], params["context"] if is_training else None)
+    #images_all = utils.tpu_cross_replica_concat(features["images"], params["context"] if is_training else None)
+    #generated_all = utils.tpu_cross_replica_concat(features["generated"], params["context"] if is_training else None)
+    images_all = images
+    generated_all = generated
     if self.conditional:
       y = self._get_one_hot_labels(labels)
       sampled_y = self._get_one_hot_labels(features["sampled_labels"])
