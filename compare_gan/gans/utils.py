@@ -307,7 +307,7 @@ def tf_gaussian(std=20, sigma=1.5):
 
 # https://stackoverflow.com/questions/47272699/need-tensorflow-keras-equivalent-for-scipy-signal-fftconvolve
 
-def tf_ssim(img1, img2, max_val, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, mode='full', cs_map=False):
+def tf_ssim(img1, img2, max_val=1.0, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, mode='full', cs_map=False):
   window = tf_fspecial_gauss(filter_size, filter_sigma)
   C1 = (k1*max_val)**2
   C2 = (k2*max_val)**2
