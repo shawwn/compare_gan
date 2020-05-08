@@ -278,27 +278,28 @@ def tf_fftconv(in1, in2, mode="full"):
   result = cropped
   return result
 
-def tf_fftconv(a, b, mode):
-  a = tf.transpose(a, [0, 2, 3, 1])
-  b = tf.transpose(b, [2, 3, 0, 1])
-  r = tf.nn.conv2d(a, b, [1, 1, 1, 1], 'VALID')
-  r = tf.transpose(r, [0, 3, 1, 2])
+def tf_fftconv(a, b, mode, cpu=False):
+  if cpu:
+    a = tf.transpose(a, [0, 2, 3, 1])
+  r = tf.nn.conv2d(a, b, [1, 1, 1, 1], 'VALID', data_format=('NHWC' if cpu else 'NCHW'))
+  if cpu:
+    r = tf.transpose(r, [0, 3, 1, 2])
   return r
 
 from tensorflow.python.ops import array_ops, math_ops
 
 def tf_fspecial_gauss(size, sigma):
     y, x = array_ops.meshgrid(math_ops.range(size)-5, math_ops.range(size)-5);
-    x = tf.cast(x[None, None, ...], dtype=tf.float32)
-    y = tf.cast(y[None, None, ...], dtype=tf.float32)
+    x = tf.cast(x[..., None, None], dtype=tf.float32)
+    y = tf.cast(y[..., None, None], dtype=tf.float32)
     g = tf.exp(-((x**2 + y**2)/(2.0*sigma**2)))
     r = g / tf.reduce_sum(g)
     return r
 
 def tf_gaussian(std=20, sigma=1.5):
     grid_x, grid_y = array_ops.meshgrid(math_ops.range(3 * std), math_ops.range(3 * std))
-    grid_x = tf.cast(grid_x[None, None, ...], 'float32')
-    grid_y = tf.cast(grid_y[None, None, ...], 'float32')
+    grid_x = tf.cast(grid_x[..., None, None], 'float32')
+    grid_y = tf.cast(grid_y[..., None, None], 'float32')
     gaussian = tf.exp(-((grid_x - sigma * std) ** 2 + (grid_y - sigma * std) ** 2) / std ** 2)
     gaussian = gaussian / tf.reduce_sum(gaussian)
     return gaussian
