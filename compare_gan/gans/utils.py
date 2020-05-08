@@ -310,14 +310,14 @@ def tf_ssim(img1, img2, max_val, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0
   window = tf_fspecial_gauss(filter_size, filter_sigma)
   C1 = (k1*max_val)**2
   C2 = (k2*max_val)**2
-  mu1 = tf_fftconv(window, img1, mode=mode)
-  mu2 = tf_fftconv(window, img2, mode=mode)
+  mu1 = tf_fftconv(img1, window, mode=mode)
+  mu2 = tf_fftconv(img2, window, mode=mode)
   mu1_sq = mu1*mu1
   mu2_sq = mu2*mu2
   mu1_mu2 = mu1*mu2
-  sigma1_sq = tf_fftconv(window, img1*img1, mode=mode) - mu1_sq
-  sigma2_sq = tf_fftconv(window, img2*img2, mode=mode) - mu2_sq
-  sigma12 = tf_fftconv(window, img1*img2, mode=mode) - mu1_mu2
+  sigma1_sq = tf_fftconv(img1*img1, window, mode=mode) - mu1_sq
+  sigma2_sq = tf_fftconv(img2*img2, window, mode=mode) - mu2_sq
+  sigma12 = tf_fftconv(img1*img2, window, mode=mode) - mu1_mu2
   if cs_map:
     return (((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*
                 (sigma1_sq + sigma2_sq + C2)),
