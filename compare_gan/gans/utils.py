@@ -383,17 +383,9 @@ def dimensions(img):
 def channels(img):
   return dimensions(img)[-1]
 
-def split_rgb(img):
-  w, h, c = dimensions(img)[-3:]
-  if c == 1:
-    return img, img, img
-  else:
-    assert c == 3
-    return tf.split(img, 3, axis=-1)
-
 # https://stackoverflow.com/a/46991488/9919772
 def rgb_yiq(rgb):
-  p1r, p1g, p1b = split_rgb(rgb)
+  p1r, p1g, p1b = tf.split(rgb, 3, axis=-1)
   y1y = (0.299*p1r + 0.587*p1g + 0.114*p1b)
   y1i = (0.596*p1r - 0.275*p1g - 0.321*p1b)
   y1q = (0.212*p1r - 0.523*p1g + 0.311*p1b)
