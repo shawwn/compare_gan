@@ -256,7 +256,8 @@ def tf_fftconv(in1, in2, mode="full"):
   # Extract shapes
   s1 = tf.convert_to_tensor(tf.shape(in1)[-2:])
   s2 = tf.convert_to_tensor(tf.shape(in2)[-2:])
-  shape = s1 + s2 - 1
+  #shape = s1 + s2 - 1
+  shape = s2
   # Compute convolution in fourier space
   sp1 = tf.signal.rfft2d(in1, shape)
   sp2 = tf.signal.rfft2d(in2, shape)
@@ -299,7 +300,7 @@ def tf_gaussian(std=20, sigma=1.5):
 
 # https://stackoverflow.com/questions/47272699/need-tensorflow-keras-equivalent-for-scipy-signal-fftconvolve
 
-def tf_ssim(img1, img2, max_val, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, mode='same', cs_map=False):
+def tf_ssim(img1, img2, max_val, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, mode='full', cs_map=False):
   window = tf_fspecial_gauss(filter_size, filter_sigma)
   C1 = (k1*max_val)**2
   C2 = (k2*max_val)**2
