@@ -254,15 +254,15 @@ def tf_fftconv(in1, in2, mode="full"):
   #in1 = tf.transpose(in1, perm=[0, 3, 1, 2])
   #in2 = tf.transpose(in2, perm=[0, 3, 1, 2])
   # Extract shapes
-  #s1 = tf.convert_to_tensor(tf.shape(in1)[-2:])
+  s1 = tf.convert_to_tensor(tf.shape(in1)[-2:])
   s2 = tf.convert_to_tensor(tf.shape(in2)[-2:])
   #shape = s1 + s2 - 1
   shape = s2
   # Compute convolution in fourier space
   sp1 = tf.signal.rfft2d(in1, shape)
   sp2 = tf.signal.rfft2d(in2, shape)
-  #ret = tf.signal.irfft2d(sp1 * sp2, shape) # not implemented on TPUs
-  ret = tf.signal.irfft(tf.linalg.matrix_transpose(tf.signal.ifft(tf.linalg.matrix_transpose(sp1 * sp2))))
+  ret = tf.signal.irfft2d(sp1 * sp2, shape) # not implemented on TPUs
+  #ret = tf.signal.irfft(tf.linalg.matrix_transpose(tf.signal.ifft(tf.linalg.matrix_transpose(sp1 * sp2))))
   # Crop according to mode
   if mode == "full":
     cropped = ret
