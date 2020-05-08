@@ -414,7 +414,11 @@ def tf_similarity(images, **kws):
   imgs2 = tf.roll(images, 1, axis=0)
   #imgs2.set_shape([n, c, h, w])
   #return tf_ssim_multiscale(imgs1, imgs2, **kws)
-  return tf_ssim(imgs1, imgs2, mean=True, **kws)
+  x = tf_ssim(imgs1, imgs2, mean=True, **kws)
+  for i in range(7):
+    imgs2 = tf.roll(images, 1, axis=0)
+    x += tf_ssim(imgs1, imgs2, mean=True, **kws)
+  return x
   # result = tf.image.ssim_multiscale(_i(imgs1), _i(imgs2), 1.0)
   # result = tf.stop_gradient(result)
   # return result
