@@ -89,6 +89,8 @@ class CLGAN(modular_gan.ModularGAN):
     """
     images = features["images"]  # Input images.
     generated = features["generated"]  # Fake images.
+    images_all = utils.tpu_cross_replica_concat(features["images"], params["context"] if is_training else None)
+    generated_all = utils.tpu_cross_replica_concat(features["generated"], params["context"] if is_training else None)
     if self.conditional:
       y = self._get_one_hot_labels(labels)
       sampled_y = self._get_one_hot_labels(features["sampled_labels"])
@@ -148,6 +150,10 @@ class CLGAN(modular_gan.ModularGAN):
     c_real_loss *= self._weight_contrastive_loss_d
 
     name = "loss/d_{}_".format(self.disc_step)
+    real_sim = tf.reduce_mean(utils.tf_similarity(images_all))
+    fake_sim = tf.reduce_mean(utils.tf_similarity(generated_all))
+    self._tpu_summary.scalar(name + "similarity_reals", tf.identity(real_sim, name="d_loss_similarity_reals"))
+    self._tpu_summary.scalar(name + "similarity_fakes", tf.identity(fake_sim, name="d_loss_similarity_fakes"))
     self._tpu_summary.scalar(name + "without_flooding", tf.identity(self.d_loss, name="d_loss_without_flooding"))
     self.flood_loss()
     self._tpu_summary.scalar(name + "without_simclr", tf.identity(self.d_loss, name="d_loss_without_simclr"))
