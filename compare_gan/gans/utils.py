@@ -307,7 +307,7 @@ def tf_gaussian(std=20, sigma=1.5):
 
 # https://stackoverflow.com/questions/47272699/need-tensorflow-keras-equivalent-for-scipy-signal-fftconvolve
 
-def tf_ssim(img1, img2, max_val=1.0, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, mode='full', cs_map=False):
+def tf_ssim(img1, img2, max_val=1.0, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, mode='full', cs_map=False, mean=False):
   window = tf_fspecial_gauss(filter_size, filter_sigma)
   C1 = (k1*max_val)**2
   C2 = (k2*max_val)**2
@@ -320,12 +320,16 @@ def tf_ssim(img1, img2, max_val=1.0, filter_size=11, filter_sigma=1.5, k1=0.01, 
   sigma2_sq = tf_fftconv(img2*img2, window, mode=mode) - mu2_sq
   sigma12 = tf_fftconv(img1*img2, window, mode=mode) - mu1_mu2
   if cs_map:
+    assert not mean
     return (((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*
                 (sigma1_sq + sigma2_sq + C2)),
             (2.0*sigma12 + C2)/(sigma1_sq + sigma2_sq + C2))
   else:
-    return ((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*
+    result = ((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*
                 (sigma1_sq + sigma2_sq + C2))
+    if mean:
+      result = tf.reduce_mean(tf.reshape(result, [tf.shape(result)[0], -1]), axis=1)
+    return result
 
 import gin
 
@@ -410,7 +414,7 @@ def tf_similarity(images, **kws):
   imgs2 = tf.roll(images, 1, axis=0)
   #imgs2.set_shape([n, c, h, w])
   #return tf_ssim_multiscale(imgs1, imgs2, **kws)
-  return tf_ssim(imgs1, imgs2, **kws)
+  return tf_ssim(imgs1, imgs2, mean=True, **kws)
   # result = tf.image.ssim_multiscale(_i(imgs1), _i(imgs2), 1.0)
   # result = tf.stop_gradient(result)
   # return result
