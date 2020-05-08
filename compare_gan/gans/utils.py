@@ -251,10 +251,10 @@ def _centered(arr, newshape):
 
 def tf_fftconv(in1, in2, mode="full"):
   # Reorder channels to come second (needed for fft)
-  in1 = tf.transpose(in1, perm=[0, 3, 1, 2])
-  in2 = tf.transpose(in2, perm=[0, 3, 1, 2])
+  #in1 = tf.transpose(in1, perm=[0, 3, 1, 2])
+  #in2 = tf.transpose(in2, perm=[0, 3, 1, 2])
   # Extract shapes
-  s1 = tf.convert_to_tensor(tf.shape(in1)[-2:])
+  #s1 = tf.convert_to_tensor(tf.shape(in1)[-2:])
   s2 = tf.convert_to_tensor(tf.shape(in2)[-2:])
   #shape = s1 + s2 - 1
   shape = s2
@@ -274,7 +274,8 @@ def tf_fftconv(in1, in2, mode="full"):
     raise ValueError("Acceptable mode flags are 'valid',"
                      " 'same', or 'full'.")
   # Reorder channels to last
-  result = tf.transpose(cropped, perm=[0, 2, 3, 1])
+  #result = tf.transpose(cropped, perm=[0, 2, 3, 1])
+  result = cropped
   return result
 
 
@@ -283,16 +284,16 @@ from tensorflow.python.ops import array_ops, math_ops
 
 def tf_fspecial_gauss(size, sigma):
     y, x = array_ops.meshgrid(math_ops.range(size)-5, math_ops.range(size)-5);
-    x = tf.cast(x[None, ..., None], dtype=tf.float32)
-    y = tf.cast(y[None, ..., None], dtype=tf.float32)
+    x = tf.cast(x[None, None, ...], dtype=tf.float32)
+    y = tf.cast(y[None, None, ...], dtype=tf.float32)
     g = tf.exp(-((x**2 + y**2)/(2.0*sigma**2)))
     r = g / tf.reduce_sum(g)
     return r
 
 def tf_gaussian(std=20, sigma=1.5):
     grid_x, grid_y = array_ops.meshgrid(math_ops.range(3 * std), math_ops.range(3 * std))
-    grid_x = tf.cast(grid_x[None, ..., None], 'float32')
-    grid_y = tf.cast(grid_y[None, ..., None], 'float32')
+    grid_x = tf.cast(grid_x[None, None, ...], 'float32')
+    grid_y = tf.cast(grid_y[None, None, ...], 'float32')
     gaussian = tf.exp(-((grid_x - sigma * std) ** 2 + (grid_y - sigma * std) ** 2) / std ** 2)
     gaussian = gaussian / tf.reduce_sum(gaussian)
     return gaussian
@@ -327,7 +328,7 @@ import gin
 @gin.configurable(whitelist=['filter_size', 'filter_sigma', 'k1', 'k2', 'weights'])
 def tf_ssim_multiscale(img1, img2, max_val=1.0,
     filter_size=11, filter_sigma=1.5,
-    k1=0.01, k2=0.03, weights=None, data_format='NHWC'):
+    k1=0.01, k2=0.03, weights=None, data_format='NCHW'):
   # if img1.shape != img2.shape:
   #   raise RuntimeError('Input images must have the same shape (%s vs. %s).',
   #                      img1.shape, img2.shape)
@@ -340,6 +341,8 @@ def tf_ssim_multiscale(img1, img2, max_val=1.0,
   levels = len(weights)
   weights = tf.constant(weights, dtype=tf.float32)
   im1, im2 = img1, img2
+  n1, c1, h1, w1 = img1.shape
+  n2, c2, h2, w2 = img2.shape
   mssim = None
   mcs = None
   for _ in range(levels):
@@ -354,15 +357,18 @@ def tf_ssim_multiscale(img1, img2, max_val=1.0,
     mcs = cs if mcs is None else tf.concat([mcs, cs], axis=1)
     im1 = downsample_2d(im1, data_format=data_format)
     im2 = downsample_2d(im2, data_format=data_format)
+    h1 //= 2
+    w1 //= 2
+    h2 //= 2
+    w2 //= 2
+    im1.set_shape([n1, c1, h1, w1])
+    im2.set_shape([n2, c2, h2, w2])
   a = mssim[:, -1] ** weights[-1]
   b = mcs[:, 0:-1] ** weights[0:-1]
   b = tf.reduce_prod(b, axis=1)
   return a * b
 
 def tf_similarity(images, **kws):
-  n = images.shape.as_list()[0]
-  idx1 = tf.range(n)
-  idx2 = tf.concat([idx1[1:], idx1[0:1]], axis=0)
-  imgs1 = tf.gather(images, idx1, axis=0)
-  imgs2 = tf.gather(images, idx2, axis=0)
+  imgs1 = images
+  imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
   return tf_ssim_multiscale(imgs1, imgs2, **kws)

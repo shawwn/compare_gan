@@ -152,8 +152,8 @@ class CLGAN(modular_gan.ModularGAN):
     c_real_loss *= self._weight_contrastive_loss_d
 
     name = "loss/d_{}_".format(self.disc_step)
-    real_sim = tf.reduce_mean(utils.tf_similarity(images_all))
-    fake_sim = tf.reduce_mean(utils.tf_similarity(generated_all))
+    real_sim = tf.reduce_mean(utils.tf_similarity(tf.transpose(images_all, [0, 3, 1, 2])))
+    fake_sim = tf.reduce_mean(utils.tf_similarity(tf.transpose(generated_all, [0, 3, 1, 2])))
     self._tpu_summary.scalar(name + "similarity_reals", tf.identity(real_sim, name="d_loss_similarity_reals"))
     self._tpu_summary.scalar(name + "similarity_fakes", tf.identity(fake_sim, name="d_loss_similarity_fakes"))
     self._tpu_summary.scalar(name + "without_flooding", tf.identity(self.d_loss, name="d_loss_without_flooding"))
