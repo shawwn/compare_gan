@@ -260,7 +260,8 @@ def tf_fftconv(in1, in2, mode="full"):
   # Compute convolution in fourier space
   sp1 = tf.signal.rfft2d(in1, shape)
   sp2 = tf.signal.rfft2d(in2, shape)
-  ret = tf.signal.irfft2d(sp1 * sp2, shape)
+  #ret = tf.signal.irfft2d(sp1 * sp2, shape) # not implemented on TPUs
+  ret = tf.signal.irfft(tf.linalg.matrix_transpose(tf.signal.ifft(tf.linalg.matrix_transpose(sp1 * sp2))))
   # Crop according to mode
   if mode == "full":
     cropped = ret
