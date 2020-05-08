@@ -368,6 +368,9 @@ def tf_ssim_multiscale(img1, img2, max_val=1.0,
   b = tf.reduce_prod(b, axis=1)
   return a * b
 
+def _i(x): return tf.transpose(x, [0,2,3,1])
+def _o(x): return tf.transpose(x, [0,3,1,2])
+
 def tf_similarity(images, **kws):
   imgs1 = images
   imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
