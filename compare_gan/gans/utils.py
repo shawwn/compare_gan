@@ -376,10 +376,44 @@ def tf_ssim_multiscale(img1, img2, max_val=1.0,
 def _i(x): return tf.transpose(x, [0,2,3,1])
 def _o(x): return tf.transpose(x, [0,3,1,2])
 
+
+def dimensions(img):
+  return img.shape.as_list()
+
+def channels(img):
+  return dimensions(img)[-1]
+
+def split_rgb(img):
+  w, h, c = dimensions(img)[-3:]
+  if c == 1:
+    return img, img, img
+  else:
+    assert c == 3
+    return tf.split(img, 3, axis=-1)
+
+# https://stackoverflow.com/a/46991488/9919772
+def rgb_yiq(rgb):
+  p1r, p1g, p1b = split_rgb(rgb)
+  y1y = (0.299*p1r + 0.587*p1g + 0.114*p1b)
+  y1i = (0.596*p1r - 0.275*p1g - 0.321*p1b)
+  y1q = (0.212*p1r - 0.523*p1g + 0.311*p1b)
+  return y1y, y1i, y1q
+
+def to_gray(img):
+  c = channels(img)
+  if c == 3:
+    y, i, q = rgb_yiq(img)
+    return y
+  else:
+    assert c == 1
+    return img
+
 def tf_similarity(images, **kws):
   #n, c, h, w = images.shape.as_list()
   imgs1 = images
   imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
+  imgs1 = to_gray(imgs1)
+  imgs2 = to_gray(imgs2)
   #imgs2.set_shape([n, c, h, w])
   return tf_ssim_multiscale(imgs1, imgs2, **kws)
   # result = tf.image.ssim_multiscale(_i(imgs1), _i(imgs2), 1.0)
