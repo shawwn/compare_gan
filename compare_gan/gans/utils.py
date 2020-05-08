@@ -371,4 +371,7 @@ def tf_ssim_multiscale(img1, img2, max_val=1.0,
 def tf_similarity(images, **kws):
   imgs1 = images
   imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
-  return tf_ssim_multiscale(imgs1, imgs2, **kws)
+  #return tf_ssim_multiscale(imgs1, imgs2, **kws)
+  result = tf.image.ssim_multiscale(imgs1, imgs2, 1.0)
+  result = tf.stop_gradient(result)
+  return result
