@@ -372,8 +372,10 @@ def _i(x): return tf.transpose(x, [0,2,3,1])
 def _o(x): return tf.transpose(x, [0,3,1,2])
 
 def tf_similarity(images, **kws):
+  n, c, h, w = images.shape.as_list()
   imgs1 = images
   imgs2 = tf.concat([imgs1[0:-1], [imgs1[-1]]], axis=0)
+  imgs2.set_shape([n, c, h, w])
   #return tf_ssim_multiscale(imgs1, imgs2, **kws)
   result = tf.image.ssim_multiscale(_i(imgs1), _i(imgs2), 1.0)
   result = tf.stop_gradient(result)
