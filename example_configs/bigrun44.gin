@@ -95,7 +95,7 @@ run_config.iterations_per_loop = 50
 run_config.experimental_host_call_every_n_steps = 50
 #TpuSummaries.save_image_steps = 50
 #options.g_fake_sim = 0.1
-options.d_flood = 0.60
-options.d_fake_sim = 1.0
-options.g_fake_sim = 4.0
+options.d_flood = 0.65
+#options.d_fake_sim = 1.0
+#options.g_fake_sim = 4.0
 
