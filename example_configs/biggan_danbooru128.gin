@@ -23,7 +23,7 @@ ModularGAN.conditional = True
 options.batch_size = 2048
 options.gan_class = @ModularGAN
 options.lamba = 1
-options.training_steps = 2500000
+options.training_steps = 250000
 weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 
@@ -71,3 +71,5 @@ options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-
 ModularGAN.g_lr_mul = 0.25
 ModularGAN.d_lr_mul = 0.25
 
+# Bump flood level
+options.g_flood = 0.10
