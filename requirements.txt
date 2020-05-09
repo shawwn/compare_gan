@@ -4,3 +4,4 @@ gin-config>=0.3.0
 tensorflow-datasets==1.0.1
 tensorflow-gan==0.0.0.dev0
 scipy>=1.4.1
+PyGithub==1.51
