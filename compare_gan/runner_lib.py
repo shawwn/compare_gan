@@ -345,6 +345,7 @@ def run_with_schedule(schedule, run_config, task_manager, options, use_tpu,
         gin.tf.GinConfigSaverHook(run_config.model_dir),
         hooks.ReportProgressHook(task_manager,
                                  max_steps=options["training_steps"]),
+        hooks.UpdateVariablesHook(),
     ]
     if run_config.save_checkpoints_steps:
       # This replaces the default checkpoint saver hook in the estimator.

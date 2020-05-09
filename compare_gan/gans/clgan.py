@@ -145,7 +145,8 @@ class CLGAN(modular_gan.ModularGAN):
 
     c_real_loss = - tf.reduce_mean(
       tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
-    c_real_loss *= self._weight_contrastive_loss_d
+    weight = self.get_var("CLGAN.weight_contrastive_loss_d", self._weight_contrastive_loss_d)
+    c_real_loss *= weight
 
     name = "loss/d_{}_".format(self.disc_step)
     self._tpu_summary.scalar(name + "without_flooding", tf.identity(self.d_loss, name="d_loss_without_flooding"))

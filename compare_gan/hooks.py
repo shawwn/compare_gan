@@ -24,6 +24,7 @@ import time
 from absl import logging
 import tensorflow as tf
 
+import gin
 
 class AsyncCheckpointSaverHook(tf.contrib.tpu.AsyncCheckpointSaverHook):
   """Saves checkpoints every N steps in a asynchronous thread.
@@ -146,3 +147,38 @@ class ReportProgressHook(EveryNSteps):
         100 * step / self.max_steps, step, steps_per_sec, eta_seconds / 60)
     logging.info("Reporting progress: %s", message)
     self.task_manager.report_progress(message)
+
+from . import tensorfork_tf as ttf
+
+@gin.configurable
+class UpdateVariablesHook(EveryNSteps):
+  """SessionRunHook that reports progress to a `TaskManager` instance."""
+
+  def __init__(self, every_n_steps=25):
+    """Create a new instance of UpdateVariablesHook.
+
+    Args:
+      task_manager: A `TaskManager` instance that implements report_progress().
+      max_steps: Maximum number of training steps.
+      every_n_steps: How frequently the hook should report progress.
+    """
+    super(UpdateVariablesHook, self).__init__(every_n_steps=every_n_steps)
+    logging.info("Creating UpdateVariablesHook to update variables every %d "
+                 "steps.", every_n_steps)
+    self.start_time = None
+    self.start_step = None
+
+  def after_create_session(self, session=None, coord=None):
+    assert session is not None
+    with session.as_default():
+      logging.info("Updating vars...")
+      ttf.update_vars()
+
+  def every_n_steps_after_run(self, step, run_context, run_values):
+    logging.info("Updating vars. every_n_steps_after_run(step=%s, session=%s)", step, run_context.session)
+    if self.start_time is None:
+      # First call.
+      self.start_time = time.time()
+      self.start_step = step
+    with run_context.session.as_default():
+      ttf.update_vars()

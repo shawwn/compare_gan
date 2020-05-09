@@ -40,6 +40,7 @@ import gin
 import gin.tf.external_configurables
 import tensorflow as tf
 
+from compare_gan import tensorfork
 
 FLAGS = flags.FLAGS
 
@@ -66,6 +67,9 @@ flags.DEFINE_integer(
 
 flags.DEFINE_bool("use_tpu", None, "Whether running on TPU or not.")
 
+flags.DEFINE_string(
+  "tensorfork_run", None,
+  "Title of tensorfork run. Create a run by creating an issue on https://github.com/tensorfork/tensorfork/issues")
 
 def _get_cluster():
   if not FLAGS.use_tpu:  # pylint: disable=unreachable
@@ -114,12 +118,14 @@ def _get_task_manager():
   return runner_lib.TaskManagerWithCsvResults(
       model_dir=FLAGS.model_dir, score_file=score_file)
 
-
 def main(unused_argv):
-  logging.info("Gin config: %s\nGin bindings: %s",
-               FLAGS.gin_config, FLAGS.gin_bindings)
-  gin.parse_config_files_and_bindings(FLAGS.gin_config, FLAGS.gin_bindings)
-
+  tensorfork.get(FLAGS.tensorfork_run)
+  FLAGS.model_dir = tensorfork.get()['meta']['logdir']
+  gin_config = FLAGS.gin_config
+  gin_bindings = tensorfork.get()['gin_bindings']
+  gin_bindings += FLAGS.gin_bindings
+  logging.info("Gin config: %s\nGin bindings: %s", gin_config, gin_bindings)
+  gin.parse_config_files_and_bindings(gin_config, gin_bindings)
 
   if FLAGS.use_tpu is None:
     FLAGS.use_tpu = bool(os.environ.get("TPU_NAME", ""))
