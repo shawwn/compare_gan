@@ -73,3 +73,7 @@ ModularGAN.d_lr_mul = 0.25
 
 # Bump flood level
 options.g_flood = 0.10
+
+# Disable flooding
+options.g_flood = 0.0
+options.d_flood = 0.0
