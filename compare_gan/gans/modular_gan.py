@@ -742,14 +742,14 @@ class ModularGAN(AbstractGAN):
 
   def get_var(self, name, *args, **kws):
     v = ttf.get_var(name, *args, **kws)
-    self._tpu_summary.scalar(v.name, v, scope='')
+    self._tpu_summary.scalar(v.name, v)
     return v
 
   def get_disc_optimizer(self, use_tpu=True):
     lr_base = ttf.get_var("ModularGAN.d_lr", self._d_lr)
     lr_mul = ttf.get_var("ModularGAN.d_lr_mul", self._d_lr_mul)
     lr = lr_base * lr_mul
-    self._tpu_summary.scalar(lr_base.name, lr, scope='')
+    self._tpu_summary.scalar(lr_base.name, lr)
     kws = {}
     if issubclass(self._d_optimizer_fn, tf.train.AdamOptimizer):
       logging.info("Setting beta1 and beta2 for discriminator's tf.train.AdamOptimizer")
@@ -764,7 +764,7 @@ class ModularGAN(AbstractGAN):
     lr_base = ttf.get_var("ModularGAN.g_lr", self._g_lr)
     lr_mul = ttf.get_var("ModularGAN.g_lr_mul", self._g_lr_mul)
     lr = lr_base * lr_mul
-    self._tpu_summary.scalar(lr_base.name, lr, scope='')
+    self._tpu_summary.scalar(lr_base.name, lr)
     kws = {}
     if issubclass(self._g_optimizer_fn, tf.train.AdamOptimizer):
       logging.info("Setting beta1 and beta2 for generator's tf.train.AdamOptimizer")
