@@ -864,28 +864,28 @@ class ModularGAN(AbstractGAN):
     self.d_loss, d_loss_real, d_loss_fake, self.g_loss = loss_lib.get_losses(
       d_real=prob_real, d_fake=prob_fake, d_real_logits=logits_real,
       d_fake_logits=logits_fake)
-    self.scalar(category, "010_g_loss_without_flooding", self.g_loss)
-    self.scalar(category, "020_d_loss_without_flooding", self.d_loss)
+    self.scalar(category, "002_d_prob_fake", prob_fake)
+    self.scalar(category, "003_d_prob_real", prob_real)
+    self.scalar(category, "004_d_loss_fake", d_loss_fake)
+    self.scalar(category, "005_d_loss_real", d_loss_real)
+    self.scalar(category, "010_d_loss_without_flooding", self.d_loss)
+    self.scalar(category, "020_g_loss_without_flooding", self.g_loss)
     self.flood_loss()
-    self.scalar(category, "011_g_loss_without_stop", self.g_loss)
-    self.scalar(category, "021_d_loss_without_stop", self.d_loss)
+    self.scalar(category, "011_d_loss_without_stop", self.d_loss)
+    self.scalar(category, "021_g_loss_without_stop", self.g_loss)
     self.stop_loss()
 
     penalty_loss = penalty_lib.get_penalty_loss(
       x=images, x_fake=generated, y=y, is_training=is_training,
       discriminator=self.discriminator, architecture=self._architecture)
     if penalty_loss != 0.0:
-      self.scalar(category, "022_d_loss_without_penalty", self.d_loss)
-      self.scalar(category, "023_d_penalty", penalty_loss)
+      self.scalar(category, "012_d_loss_without_penalty", self.d_loss)
+      self.scalar(category, "013_d_penalty", penalty_loss)
       self.d_loss += self._lambda * penalty_loss
 
   def end_losses(self, category):
-    self.scalar(category, "000_g_loss", self.g_loss)
-    self.scalar(category, "001_d_loss", self.d_loss)
-    self.scalar(category, "002_d_prob_fake", prob_fake)
-    self.scalar(category, "003_d_prob_real", prob_real)
-    self.scalar(category, "004_d_loss_fake", d_loss_fake)
-    self.scalar(category, "005_d_loss_real", d_loss_real)
+    self.scalar(category, "000_d_loss", self.d_loss)
+    self.scalar(category, "001_g_loss", self.g_loss)
 
   def get_option_var(self, name, default):
     value = self.options.get(name, default)
