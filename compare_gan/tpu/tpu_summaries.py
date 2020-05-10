@@ -72,8 +72,8 @@ class TpuSummaries(object):
 
   def __init__(self, log_dir, run_name='run', save_summary_steps=1, save_image_steps=50):
     assert re.match('^[a-z0-9]+[a-z-_0-9/]*$', run_name)
-    assert '//' not in log_name
-    assert not log_name.endswith('/')
+    assert '//' not in run_name
+    assert not run_name.endswith('/')
     self._log_dir = log_dir
     self._run_name = run_name
     self._log_date = time.strftime('%Y-%M-%d')
