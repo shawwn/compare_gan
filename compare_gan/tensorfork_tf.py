@@ -6,6 +6,8 @@ import threading
 import gin
 import gin.tf.external_configurables
 
+from absl import logging
+
 class Context:
   def __init__(self):
     pass
@@ -77,6 +79,22 @@ def eval(variable, session=None, timeout_in_ms=None):
   if timeout_in_ms:
     options=config_pb2.RunOptions(timeout_in_ms=timeout_in_ms)
   return session.run(variable, options=options)
+
+def run(ops, timeout=10.0, session=None, **kws):
+  if not isinstance(ops, list):
+    ops = [ops]
+  session = session or tf.get_default_session()
+  if session is None:
+    logging.warning('Session is None')
+    return None
+  assert 'options' not in kws
+  options = None
+  if timeout is not None:
+    options=config_pb2.RunOptions(timeout_in_ms=int(timeout*1000))
+  return session.run(ops, options=options, **kws)
+
+def run2(ops, timeout=20.0, session=None, **kws):
+  return run(ops, timeout=timeout, session=session, **kws)
 
 import re
 
@@ -218,7 +236,7 @@ def rm(filename):
     traceback.print_exc()
     return False
 
-def update_vars(name=None, skip_unknown=False, session=None):
+def heartbeat(session=None):
   session = session or tf.get_default_session()
   if session is None:
     logging.warning('Session is None')
@@ -226,14 +244,18 @@ def update_vars(name=None, skip_unknown=False, session=None):
   if session not in state.pinned_sessions:
     state.pinned_sessions.append(session)
   state.session = session
-  try:
-    tensorfork.reload(name=name, skip_unknown=skip_unknown)
-  finally:
-    if os.path.exists('debug_break.txt'):
-      logging.info('Debug breakpoint...')
-      rm('debug_break.txt')
-      import pdb
-      pdb.set_trace()
+  if os.path.exists('debug_break.txt'):
+    logging.info('Debug breakpoint...')
+    rm('debug_break.txt')
+    import pdb
+    pdb.set_trace()
+
+def update_vars(name=None, skip_unknown=False, session=None):
+  session = session or tf.get_default_session()
+  if session is None:
+    logging.warning('Session is None')
+    return
+  tensorfork.reload(name=name, skip_unknown=skip_unknown)
   for entry in state.vars.values():
     knob = entry['knob']
     variable = entry['variable']

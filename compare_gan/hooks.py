@@ -171,14 +171,26 @@ class UpdateVariablesHook(EveryNSteps):
   def after_create_session(self, session=None, coord=None):
     assert session is not None
     with session.as_default():
-      logging.info("Updating vars...")
+      ttf.state.session = session
+      ttf.state.coord = coord
+      logging.info("Updating vars after_create_session(coord=%s)", coord)
       ttf.update_vars()
 
   def every_n_steps_after_run(self, step, run_context, run_values):
-    logging.info("Updating vars. every_n_steps_after_run(step=%s, session=%s)", step, run_context.session)
+    if run_context is None or not hasattr(run_context, 'session'):
+      logging.info("Skipping every_n_steps_after_run(step=%s, run_context=%s, run_values=%s)", step, run_context, run_values)
+      return
+    logging.info("Updating vars. every_n_steps_after_run(step=%s, session=%s, run_values=%s)", step, run_context.session, run_values)
     if self.start_time is None:
       # First call.
       self.start_time = time.time()
       self.start_step = step
     with run_context.session.as_default():
-      ttf.update_vars()
+      ttf.state.session = run_context.session
+      ttf.state.run_context = run_context
+      ttf.state.run_values = run_context
+      ttf.state.run_args = run_context.original_args
+      try:
+        ttf.update_vars()
+      finally:
+        ttf.heartbeat()
