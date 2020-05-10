@@ -922,7 +922,6 @@ class ModularGAN(AbstractGAN):
   def flood_loss(self):
     self.g_loss = self.flood(self.g_loss, "g_flood")
     self.d_loss = self.flood(self.d_loss, "d_flood")
-    return d_loss, g_loss
 
   def stop_loss(self):
     d_stop_d_below = self.get_option_var("d_stop_d_below", -1e6)
