@@ -88,10 +88,10 @@ if __name__ == '__main__':
   with mock.patch.object(resolver.TPUClusterResolver, 'master', mock_master):
     with mock.patch.object(resolver.TPUClusterResolver, 'cluster_spec', cluster_spec):
       with mock.patch.object(resolver.TPUClusterResolver, '_fetch_cloud_tpu_metadata', _fetch_cloud_tpu_metadata):
-        res = resolver.TPUClusterResolver(os.environ['TPU_NAME'])
-        spec = res.cluster_spec().as_cluster_def()
-        ip = res.get_master()
-        print(ip, spec)
+        #res = resolver.TPUClusterResolver(os.environ['TPU_NAME'])
+        #spec = res.cluster_spec().as_cluster_def()
+        #ip = res.get_master()
+        #print(ip, spec)
         sys.argv = sys.argv[1:]
         exec(open(sys.argv[0]).read(), globals(), globals())
 
