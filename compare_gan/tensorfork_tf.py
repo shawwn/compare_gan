@@ -81,9 +81,12 @@ def eval(variable, session=None, timeout_in_ms=None):
 import re
 
 def variable_name(variable):
-  if re.match(r'core[0-9]+/', variable.name):
-    return variable.name.split('/', 1)[-1]
-  return variable.name
+  if hasattr(variable, 'name'):
+    variable = variable.name
+  if re.match(r'core[0-9]+/', variable):
+    variable = variable.split('/', 1)[-1]
+  variable = variable.split(':', 1)[0]
+  return variable
 
 def grab_values(variables, reader, reshape=False):
   for variable in variables:
