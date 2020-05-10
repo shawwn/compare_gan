@@ -131,8 +131,8 @@ class TpuSummaries(object):
     # batch dimension). Step is the same for all cores.
     step = step[0]
     logging.info("host_call_fn: args=%s", args)
-    save_image_steps = self.get_var("TpuSummaries.save_image_steps", self._save_image_steps)
-    save_summary_steps = self.get_var("TpuSummaries.save_summary_steps", self._save_summary_steps)
+    save_image_steps = tf.cast(self.get_var("TpuSummaries.save_image_steps", self._save_image_steps), dtype=tf.int64)
+    save_summary_steps = tf.cast(self.get_var("TpuSummaries.save_summary_steps", self._save_summary_steps), dtype=tf.int64)
     ops = []
     with summary.create_file_writer(os.path.join(self._log_dir, 'images')).as_default():
       offset = 0
