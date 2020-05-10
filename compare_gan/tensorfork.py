@@ -255,7 +255,8 @@ def fqn(name):
 def bind(name, value, skip_unknown=False):
   name = fqn(name)
   try:
-    gin.config.bind_parameter(name, value)
+    with gin.config.unlock_config():
+      gin.config.bind_parameter(name, value)
     return value
   except ValueError:
     if skip_unknown:
