@@ -128,38 +128,24 @@ class CLGAN(modular_gan.ModularGAN):
     d_real_logits, d_fake_logits, _ = tf.split(d_all_logits, 3)
     z_projs_real, _, z_aug_projs_real = tf.split(z_projs, 3)
 
-    self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
-        d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
-        d_fake_logits=d_fake_logits)
-    self.scalar("CLGAN.loss", "d_without_flooding", self.d_loss)
-    self.scalar("CLGAN.loss", "g_without_flooding", self.g_loss)
-    self.flood_loss()
-
-    penalty_loss = penalty_lib.get_penalty_loss(
-        x=images, x_fake=generated, y=y, is_training=is_training,
-        discriminator=self.discriminator, architecture=self._architecture)
-    if penalty_loss != 0.0:
-      self.scalar("CLGAN.loss", "d_without_penalty", self.d_loss)
-      self.d_loss += self._lambda * penalty_loss
-      self.flood_loss()
-      self.scalar("CLGAN.loss", "d_penalty_loss", penalty_loss)
-
     sims_logits = tf.matmul(z_projs_real, z_aug_projs_real, transpose_b=True)    
     sims_probs = tf.nn.softmax(sims_logits)
 
     sim_labels = tf.constant(np.arange(bs, dtype=np.int32))
     sims_onehot = tf.one_hot(sim_labels, bs)
 
+    self.set_losses("CLGAN.loss",
+                    prob_real=d_real, prob_fake=d_fake,
+                    logits_real=d_real_logits, logits_fake=d_fake_logits,
+                    images=images, generated=generated, y=y, is_training=is_training)
+
     c_real_loss = - tf.reduce_mean(
       tf.reduce_sum(sims_onehot * tf.log(sims_probs + 1e-10), 1))
     weight = self.get_var("CLGAN.weight_contrastive_loss_d", self._weight_contrastive_loss_d)
     c_real_loss *= weight
-
-    self.scalar("CLGAN.loss", "d_without_simclr", self.d_loss)
-    self.d_loss += c_real_loss
     self.scalar("CLGAN.loss", "d_simclr_loss", c_real_loss)
+    self.scalar("CLGAN.loss", "d_loss_without_simclr", self.d_loss)
+    self.d_loss += c_real_loss
 
-    self.flood_loss()
-    self.scalar("CLGAN.loss", "d_loss", self.d_loss)
-    self.scalar("CLGAN.loss", "g_loss", self.g_loss)
+    self.end_losses("CLGAN.loss")
 

@@ -272,9 +272,11 @@ class S3GAN(modular_gan.ModularGAN):
     logits_real, logits_fake = logits_real[:bs], logits_fake[:bs]
 
     # Get the true/fake GAN loss.
-    self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
-        d_real=prob_real, d_fake=prob_fake,
-        d_real_logits=logits_real, d_fake_logits=logits_fake)
+    self.set_losses("S3GAN.loss",
+                    prob_real=prob_real, prob_fake=prob_fake,
+                    logits_real=logits_real, logits_fake=logits_fake,
+                    images=real_images, generated=fake_images, y=real_labels,
+                    is_training=is_training)
 
     # At this point we have the classic GAN loss with possible regularization.
     # We now add the rotation loss and summaries if required.
@@ -300,10 +302,10 @@ class S3GAN(modular_gan.ModularGAN):
       accuracy_real = tf.metrics.accuracy(rot_onehot, rot_real_labels)
       accuracy_fake = tf.metrics.accuracy(rot_onehot, rot_fake_labels)
 
-      self._tpu_summary.scalar("loss/real_loss", real_loss)
-      self._tpu_summary.scalar("loss/fake_loss", fake_loss)
-      self._tpu_summary.scalar("accuracy/real", accuracy_real)
-      self._tpu_summary.scalar("accuracy/fake", accuracy_fake)
+      self.scalar("S3GAN.loss", "loss_real", real_loss)
+      self.scalar("S3GAN.loss", "loss_fake", fake_loss)
+      self.scalar("S3GAN.loss", "accuracy_real", accuracy_real)
+      self.scalar("S3GAN.loss", "accuracy_fake", accuracy_fake)
 
     # Training the predictor on the features of real data and real labels.
     if self._use_predictor:
@@ -318,5 +320,7 @@ class S3GAN(modular_gan.ModularGAN):
 
       # Add the loss to the discriminator
       self.d_loss += self._weight_class_loss * class_loss_real
-      self._tpu_summary.scalar("loss/class_loss_real", class_loss_real)
-      self._tpu_summary.scalar("label_frac", tf.reduce_mean(is_label_available))
+      self.scalar("S3GAN.loss", "class_loss_real", class_loss_real)
+      self.scalar("S3GAN.loss", "label_frac", tf.reduce_mean(is_label_available))
+
+    self.end_losses("S3GAN.loss")

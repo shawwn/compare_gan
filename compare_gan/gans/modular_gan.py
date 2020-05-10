@@ -564,7 +564,6 @@ class ModularGAN(AbstractGAN):
     tpu_random.set_random_offset_from_features(features)
     # create_loss will set self.d_loss.
     self.create_loss(features, labels, params=params)
-    self.flood_loss()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
       train_op = optimizer.minimize(
@@ -579,7 +578,6 @@ class ModularGAN(AbstractGAN):
     tpu_random.set_random_offset_from_features(features)
     # create_loss will set self.g_loss.
     self.create_loss(features, labels, params=params)
-    self.flood_loss()
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
       train_op = optimizer.minimize(
@@ -851,24 +849,43 @@ class ModularGAN(AbstractGAN):
       d_real, d_fake = tf.split(d_all, 2)
       d_real_logits, d_fake_logits = tf.split(d_all_logits, 2)
 
-    self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
-        d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
-        d_fake_logits=d_fake_logits)
-    self.scalar("ModularGAN.loss", "d_without_flooding", self.d_loss)
-    self.scalar("ModularGAN.loss", "g_without_flooding", self.g_loss)
+    self.set_losses("ModularGAN.loss",
+                    prob_real=d_real, prob_fake=d_fake,
+                    logits_real=d_real_logits, logits_fake=d_fake_logits,
+                    images=images, generated=generated, y=y, is_training=is_training)
+
+    self.end_losses("ModularGAN.loss")
+
+
+  def set_losses(self, category,
+                 prob_real, prob_fake,
+                 logits_real, logits_fake,
+                 images, generated, y, is_training):
+    self.d_loss, d_loss_real, d_loss_fake, self.g_loss = loss_lib.get_losses(
+      d_real=prob_real, d_fake=prob_fake, d_real_logits=logits_real,
+      d_fake_logits=logits_fake)
+    self.scalar(category, "d_prob_real", prob_real)
+    self.scalar(category, "d_prob_fake", prob_fake)
+    self.scalar(category, "d_loss_real", d_loss_real)
+    self.scalar(category, "d_loss_fake", d_loss_fake)
+    self.scalar(category, "d_loss_without_flooding", self.d_loss)
+    self.scalar(category, "g_loss_without_flooding", self.g_loss)
+    self.flood_loss()
+    self.scalar(category, "d_loss_without_stop", self.d_loss)
+    self.scalar(category, "g_loss_without_stop", self.g_loss)
+    self.stop_loss()
 
     penalty_loss = penalty_lib.get_penalty_loss(
-        x=images, x_fake=generated, y=y, is_training=is_training,
-        discriminator=self.discriminator)
+      x=images, x_fake=generated, y=y, is_training=is_training,
+      discriminator=self.discriminator, architecture=self._architecture)
     if penalty_loss != 0.0:
-      self.scalar("ModularGAN.loss", "d_without_penalty", self.d_loss)
+      self.scalar(category, "d_penalty", penalty_loss)
+      self.scalar(category, "d_loss_without_penalty", self.d_loss)
       self.d_loss += self._lambda * penalty_loss
-      self.flood_loss()
-      self.scalar("ModularGAN.loss", "d_penalty_loss", penalty_loss)
 
-    self.flood_loss()
-    self.scalar("ModularGAN.loss", "d_loss", self.d_loss)
-    self.scalar("ModularGAN.loss", "g_loss", self.g_loss)
+  def end_losses(self, category):
+    self.scalar(category, "d_loss_final", self.d_loss)
+    self.scalar(category, "g_loss_final", self.g_loss)
 
   def get_option_var(self, name, default):
     value = self.options.get(name, default)
@@ -897,19 +914,27 @@ class ModularGAN(AbstractGAN):
     op = cmp(lhs, rhs)
     return tf.cond(op, lambda: yes, lambda: no, name="{}_cond".format(name))
 
+  def flood(self, loss, option, default=-4):
+    flood = self.get_option_var(option, default)
+    loss = tf.abs(loss - flood) + flood
+    return loss
+
   def flood_loss(self):
-    d_flood = self.get_option_var("d_flood", 0.0)
-    g_flood = self.get_option_var("g_flood", 0.0)
-    self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
-    self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+    self.g_loss = self.flood(self.g_loss, "g_flood")
+    self.d_loss = self.flood(self.d_loss, "d_flood")
+    return d_loss, g_loss
+
+  def stop_loss(self):
     d_stop_d_below = self.get_option_var("d_stop_d_below", -1e6)
     d_stop_g_above = self.get_option_var("d_stop_g_above", 1e6)
     g_stop_g_below = self.get_option_var("g_stop_g_below", -1e6)
     g_stop_d_above = self.get_option_var("g_stop_d_above", 1e6)
-    self.d_loss = ModularGAN.conditional("d_stop_d_below", self.d_loss, "<", d_stop_d_below, 0.0, self.d_loss)
-    self.d_loss = ModularGAN.conditional("d_stop_g_above", self.g_loss, ">", d_stop_g_above, 0.0, self.d_loss)
-    self.g_loss = ModularGAN.conditional("g_stop_g_below", self.g_loss, "<", g_stop_g_below, 0.0, self.g_loss)
-    self.g_loss = ModularGAN.conditional("g_stop_d_above", self.d_loss, ">", g_stop_d_above, 0.0, self.g_loss)
+    d_stop = ModularGAN.conditional("d_stop_d_below", self.d_loss, "<", d_stop_d_below, 0.0, 1.0)
+    g_stop = ModularGAN.conditional("g_stop_g_below", self.g_loss, "<", g_stop_g_below, 0.0, 1.0)
+    d_stop *= ModularGAN.conditional("d_stop_g_above", self.g_loss, ">", d_stop_g_above, 0.0, 1.0)
+    g_stop *= ModularGAN.conditional("g_stop_d_above", self.d_loss, ">", g_stop_d_above, 0.0, 1.0)
+    self.d_loss *= d_stop
+    self.g_loss *= g_stop
 
   def scalar(self, category, name, op, i=None):
     if self.disc_step < 0:

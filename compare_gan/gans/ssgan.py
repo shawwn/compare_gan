@@ -184,14 +184,11 @@ class SSGAN(modular_gan.ModularGAN):
     d_real = d_real[:bs]
     d_fake = d_fake[:bs]
 
-    self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
-        d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
-        d_fake_logits=d_fake_logits)
-
-    penalty_loss = penalty_lib.get_penalty_loss(
-        x=images, x_fake=generated, y=y, is_training=is_training,
-        discriminator=self.discriminator, architecture=self._architecture)
-    self.d_loss += self._lambda * penalty_loss
+    self.set_losses("SSGAN.loss",
+                    prob_real=d_real, prob_fake=d_fake,
+                    logits_real=d_real_logits, logits_fake=d_fake_logits,
+                    images=images, generated=generated, y=y,
+                    is_training=is_training)
 
     # Add rotation augmented loss.
     if "rotation" in self._self_supervision:
@@ -219,8 +216,9 @@ class SSGAN(modular_gan.ModularGAN):
       c_fake_loss = 0.0
       accuracy = tf.zeros([])
 
-    self._tpu_summary.scalar("loss/c_real_loss", c_real_loss)
-    self._tpu_summary.scalar("loss/c_fake_loss", c_fake_loss)
-    self._tpu_summary.scalar("accuracy/d_rotation", accuracy)
-    self._tpu_summary.scalar("loss/penalty", penalty_loss)
+    self.scalar("SSGAN.loss", "c_loss_real", c_real_loss)
+    self.scalar("SSGAN.loss", "c_loss_fake", c_fake_loss)
+    self.scalar("SSGAN.loss", "d_accuracy_rotation", accuracy)
+
+    self.end_losses("SSGAN.loss")
 
