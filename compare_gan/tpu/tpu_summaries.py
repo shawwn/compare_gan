@@ -50,7 +50,7 @@ from compare_gan import tensorfork_tf as ttf
 
 import gin
 import os
-
+import contextlib
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
 
@@ -127,36 +127,39 @@ class TpuSummaries(object):
     host_call_args.extend([e.tensor for e in self._scalar_entries])
     logging.info("host_call_args: %r images and %r scalars", len(self._image_entries), len(self._scalar_entries))
     return (self._host_call_fn, host_call_args)
+  
+  @contextlib.contextmanager
+  def log_every_n(self, category, n, current_step, ops):
+    with summary.create_file_writer(os.path.join(self._log_dir, category)).as_default():
+      with summary.record_summaries_every_n_global_steps(tf.cast(n, dtype=tf.int64), current_step):
+        yield
+      ops.extend(summary.all_summary_ops())
 
   def _host_call_fn(self, step, *args):
     """Function that will run on the host machine."""
     # Host call receives values from all tensor cores (concatenate on the
     # batch dimension). Step is the same for all cores.
+    logging.info("host_call_fn: len(args)=%r", len(args))
     step = step[0]
-    logging.info("host_call_fn: args=%s", args)
-    save_image_steps = tf.cast(self.get_var("TpuSummaries.save_image_steps", self._save_image_steps), dtype=tf.int64)
-    save_summary_steps = tf.cast(self.get_var("TpuSummaries.save_summary_steps", self._save_summary_steps), dtype=tf.int64)
+    save_image_steps = self.get_var("TpuSummaries.save_image_steps", self._save_image_steps)
+    save_summary_steps = self.get_var("TpuSummaries.save_summary_steps", self._save_summary_steps)
+    images = args[0:len(self._image_entries)]
+    scalars = args[len(self._image_entries):]
     ops = []
-    with summary.create_file_writer(os.path.join(self._log_dir, 'images')).as_default():
-      offset = 0
-      with summary.record_summaries_every_n_global_steps(save_image_steps, step):
-        for i, e in enumerate(self._image_entries):
-          value = e.reduce_fn(args[i + offset])
-          e.summary_fn(e.name, value, step=step)
-      offset += len(self._image_entries)
-      ops.append(summary.all_summary_ops())
-    with summary.create_file_writer(os.path.join(self._log_dir, 'scalars')).as_default():
-      with summary.record_summaries_every_n_global_steps(save_summary_steps, step):
-        for i, e in enumerate(self._scalar_entries):
-          value = e.reduce_fn(args[i + offset])
-          e.summary_fn(e.name, value, step=step)
-        summary.scalar('debug/step', step, step=step)
-        global_step = tf.train.get_or_create_global_step()
-        summary.scalar('debug/global_step', global_step, step=global_step)
-        summary.scalar('debug/global_step_minus_step', tf.identity(global_step - step), step=step)
-      offset += len(self._scalar_entries)
-      ops.append(summary.all_summary_ops())
-    return tf.group(ops)
+    with self.log_every_n('images', save_image_steps, step, ops):
+      for e, image in zip(self._image_entries, images):
+        value = e.reduce_fn(image)
+        e.summary_fn(e.name, value, step=step)
+    with self.log_every_n('scalars', save_summary_steps, step, ops):
+      for e, scalar in zip(self._scalar_entries, scalars):
+        value = e.reduce_fn(scalar)
+        e.summary_fn(e.name, value, step=step)
+      # log extra global values.
+      global_step = tf.train.get_or_create_global_step()
+      summary.scalar('debug/step', step, step=step)
+      summary.scalar('debug/global_step', global_step, step=global_step)
+      summary.scalar('debug/global_step_minus_step', tf.identity(global_step - step), step=step)
+    return tf.group(ops, name="host_call_log_ops")
 
 
 TpuSummaries.inst = None
