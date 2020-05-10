@@ -870,7 +870,7 @@ class ModularGAN(AbstractGAN):
     self.scalar("ModularGAN.loss", "d_loss", self.d_loss)
     self.scalar("ModularGAN.loss", "g_loss", self.g_loss)
 
-  def get_option_var(name, default):
+  def get_option_var(self, name, default):
     value = self.options.get(name, default)
     logging.info("Using %s=%f", name, value)
     result = self.get_var("options.{}".format(name), value)
