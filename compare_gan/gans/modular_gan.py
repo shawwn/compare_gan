@@ -770,8 +770,8 @@ class ModularGAN(AbstractGAN):
     kws = {}
     if issubclass(self._d_optimizer_fn, tf.train.AdamOptimizer):
       logging.info("Setting beta1 and beta2 for discriminator's tf.train.AdamOptimizer")
-      kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="discriminator")
-      kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="discriminator")
+      kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="discriminator").initialized_value()
+      kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="discriminator").initialized_value()
     opt = self._d_optimizer_fn(lr, name="d_opt", **kws)
     self._disc_optimizer_opt = opt
     self._disc_optimizer_kws = kws
@@ -791,8 +791,8 @@ class ModularGAN(AbstractGAN):
     kws = {}
     if issubclass(self._g_optimizer_fn, tf.train.AdamOptimizer):
       logging.info("Setting beta1 and beta2 for generator's tf.train.AdamOptimizer")
-      kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="generator")
-      kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="generator")
+      kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="generator").initialized_value()
+      kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="generator").initialized_value()
     opt = self._g_optimizer_fn(lr, name="g_opt", **kws)
     self._gen_optimizer_opt = opt
     self._gen_optimizer_kws = kws
