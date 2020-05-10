@@ -76,7 +76,7 @@ class TpuSummaries(object):
     assert not run_name.endswith('/')
     self._log_dir = log_dir
     self._run_name = run_name
-    self._log_date = time.strftime('%Y-%M-%d')
+    self._log_date = time.strftime('%Y-%m-%d-%H-%M-%S')
     self._image_entries = []
     self._scalar_entries = []
     # While False no summary entries will be added. On TPU we unroll the graph
@@ -136,7 +136,7 @@ class TpuSummaries(object):
     return (self._host_call_fn, host_call_args)
 
   def get_log_path(self, category):
-    return os.path.join(self._log_dir, 'logs', self._run_name, category + '-' + self._log_date)
+    return os.path.join(self._log_dir, 'logs', category, self._run_name, category + '-' + self._log_date)
 
   @contextlib.contextmanager
   def log_every_n(self, category, n, current_step, ops):
