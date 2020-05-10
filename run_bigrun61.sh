@@ -3,7 +3,7 @@ set -ex
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 #export TPU_HOST=10.255.128.3
 export TPU_HOST=${TPU_HOST:-10.255.128.2}
-export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-53}"
+export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-54}"
 export TENSORFORK_RUN="tensorfork/tensorfork#27"
 printf '\033]2;%s\033\\' "bigrun61 ${TPU_NAME} @ ${TPU_HOST} (${TENSORFORK_RUN})" # set tmux title
 export MODEL_DIR="${MODEL_DIR:-gs://darnbooru-euw4a/runs/bigrun61/}"
