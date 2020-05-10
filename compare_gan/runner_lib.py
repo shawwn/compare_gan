@@ -37,6 +37,8 @@ import numpy as np
 import six
 import tensorflow as tf
 
+from compare_gan import tensorfork_tf as ttf
+
 
 FLAGS = flags.FLAGS
 
@@ -358,6 +360,14 @@ def run_with_schedule(schedule, run_config, task_manager, options, use_tpu,
       run_config = run_config.replace(save_checkpoints_steps=1000000)
     estimator = gan.as_estimator(
         run_config, batch_size=options["batch_size"], use_tpu=use_tpu)
+    ttf.register_global("train_hooks", train_hooks)
+    ttf.register_global("estimator", estimator)
+    ttf.register_global("task_manager", task_manager)
+    ttf.register_global("run_config", run_config)
+    ttf.register_global("logging", logging)
+    ttf.register_global("gan", gan)
+    ttf.register_global("dataset", dataset)
+    ttf.register_global("options", options)
     estimator.train(
         input_fn=gan.input_fn,
         max_steps=int(1e6*options["training_steps"]),

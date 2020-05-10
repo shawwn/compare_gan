@@ -166,6 +166,8 @@ class ModularGAN(AbstractGAN):
     self._discriminator = None
     self._generator = None
 
+    ttf.register_global("ModularGAN", self)
+
   def _get_num_sub_steps(self, unroll_graph):
     if unroll_graph:
       return self._disc_iters + 1
@@ -732,13 +734,32 @@ class ModularGAN(AbstractGAN):
     utils.log_parameter_overview(self.discriminator.trainable_variables,
                                  msg="Discriminator variables:")
 
-    return tf.contrib.tpu.TPUEstimatorSpec(
+    host_call = self._tpu_summary.get_host_call()
+    estimator_spec = tf.contrib.tpu.TPUEstimatorSpec(
         mode=mode,
-        host_call=self._tpu_summary.get_host_call(),
+        host_call=host_call,
         # Estimator requires a loss which gets displayed on TensorBoard.
         # The given Tensor is evaluated but not used to create gradients.
         loss=d_losses[0],
         train_op=g_loss.op)
+
+    if hasattr(self, '_estimator_spec'):
+      logging.warn("Warning: model_fn called multiple times")
+    self._estimator_spec = estimator_spec
+    self._gen_step = gen_step
+    self._disc_step = disc_step
+    self._g_loss = g_loss
+    self._d_losses = d_losses
+    self._train_gen_fn = train_gen_fn
+    self._train_disc_fn = train_disc_fn
+    self._fs = fs
+    self._ls = ls
+    self._features = features
+    self._labels = labels
+    self._params = params
+    self._mode = mode
+    self._host_call = host_call
+    return estimator_spec
 
   def get_var(self, name, *args, **kws):
     v = ttf.get_var(name, *args, **kws)
@@ -756,8 +777,14 @@ class ModularGAN(AbstractGAN):
       kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="discriminator")
       kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="discriminator")
     opt = self._d_optimizer_fn(lr, name="d_opt", **kws)
+    self._disc_optimizer_opt = opt
+    self._disc_optimizer_kws = kws
+    self._disc_optimizer_lr_base = lr_base
+    self._disc_optimizer_lr_mul = lr_mul
+    self._disc_optimizer_lr = lr
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+    self._disc_optimizer = opt
     return opt
 
   def get_gen_optimizer(self, use_tpu=True):
@@ -771,8 +798,14 @@ class ModularGAN(AbstractGAN):
       kws['beta1'] = self.get_var("tf.train.AdamOptimizer.beta1", scope="generator")
       kws['beta2'] = self.get_var("tf.train.AdamOptimizer.beta2", scope="generator")
     opt = self._g_optimizer_fn(lr, name="g_opt", **kws)
+    self._gen_optimizer_opt = opt
+    self._gen_optimizer_kws = kws
+    self._gen_optimizer_lr_base = lr_base
+    self._gen_optimizer_lr_mul = lr_mul
+    self._gen_optimizer_lr = lr
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
+    self._gen_optimizer = opt
     return opt
 
   def create_loss(self, features, labels, params, is_training=True):

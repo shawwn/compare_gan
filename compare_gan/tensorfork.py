@@ -9,19 +9,20 @@ import time
 class Namespace():
   pass
 
-tensorfork = globals().get("tensorfork", Namespace())
+if 'tensorfork' not in globals():
+  tensorfork = Namespace()
 
 env = {}
 
-def opts(env=env, name=".env"):
-  if time.time() - env.get("parsed", 0) < 5.0:
+def opts(env=env, name='.env'):
+  if time.time() - env.get('parsed', 0) < 5.0:
     return env
   if os.path.exists(name):
     with open(name) as f:
       s = f.read()
     for k, v in parse_string(s):
       env[k] = v
-  env["parsed"] = time.time()
+  env['parsed'] = time.time()
   return env
 
 def parse_string(s, included=[]):
