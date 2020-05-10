@@ -125,7 +125,7 @@ class TpuSummaries(object):
     host_call_args = [tf.expand_dims(global_step, 0)]
     host_call_args.extend([e.tensor for e in self._image_entries])
     host_call_args.extend([e.tensor for e in self._scalar_entries])
-    logging.info("host_call_args: %s", host_call_args)
+    logging.info("host_call_args: %r images and %r scalars", len(self._image_entries), len(self._scalar_entries))
     return (self._host_call_fn, host_call_args)
 
   def _host_call_fn(self, step, *args):
@@ -139,19 +139,17 @@ class TpuSummaries(object):
     ops = []
     with summary.create_file_writer(os.path.join(self._log_dir, 'images')).as_default():
       offset = 0
-      with summary.record_summaries_every_n_global_steps(
-              save_image_steps, step):
+      with summary.record_summaries_every_n_global_steps(save_image_steps, step):
         for i, e in enumerate(self._image_entries):
           value = e.reduce_fn(args[i + offset])
           e.summary_fn(e.name, value, step=step)
       offset += len(self._image_entries)
       ops.append(summary.all_summary_ops())
     with summary.create_file_writer(os.path.join(self._log_dir, 'scalars')).as_default():
-      with summary.record_summaries_every_n_global_steps(
-            save_summary_steps, step):
+      with summary.record_summaries_every_n_global_steps(save_summary_steps, step):
         for i, e in enumerate(self._scalar_entries):
           value = e.reduce_fn(args[i + offset])
-        e.summary_fn(e.name, value, step=step)
+          e.summary_fn(e.name, value, step=step)
         summary.scalar('debug/step', step, step=step)
         global_step = tf.train.get_or_create_global_step()
         summary.scalar('debug/global_step', global_step, step=global_step)
