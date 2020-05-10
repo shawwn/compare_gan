@@ -870,20 +870,46 @@ class ModularGAN(AbstractGAN):
     self.scalar("ModularGAN.loss", "d_loss", self.d_loss)
     self.scalar("ModularGAN.loss", "g_loss", self.g_loss)
 
+  def get_option_var(name, default):
+    value = self.options.get(name, default)
+    logging.info("Using %s=%f", name, value)
+    result = self.get_var("options.{}".format(name), value)
+    return result
+
+  @staticmethod
+  def conditional(name, lhs, cmp, rhs, yes, no):
+    assert not callable(yes)
+    assert not callable(no)
+    ops = {
+      '<': tf.less,
+      '<=': tf.less_equal,
+      '=': tf.equal,
+      '==': tf.equal,
+      '>=': tf.greater_equal,
+      '>': tf.greater,
+    }
+    if isinstance(cmp, str):
+      cmp = ops[cmp]
+    lhs = tf.identity(lhs, name="{}_lhs".format(name))
+    rhs = tf.identity(rhs, name="{}_rhs".format(name))
+    yes = tf.identity(yes, name="{}_yes".format(name))
+    no = tf.identity(no, name="{}_no".format(name))
+    op = cmp(lhs, rhs)
+    return tf.cond(op, lambda: yes, lambda: no, name="{}_cond".format(name))
+
   def flood_loss(self):
-    d_flood = self.options.get("d_flood", 0.0)
-
-    flood = self.get_var("options.d_flood", d_flood)
-    self._tpu_summary.scalar(flood.name, flood)
-    logging.info("Using d_flood=%f", d_flood)
-    self.d_loss = tf.abs(self.d_loss - flood) + flood
-
-    g_flood = self.options.get("g_flood", 0.0)
-
-    flood = self.get_var("options.g_flood", g_flood)
-    self._tpu_summary.scalar(flood.name, flood)
-    logging.info("Using g_flood=%f", g_flood)
-    self.g_loss = tf.abs(self.g_loss - flood) + flood
+    d_flood = self.get_option_var("d_flood", 0.0)
+    g_flood = self.get_option_var("g_flood", 0.0)
+    self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
+    self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+    d_stop_d_below = self.get_option_var("d_stop_d_below", -1e6)
+    d_stop_g_above = self.get_option_var("d_stop_g_above", 1e6)
+    g_stop_g_below = self.get_option_var("g_stop_g_below", -1e6)
+    g_stop_d_above = self.get_option_var("g_stop_d_above", 1e6)
+    self.d_loss = ModularGAN.conditional("d_stop_d_below", self.d_loss, "<", d_stop_d_below, 0.0, self.d_loss)
+    self.d_loss = ModularGAN.conditional("d_stop_g_above", self.g_loss, ">", d_stop_g_above, 0.0, self.d_loss)
+    self.g_loss = ModularGAN.conditional("g_stop_g_below", self.g_loss, "<", g_stop_g_below, 0.0, self.g_loss)
+    self.g_loss = ModularGAN.conditional("g_stop_d_above", self.d_loss, ">", g_stop_d_above, 0.0, self.g_loss)
 
   def scalar(self, category, name, op, i=None):
     if self.disc_step < 0:
