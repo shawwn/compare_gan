@@ -407,7 +407,7 @@ def update_vars(name=None, skip_unknown=False, session=None):
     tf_value = api.eval_lightweight(variable, session=session)
     logging.info('Setting knob %s to %s (was %s)', knob, vm_value, tf_value)
     api.load_lightweight(variable, vm_value, session=session)
-    logging.info('Session %s cwd %s', session, os.getcwd())
+  logging.info('Session %s cwd %s', session, os.getcwd())
 
 if __name__ == "__main__":
   logging.set_verbosity(0)
