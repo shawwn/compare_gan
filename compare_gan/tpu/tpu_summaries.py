@@ -88,7 +88,7 @@ class TpuSummaries(object):
 
   def get_var(self, name, *args, **kws):
     v = ttf.get_var(name, *args, **kws)
-    self.scalar(os.path.join('knobs', v.name), v)
+    self.scalar(os.path.join('knobs', ttf.api.variable_name(v)), v)
     return v
 
   def image(self, name, tensor, reduce_fn):
