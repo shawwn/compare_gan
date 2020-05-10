@@ -188,7 +188,7 @@ def update_vars(name=None, skip_unknown=False):
       except:
         import traceback
         traceback.print_exc()
-      #import pdb; pdb.set_trace()
+      import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
   logging.set_verbosity(0)
