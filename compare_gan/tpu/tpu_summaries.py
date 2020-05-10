@@ -81,6 +81,7 @@ class TpuSummaries(object):
     TpuSummaries.inst = self
 
   def has(self, name):
+    name = ttf.variable_name(name)
     for entry in self._image_entries + self._scalar_entries:
       if entry.name == name:
         return True
@@ -88,13 +89,14 @@ class TpuSummaries(object):
 
   def get_var(self, name, *args, **kws):
     v = ttf.get_var(name, *args, **kws)
-    self.scalar(os.path.join('knobs', ttf.api.variable_name(v)), v)
+    self.scalar(os.path.join('knobs', v.name), v)
     return v
 
   def image(self, name, tensor, reduce_fn):
     """Add a summary for images. Tensor must be of 4-D tensor."""
     if not self.record:
       return
+    name = ttf.variable_name(name)
     if self.has(name):
       logging.info("TpuSummaries.image: skipping duplicate %s", name)
     else:
@@ -105,6 +107,7 @@ class TpuSummaries(object):
     """Add a summary for a scalar tensor."""
     if not self.record:
       return
+    name = ttf.variable_name(name)
     if self.has(name):
       logging.info("TpuSummaries.scalar: skipping duplicate %s", name)
     else:
@@ -148,11 +151,11 @@ class TpuSummaries(object):
             save_summary_steps, step):
         for i, e in enumerate(self._scalar_entries):
           value = e.reduce_fn(args[i + offset])
-          e.summary_fn(e.name, value, step=step)
-          summary.scalar('debug/step', step, step=step)
-          global_step = tf.train.get_or_create_global_step()
-          summary.scalar('debug/global_step', global_step, step=global_step)
-          summary.scalar('debug/global_step_minus_step', tf.identity(global_step - step), step=step)
+        e.summary_fn(e.name, value, step=step)
+        summary.scalar('debug/step', step, step=step)
+        global_step = tf.train.get_or_create_global_step()
+        summary.scalar('debug/global_step', global_step, step=global_step)
+        summary.scalar('debug/global_step_minus_step', tf.identity(global_step - step), step=step)
       offset += len(self._scalar_entries)
       ops.append(summary.all_summary_ops())
     return tf.group(ops)
