@@ -51,6 +51,8 @@ from compare_gan import tensorfork_tf as ttf
 import gin
 import os
 import contextlib
+import re
+import time
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
 
@@ -68,8 +70,13 @@ class TpuSummaries(object):
   all the TPU cores.
   """
 
-  def __init__(self, log_dir, save_summary_steps=1, save_image_steps=50):
+  def __init__(self, log_dir, run_name='run', save_summary_steps=1, save_image_steps=50):
+    assert re.match('^[a-z0-9]+[a-z-_0-9/]*$', run_name)
+    assert '//' not in log_name
+    assert not log_name.endswith('/')
     self._log_dir = log_dir
+    self._run_name = run_name
+    self._log_date = time.strftime('%Y-%M-%d')
     self._image_entries = []
     self._scalar_entries = []
     # While False no summary entries will be added. On TPU we unroll the graph
@@ -127,10 +134,13 @@ class TpuSummaries(object):
     host_call_args.extend([e.tensor for e in self._scalar_entries])
     logging.info("host_call_args: %r images and %r scalars", len(self._image_entries), len(self._scalar_entries))
     return (self._host_call_fn, host_call_args)
-  
+
+  def get_log_path(self, category):
+    return os.path.join(self._log_dir, 'logs', self._run_name, category + '-' + self._log_date)
+
   @contextlib.contextmanager
   def log_every_n(self, category, n, current_step, ops):
-    with summary.create_file_writer(os.path.join(self._log_dir, category)).as_default():
+    with summary.create_file_writer(self.get_log_path(category)).as_default():
       with summary.record_summaries_every_n_global_steps(tf.cast(n, dtype=tf.int64), current_step):
         yield
       ops.extend(summary.all_summary_ops())
