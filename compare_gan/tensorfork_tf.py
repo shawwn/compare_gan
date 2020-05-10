@@ -6,7 +6,7 @@ import threading
 import gin
 import gin.tf.external_configurables
 
-class State(threading.local):
+class State:
   def __init__(self):
     pass
 
@@ -183,7 +183,12 @@ def update_vars(name=None, skip_unknown=False):
       except:
         import traceback
         traceback.print_exc()
-      import pdb; pdb.set_trace()
+      try:
+        raise ValueError("Just logging the traceback...")
+      except:
+        import traceback
+        traceback.print_exc()
+      #import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
   logging.set_verbosity(0)
