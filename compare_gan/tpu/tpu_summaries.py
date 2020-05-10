@@ -46,6 +46,8 @@ import collections
 from absl import logging
 import tensorflow as tf
 
+from compare_gan import tensorfork_tf as ttf
+
 import gin
 import os
 
@@ -83,6 +85,11 @@ class TpuSummaries(object):
       if entry.name == name:
         return True
     return False
+
+  def get_var(self, name, *args, **kws):
+    v = ttf.get_var(name, *args, **kws)
+    self.scalar(os.path.join('knobs', v.name), v)
+    return v
 
   def image(self, name, tensor, reduce_fn):
     """Add a summary for images. Tensor must be of 4-D tensor."""
@@ -124,11 +131,13 @@ class TpuSummaries(object):
     # batch dimension). Step is the same for all cores.
     step = step[0]
     logging.info("host_call_fn: args=%s", args)
+    save_image_steps = self.get_var("TpuSummaries.save_image_steps", self._save_image_steps)
+    save_summary_steps = self.get_var("TpuSummaries.save_summary_steps", self._save_summary_steps)
     ops = []
     with summary.create_file_writer(os.path.join(self._log_dir, 'images')).as_default():
       offset = 0
       with summary.record_summaries_every_n_global_steps(
-              self._save_image_steps, step):
+              save_image_steps, step):
         for i, e in enumerate(self._image_entries):
           value = e.reduce_fn(args[i + offset])
           e.summary_fn(e.name, value, step=step)
@@ -136,10 +145,14 @@ class TpuSummaries(object):
       ops.append(summary.all_summary_ops())
     with summary.create_file_writer(os.path.join(self._log_dir, 'scalars')).as_default():
       with summary.record_summaries_every_n_global_steps(
-            self._save_summary_steps, step):
+            save_summary_steps, step):
         for i, e in enumerate(self._scalar_entries):
           value = e.reduce_fn(args[i + offset])
           e.summary_fn(e.name, value, step=step)
+          summary.scalar('debug/step', step, step=step)
+          global_step = tf.train.get_or_create_global_step()
+          summary.scalar('debug/global_step', global_step, step=global_step)
+          summary.scalar('debug/global_step_minus_step', tf.identity(global_step - step), step=step)
       offset += len(self._scalar_entries)
       ops.append(summary.all_summary_ops())
     return tf.group(ops)

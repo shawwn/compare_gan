@@ -762,13 +762,11 @@ class ModularGAN(AbstractGAN):
     return estimator_spec
 
   def get_var(self, name, *args, **kws):
-    v = ttf.get_var(name, *args, **kws)
-    self._tpu_summary.scalar(v.name, v)
-    return v
+    return self._tpu_summary.get_var(name, *args, **kws)
 
   def get_disc_optimizer(self, use_tpu=True):
-    lr_base = ttf.get_var("ModularGAN.d_lr", self._d_lr)
-    lr_mul = ttf.get_var("ModularGAN.d_lr_mul", self._d_lr_mul)
+    lr_base = self.get_var("ModularGAN.d_lr", self._d_lr)
+    lr_mul = self.get_var("ModularGAN.d_lr_mul", self._d_lr_mul)
     lr = lr_base * lr_mul
     self._tpu_summary.scalar(lr_base.name, lr)
     kws = {}
@@ -788,8 +786,8 @@ class ModularGAN(AbstractGAN):
     return opt
 
   def get_gen_optimizer(self, use_tpu=True):
-    lr_base = ttf.get_var("ModularGAN.g_lr", self._g_lr)
-    lr_mul = ttf.get_var("ModularGAN.g_lr_mul", self._g_lr_mul)
+    lr_base = self.get_var("ModularGAN.g_lr", self._g_lr)
+    lr_mul = self.get_var("ModularGAN.g_lr_mul", self._g_lr_mul)
     lr = lr_base * lr_mul
     self._tpu_summary.scalar(lr_base.name, lr)
     kws = {}
@@ -865,14 +863,14 @@ class ModularGAN(AbstractGAN):
   def flood_loss(self):
     d_flood = self.options.get("d_flood", 0.0)
     if d_flood > 0.0:
-      flood = ttf.get_var("options.d_flood", d_flood)
+      flood = self.get_var("options.d_flood", d_flood)
       self._tpu_summary.scalar(flood.name, flood)
       logging.info("Using d_flood=%f", d_flood)
       self.d_loss = tf.abs(self.d_loss - flood) + flood
 
     g_flood = self.options.get("g_flood", 0.0)
     if g_flood > 0.0:
-      flood = ttf.get_var("options.g_flood", g_flood)
+      flood = self.get_var("options.g_flood", g_flood)
       self._tpu_summary.scalar(flood.name, flood)
       logging.info("Using g_flood=%f", g_flood)
       self.g_loss = tf.abs(self.g_loss - flood) + flood
