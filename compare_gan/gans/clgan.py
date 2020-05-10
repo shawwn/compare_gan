@@ -131,11 +131,18 @@ class CLGAN(modular_gan.ModularGAN):
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
         d_fake_logits=d_fake_logits)
+    self.scalar("CLGAN.loss", "d_without_flooding", self.d_loss)
+    self.scalar("CLGAN.loss", "g_without_flooding", self.g_loss)
+    self.flood_loss()
 
     penalty_loss = penalty_lib.get_penalty_loss(
         x=images, x_fake=generated, y=y, is_training=is_training,
         discriminator=self.discriminator, architecture=self._architecture)
-    self.d_loss += self._lambda * penalty_loss
+    if penalty_loss != 0.0:
+      self.scalar("CLGAN.loss", "d_without_penalty", self.d_loss)
+      self.d_loss += self._lambda * penalty_loss
+      self.flood_loss()
+      self.scalar("CLGAN.loss", "d_penalty_loss", penalty_loss)
 
     sims_logits = tf.matmul(z_projs_real, z_aug_projs_real, transpose_b=True)    
     sims_probs = tf.nn.softmax(sims_logits)
@@ -148,13 +155,11 @@ class CLGAN(modular_gan.ModularGAN):
     weight = self.get_var("CLGAN.weight_contrastive_loss_d", self._weight_contrastive_loss_d)
     c_real_loss *= weight
 
-    name = "loss/d_{}_".format(self.disc_step)
-    self._tpu_summary.scalar(name + "without_flooding", tf.identity(self.d_loss, name="d_loss_without_flooding"))
-    self.flood_loss()
-    self._tpu_summary.scalar(name + "without_simclr", tf.identity(self.d_loss, name="d_loss_without_simclr"))
+    self.scalar("CLGAN.loss", "d_without_simclr", self.d_loss)
     self.d_loss += c_real_loss
+    self.scalar("CLGAN.loss", "d_simclr_loss", c_real_loss)
 
-    self._tpu_summary.scalar(name + "simclr", c_real_loss)
-    self._tpu_summary.scalar(name + "simclr_weight", self._weight_contrastive_loss_d)
-    self._tpu_summary.scalar(name + "penalty", penalty_loss)
+    self.flood_loss()
+    self.scalar("CLGAN.loss", "d_loss", self.d_loss)
+    self.scalar("CLGAN.loss", "g_loss", self.g_loss)
 

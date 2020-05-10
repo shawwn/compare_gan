@@ -854,23 +854,47 @@ class ModularGAN(AbstractGAN):
     self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
         d_fake_logits=d_fake_logits)
+    self.scalar("ModularGAN.loss", "d_without_flooding", self.d_loss)
+    self.scalar("ModularGAN.loss", "g_without_flooding", self.g_loss)
 
     penalty_loss = penalty_lib.get_penalty_loss(
         x=images, x_fake=generated, y=y, is_training=is_training,
         discriminator=self.discriminator)
-    self.d_loss += self._lambda * penalty_loss
+    if penalty_loss != 0.0:
+      self.scalar("ModularGAN.loss", "d_without_penalty", self.d_loss)
+      self.d_loss += self._lambda * penalty_loss
+      self.flood_loss()
+      self.scalar("ModularGAN.loss", "d_penalty_loss", penalty_loss)
+
+    self.flood_loss()
+    self.scalar("ModularGAN.loss", "d_loss", self.d_loss)
+    self.scalar("ModularGAN.loss", "g_loss", self.g_loss)
 
   def flood_loss(self):
     d_flood = self.options.get("d_flood", 0.0)
-    if d_flood > 0.0:
-      flood = self.get_var("options.d_flood", d_flood)
-      self._tpu_summary.scalar(flood.name, flood)
-      logging.info("Using d_flood=%f", d_flood)
-      self.d_loss = tf.abs(self.d_loss - flood) + flood
+
+    flood = self.get_var("options.d_flood", d_flood)
+    self._tpu_summary.scalar(flood.name, flood)
+    logging.info("Using d_flood=%f", d_flood)
+    self.d_loss = tf.abs(self.d_loss - flood) + flood
 
     g_flood = self.options.get("g_flood", 0.0)
-    if g_flood > 0.0:
-      flood = self.get_var("options.g_flood", g_flood)
-      self._tpu_summary.scalar(flood.name, flood)
-      logging.info("Using g_flood=%f", g_flood)
-      self.g_loss = tf.abs(self.g_loss - flood) + flood
+
+    flood = self.get_var("options.g_flood", g_flood)
+    self._tpu_summary.scalar(flood.name, flood)
+    logging.info("Using g_flood=%f", g_flood)
+    self.g_loss = tf.abs(self.g_loss - flood) + flood
+
+  def scalar(self, category, name, op, i=None):
+    if self.disc_step < 0:
+      j = -self.disc_step - 1
+      kind = 'g'
+    else:
+      j = self.disc_step
+      kind = 'd'
+    if i is not None:
+      fqn = "{}_{}_step_{}/{:03d}_{}".format(category, kind, j, i, name)
+    else:
+      fqn = "{}_{}_step_{}/{}".format(category, kind, j, name)
+    self._tpu_summary.scalar(fqn, tf.identity(op, name=name))
+
