@@ -172,6 +172,18 @@ def update_vars(name=None, skip_unknown=False):
     if compare_values(vm_value, tf_value) != 0:
       logging.info("Setting knob %s to %s (was %s)", knob, vm_value, tf_value)
       load_lightweight(variable, vm_value)
+    session = tf.get_default_session()
+    logging.info('Session %s cwd %s', session, os.getcwd())
+    if session is not None:
+      state.session = session
+    if os.path.exists('debug_break.txt'):
+      logging.info('Debug breakpoint...')
+      try:
+        os.unlink('debug_break.txt')
+      except:
+        import traceback
+        traceback.print_exc()
+      import pdb; pdb.set_trace()
 
 if __name__ == "__main__":
   logging.set_verbosity(0)
