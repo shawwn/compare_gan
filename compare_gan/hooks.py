@@ -174,7 +174,7 @@ class UpdateVariablesHook(EveryNSteps):
       ttf.state.session = session
       ttf.state.coord = coord
       logging.info("Updating vars after_create_session(coord=%s)", coord)
-      ttf.update_vars()
+      ttf.api.update_vars()
 
   def every_n_steps_after_run(self, step, run_context, run_values):
     if run_context is None or not hasattr(run_context, 'session'):
@@ -191,6 +191,6 @@ class UpdateVariablesHook(EveryNSteps):
       ttf.state.run_values = run_context
       ttf.state.run_args = run_context.original_args
       try:
-        ttf.update_vars()
+        ttf.api.update_vars()
       finally:
-        ttf.heartbeat()
+        ttf.api.heartbeat()
