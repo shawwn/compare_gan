@@ -209,11 +209,9 @@ class ImageNet(object):
     dataset = None
     for pattern in file_patterns:
       x = tf.data.Dataset.list_files(pattern, shuffle=False, seed=seed)
+      x = x.cache() # Memoize the filename list to avoid lots of calls to list_files.
       x = x.shard(num_hosts, index)
       dataset = x if dataset is None else dataset.concatenate(x)
-
-    # Memoize the filename list to avoid lots of calls to list_files.
-    dataset = dataset.cache()
 
     # For mixing multiple datasets, shuffle list of filenames.
     dataset = dataset.shuffle(FLAGS.data_shuffle_buffer_size, seed=seed)
@@ -470,7 +468,7 @@ class ImageDatasetV2(object):
     if self._train_filter_fn is not None:
       ds = ds.filter(self._train_filter_fn)
     #ds = ds.cache() # cache the unparsed filtered dataset.
-    ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 16)) # fused shuffle and repeat
+    ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 8)) # fused shuffle and repeat
     #ds = ds.repeat()
     # if "batch_size" in params:
     #   def fused_parse(features, labels, seed, preprocess_fn, parse_fn):
@@ -907,8 +905,8 @@ class ImagesDataset(ImagenetDataset):
     return ds
 
   def _shortcut(self, ds, params, seed, preprocess_fn=None):
-    ds = ds.cache() # cache the unparsed filtered dataset.
-    ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 16)) # fused shuffle and repeat
+    #ds = ds.cache() # cache the unparsed filtered dataset.
+    ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 8)) # fused shuffle and repeat
     assert "batch_size" in params
     def fused_parse(image_bytes, seed, preprocess_fn, parse_fn, num_classes):
       features = ImageNet.dataset_parser_static(image_bytes, num_classes)
@@ -928,10 +926,10 @@ class ImagesDataset(ImagenetDataset):
         num_parallel_batches=ImageNet.get_num_cores(params),
         drop_remainder=True))
     ds = ds.prefetch(tf.contrib.data.AUTOTUNE)
-    options = tf.data.Options()
-    options.experimental_threading.max_intra_op_parallelism = 1
-    options.experimental_threading.private_threadpool_size = 48
-    ds = ds.with_options(options)
+    #options = tf.data.Options()
+    #options.experimental_threading.max_intra_op_parallelism = 1
+    #options.experimental_threading.private_threadpool_size = 48
+    #ds = ds.with_options(options)
     return ds
 
   def _parse_fn(self, features):
