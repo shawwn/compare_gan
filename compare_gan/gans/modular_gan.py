@@ -295,15 +295,6 @@ class ModularGAN(AbstractGAN):
           ema_generated = self.generator(z, y=y, is_training=is_training)
           if not is_training:
             generated = ema_generated
-          outputs["generated_ema"] = ema_generated
-          # warning: Here be an awful hack.
-          class FakeContext:
-            def __init__(self):
-              self.num_replicas = int(os.environ["NUM_CORES"]) // 8
-          params = {
-            "context": FakeContext()
-          }
-          self._add_images_to_summary(ema_generated, "fake_images_ema", params)
       outputs["generated"] = generated
 
     hub.add_signature(inputs=inputs, outputs=outputs)
