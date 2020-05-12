@@ -24,6 +24,7 @@ import abc
 import six
 import tensorflow as tf
 
+import os
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractGAN(object):
@@ -38,13 +39,54 @@ class AbstractGAN(object):
     self._parameters = parameters
     self._model_dir = model_dir
 
+  def transpose_input(self, use_tpu):
+    if use_tpu:
+      return self._parameters['transpose_input']
+    return False
+
+  def num_cores(self, use_tpu):
+    #if params is not None and 'context' in params:
+    #  return params['context'].num_cores
+    if use_tpu:
+      assert 'NUM_CORES' in os.environ
+      return int(os.environ['NUM_CORES'])
+    else:
+      return 1
+
+  def global_batch_size(self):
+    #if params is not None and 'context' in params:
+    #  return params['context'].global_batch_size
+    return self._parameters['batch_size']
+
+  def input_format(self, batch_size, num_cores, use_tpu):
+    if self.transpose_input(use_tpu=use_tpu):
+      if batch_size // num_cores > 8:
+        return 'HWCN'
+      else:
+        return 'HWNC'
+    else:
+      return 'NHWC'
+
+  def batch_axis(self, batch_size, num_cores, use_tpu):
+    return None # TODO
+    format = self.input_format(batch_size=batch_size, num_cores=num_cores, use_tpu=use_tpu)
+    if format == 'HWCN':
+      return [3, 0]
+    if format == 'HWNC':
+      return [2, 0]
+    if format == 'NHWC' or format == 'NCHW':
+      return [0, 0]
+    raise ValueError("Unknown input format {}".format(format))
+
   def as_estimator(self, run_config, batch_size, use_tpu):
     """Returns a TPUEstimator for this GAN."""
     return tf.contrib.tpu.TPUEstimator(
         config=run_config,
         use_tpu=use_tpu,
         model_fn=self.model_fn,
-        train_batch_size=batch_size)
+        train_batch_size=batch_size,
+        batch_axis=self.batch_axis(batch_size=batch_size, num_cores=self.num_cores(use_tpu=use_tpu), use_tpu=use_tpu),
+    )
 
   @abc.abstractmethod
   def as_module_spec(self, params, mode):

@@ -231,7 +231,9 @@ class ModularGAN(AbstractGAN):
         config=run_config,
         use_tpu=use_tpu,
         model_fn=self.model_fn,
-        train_batch_size=batch_size * num_sub_steps)
+        train_batch_size=batch_size * num_sub_steps,
+        batch_axis=self.batch_axis(batch_size=batch_size, num_cores=self.num_cores(use_tpu=use_tpu), use_tpu=use_tpu),
+    )
 
   def _module_fn(self, model, batch_size):
     """Module Function to create a TF Hub module spec.
@@ -637,7 +639,7 @@ class ModularGAN(AbstractGAN):
       raise ValueError("Joining G forward passes is only supported for ",
                        "unrolled graphs.")
 
-    if self._parameters["transpose_input"]:
+    if self.transpose_input(use_tpu=use_tpu):
 
       # TODO(dehao): Replace the following with params['context'].current_host
       if 'context' in params:
@@ -654,7 +656,7 @@ class ModularGAN(AbstractGAN):
       num_cores = num_hosts * 8
 
       images = features["images"]
-      if self._parameters["batch_size"] // num_cores > 8:
+      if self.global_batch_size() // num_cores > 8:
         images = tf.reshape(images,
                             [self._dataset._resolution, self._dataset._resolution, self._dataset._colors, -1])
         images = tf.transpose(images, [3, 0, 1, 2])  # HWCN to NHWC
