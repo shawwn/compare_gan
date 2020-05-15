@@ -189,6 +189,11 @@ class ImageNet(object):
       return 1
 
   @staticmethod
+  def get_num_replicas(params):
+    # TODO: This is incorrect for model parallelism.
+    return 8 * ImageNet.get_num_hosts(params)
+
+  @staticmethod
   def get_num_cores(params):
     return 8 * ImageNet.get_num_hosts(params)
 

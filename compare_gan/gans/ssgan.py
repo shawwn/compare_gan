@@ -26,6 +26,7 @@ from compare_gan.gans import loss_lib
 from compare_gan.gans import modular_gan
 from compare_gan.gans import penalty_lib
 from compare_gan.gans import utils
+from compare_gan import datasets
 
 import gin
 import numpy as np
@@ -132,7 +133,8 @@ class SSGAN(modular_gan.ModularGAN):
 
     # Batch size per core.
     bs = images.shape[0].value
-    num_replicas = params["context"].num_replicas if "context" in params else 1
+    #num_replicas = params["context"].num_replicas if "context" in params else 1
+    num_replicas = datasets.ImageNet.get_num_replicas(params)
     assert self._rotated_batch_size % num_replicas == 0
     # Rotated batch size per core.
     rotated_bs = self._rotated_batch_size // num_replicas

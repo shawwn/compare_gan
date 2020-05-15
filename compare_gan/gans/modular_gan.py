@@ -49,6 +49,8 @@ import tensorflow as tf
 import tensorflow_gan as tfgan
 import tensorflow_hub as hub
 
+from compare_gan import datasets
+
 import os
 
 import contextlib
@@ -337,7 +339,7 @@ class ModularGAN(AbstractGAN):
     # more images then needed we transfer at most `sampler_per_replica` to
     # create a 8x8 image grid.
     batch_size_per_replica = images.shape[0].value
-    num_replicas = params["context"].num_replicas if "context" in params else 1
+    num_replicas = datasets.ImageNet.get_num_cores(params)
     grid_shape = (self.options.get("image_grid_width", 3), self.options.get("image_grid_height", 3))
     total_num_images = batch_size_per_replica * num_replicas
     sample_num_images = np.prod(grid_shape)
@@ -641,19 +643,7 @@ class ModularGAN(AbstractGAN):
 
     if self.transpose_input(use_tpu=use_tpu):
 
-      # TODO(dehao): Replace the following with params['context'].current_host
-      if 'context' in params:
-        #current_host = params['context'].current_input_fn_deployment()[1]
-        num_hosts = params['context'].num_hosts
-      else:
-        if 'dataset_index' in params:
-          #current_host = params['dataset_index']
-          num_hosts = params['dataset_num_shards']
-        else:
-          #current_host = 0
-          num_hosts = 1
-      #num_replicas = params["context"].num_replicas if "context" in params else 1
-      num_cores = num_hosts * 8
+      num_cores = datasets.ImageNet.get_num_cores(params)
 
       images = features["images"]
       if self.global_batch_size() // num_cores > 8:
