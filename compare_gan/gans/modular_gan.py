@@ -728,7 +728,7 @@ class ModularGAN(AbstractGAN):
       logging.warn("Warning: model_fn called multiple times")
     self._estimator_spec = estimator_spec
     self._gen_step = gen_step
-    self._disc_step = disc_step
+    self._disc_step_var = disc_step
     self._g_loss = g_loss
     self._d_losses = d_losses
     self._train_gen_fn = train_gen_fn
