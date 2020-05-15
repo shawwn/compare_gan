@@ -567,11 +567,11 @@ class ImageDatasetV2(object):
         features["images"] = tf.transpose(features["images"], transpose_array)
         return features, labels
       ds = ds.map(transposing, num_parallel_calls=num_cores)
-    # Assign static batch size dimension
-    ds = ds.map(functools.partial(
-      ImageNet.set_shapes, image_size, channels,
-      transpose_input, train_batch_size,
-      params["batch_size"], num_cores))
+    # # Assign static batch size dimension
+    # ds = ds.map(functools.partial(
+    #   ImageNet.set_shapes, image_size, channels,
+    #   transpose_input, train_batch_size,
+    #   params["batch_size"], num_cores))
     return ds
 
   def transpose_input(self, ds, params, train_batch_size):
