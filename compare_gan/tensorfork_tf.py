@@ -219,7 +219,7 @@ def get_var(name, default_value=None, update=False, scope=None, dtype=None, shap
       scope = None
   knob = name if '.' in name else fqn(name)
   #knob = knob.split('/')[-1]
-  if not tensorfork.has_knob(knob):
+  if not tensorfork.has_knob(knob) or True:
     update = True
   if update and default_value is None:
     value = tensorfork.knobs(knob)
