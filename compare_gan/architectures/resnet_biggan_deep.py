@@ -185,8 +185,10 @@ class Generator(abstract_arch.AbstractGenerator):
 
   def __init__(self,
                ch=96,
+               embed_z=False,
                embed_y=True,
                embed_y_dim=128,
+               embed_bias=False,
                experimental_fast_conv_to_rgb=False,
                blocks_with_attention="64",
                **kwargs):
@@ -204,6 +206,8 @@ class Generator(abstract_arch.AbstractGenerator):
     self._ch = ch
     self._embed_y = embed_y
     self._embed_y_dim = embed_y_dim
+    self._embed_z = embed_z
+    self._embed_bias = embed_bias
     self._experimental_fast_conv_to_rgb = experimental_fast_conv_to_rgb
     self._blocks_with_attention = set(blocks_with_attention.split(","))
     self._blocks_with_attention.discard('')
@@ -257,10 +261,14 @@ class Generator(abstract_arch.AbstractGenerator):
     shape_or_none = lambda t: None if t is None else t.shape
     logging.info("[Generator] inputs are z=%s, y=%s", z.shape, shape_or_none(y))
     seed_size = 4
+    z_dim = z.shape[1].value
 
     if self._embed_y:
       y = ops.linear(y, self._embed_y_dim, scope="embed_y", use_sn=False,
                      use_bias=False)
+    if self._embed_z:
+      z = ops.linear(z, z_dim, scope="embed_z", use_sn=False,
+                     use_bias=self._embed_bias)
     if y is not None:
       y = tf.concat([z, y], axis=1)
       z = y
