@@ -877,7 +877,7 @@ class ModularGAN(AbstractGAN):
     return result
 
   @staticmethod
-  def conditional(name, lhs, cmp, rhs, yes, no):
+  def cond(name, lhs, cmp, rhs, yes, no):
     assert not callable(yes)
     assert not callable(no)
     ops = {
@@ -911,10 +911,10 @@ class ModularGAN(AbstractGAN):
     d_stop_g_above = self.get_option_var("d_stop_g_above", 1e6)
     g_stop_g_below = self.get_option_var("g_stop_g_below", -1e6)
     g_stop_d_above = self.get_option_var("g_stop_d_above", 1e6)
-    d_stop = ModularGAN.conditional("d_stop_d_below", self.d_loss, "<", d_stop_d_below, 0.0, 1.0)
-    g_stop = ModularGAN.conditional("g_stop_g_below", self.g_loss, "<", g_stop_g_below, 0.0, 1.0)
-    d_stop *= ModularGAN.conditional("d_stop_g_above", self.g_loss, ">", d_stop_g_above, 0.0, 1.0)
-    g_stop *= ModularGAN.conditional("g_stop_d_above", self.d_loss, ">", g_stop_d_above, 0.0, 1.0)
+    d_stop = ModularGAN.cond("d_stop_d_below", self.d_loss, "<", d_stop_d_below, 0.0, 1.0)
+    g_stop = ModularGAN.cond("g_stop_g_below", self.g_loss, "<", g_stop_g_below, 0.0, 1.0)
+    d_stop *= ModularGAN.cond("d_stop_g_above", self.g_loss, ">", d_stop_g_above, 0.0, 1.0)
+    g_stop *= ModularGAN.cond("g_stop_d_above", self.d_loss, ">", g_stop_d_above, 0.0, 1.0)
     self.d_loss *= d_stop
     self.g_loss *= g_stop
 
