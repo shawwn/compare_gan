@@ -257,7 +257,7 @@ def standardize_batch(inputs,
     raise ValueError(
         "Invalid data_format {}. Allowed: NCHW, NHWC.".format(data_format))
   if use_evonorm:
-    return evonorm_s0(inputs, data_format=data_format)
+    return evonorm_s0(inputs, data_format=data_format, scale=False, center=False)
   if use_cross_replica_mean is None:
     # Default to global batch norm only on TPUs.
     use_cross_replica_mean = (
@@ -428,7 +428,9 @@ def self_modulated_batch_norm(inputs, z, is_training, use_sn,
 def evonorm_s0(inputs,
               data_format="NHWC",
               nonlinearity=True,
-              name="evonorm-s0"):
+              name="evonorm-s0",
+              scale=True,
+              center=True):
 
   with tf.variable_scope(name, values=[inputs]):
     if data_format not in {"NCHW", "NHWC"}:
@@ -458,27 +460,31 @@ def evonorm_s0(inputs,
       inputs = tf.reshape(inputs, new_shape)
 
     with tf.variable_scope("evonorm-s0", values=[inputs]):
+      if nonlinearity:
+        v = trainable_variable_ones(shape=[num_channels])
+        num = inputs * tf.nn.sigmoid(v * inputs)
+        outputs = num / group_std(inputs)
+      else:
+        outputs = inputs
+
       collections = [tf.GraphKeys.MODEL_VARIABLES,
                      tf.GraphKeys.GLOBAL_VARIABLES]
 
-      gamma = tf.get_variable(
+      if scale:
+        gamma = tf.get_variable(
           "gamma",
           [num_channels],
           collections=collections,
           initializer=tf.ones_initializer())
+        outputs *= gamma
 
-      beta = tf.get_variable(
+      if center:
+        beta = tf.get_variable(
           "beta",
           [num_channels],
           collections=collections,
           initializer=tf.zeros_initializer())
-
-      if nonlinearity:
-        v = trainable_variable_ones(shape=gamma.shape)
-        num = inputs * tf.nn.sigmoid(v * inputs)
-        outputs = num / group_std(inputs) * gamma + beta
-      else:
-        outputs = inputs * gamma + beta
+        outputs += beta
 
       outputs = tf.cast(outputs, inputs_dtype)
 
