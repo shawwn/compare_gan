@@ -192,7 +192,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
 
 
 @gin.configurable(whitelist=["decay", "epsilon", "use_cross_replica_mean",
-                             "use_moving_averages"])
+                             "use_moving_averages", "use_evonorm"])
 def standardize_batch(inputs,
                       is_training,
                       decay=0.999,
