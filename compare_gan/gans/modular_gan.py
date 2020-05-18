@@ -876,47 +876,26 @@ class ModularGAN(AbstractGAN):
     result = self.get_var("options.{}".format(name), value)
     return result
 
-  @staticmethod
-  def cond(name, lhs, cmp, rhs, yes, no):
-    assert not callable(yes)
-    assert not callable(no)
-    ops = {
-      '<': tf.less,
-      '<=': tf.less_equal,
-      '=': tf.equal,
-      '==': tf.equal,
-      '>=': tf.greater_equal,
-      '>': tf.greater,
-    }
-    if isinstance(cmp, str):
-      cmp = ops[cmp]
-    lhs = tf.identity(lhs, name="{}_lhs".format(name))
-    rhs = tf.identity(rhs, name="{}_rhs".format(name))
-    yes = tf.identity(yes, name="{}_yes".format(name))
-    no = tf.identity(no, name="{}_no".format(name))
-    op = cmp(lhs, rhs)
-    return tf.cond(op, lambda: yes, lambda: no, name="{}_cond".format(name))
-
-  def flood(self, loss, option, default=-4):
+  def flood(self, loss, option, default=-128.0):
     flood = self.get_option_var(option, default)
     loss = tf.abs(loss - flood) + flood
     return loss
 
   def flood_loss(self):
-    self.g_loss = self.flood(self.g_loss, "g_flood")
     self.d_loss = self.flood(self.d_loss, "d_flood")
+    self.g_loss = self.flood(self.g_loss, "g_flood")
 
   def stop_loss(self):
-    d_stop_d_below = self.get_option_var("d_stop_d_below", -1e6)
-    d_stop_g_above = self.get_option_var("d_stop_g_above", 1e6)
-    g_stop_g_below = self.get_option_var("g_stop_g_below", -1e6)
-    g_stop_d_above = self.get_option_var("g_stop_d_above", 1e6)
-    d_stop = ModularGAN.cond("d_stop_d_below", self.d_loss, "<", d_stop_d_below, 0.0, 1.0)
-    g_stop = ModularGAN.cond("g_stop_g_below", self.g_loss, "<", g_stop_g_below, 0.0, 1.0)
-    d_stop *= ModularGAN.cond("d_stop_g_above", self.g_loss, ">", d_stop_g_above, 0.0, 1.0)
-    g_stop *= ModularGAN.cond("g_stop_d_above", self.d_loss, ">", g_stop_d_above, 0.0, 1.0)
-    self.d_loss *= d_stop
-    self.g_loss *= g_stop
+    d_stop_d_below = self.get_option_var("d_stop_d_below", -128.0)
+    d_stop_g_above = self.get_option_var("d_stop_g_above", 128.0)
+    g_stop_g_below = self.get_option_var("g_stop_g_below", -128.0)
+    g_stop_d_above = self.get_option_var("g_stop_d_above", 128.0)
+    def lt(a, b): return tf.maximum(0.0, tf.math.sign(b - a))
+    def gt(a, b): return tf.maximum(0.0, tf.math.sign(a - b))
+    d_stop = lt(self.g_loss, d_stop_g_above) * gt(self.d_loss, d_stop_d_below)
+    g_stop = lt(self.d_loss, g_stop_d_above) * gt(self.g_loss, g_stop_g_below)
+    self.d_loss = tf.math.multiply_no_nan(self.d_loss, d_stop)
+    self.g_loss = tf.math.multiply_no_nan(self.g_loss, g_stop)
 
   def scalar(self, category, name, op, i=None):
     if self.disc_step < 0:
