@@ -5,7 +5,7 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 export TPU_HOST=${TPU_HOST:-10.255.128.2}
 export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-3}"
 tmux-set-title "bigrun79 ${TPU_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun80/}"
+export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun81/}"
 export DATASETS=gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*
 export LABELS=""
 export NUM_CLASSES=1000
