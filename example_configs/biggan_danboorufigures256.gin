@@ -18,6 +18,9 @@ options.d_flood = 0.2
 resnet_biggan.Generator.blocks_with_attention = "128"
 resnet_biggan.Discriminator.blocks_with_attention = "128"
 
+resnet_biggan.Generator.ch = 128
+resnet_biggan.Discriminator.ch = 128
+
 options.architecture = "resnet_biggan_arch"
 ModularGAN.conditional = True
 options.batch_size = 2048
