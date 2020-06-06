@@ -26,7 +26,7 @@ ModularGAN.conditional = True
 options.batch_size = 2048
 options.gan_class = @ModularGAN
 options.lamba = 1
-options.training_steps = 250000
+options.training_steps = 25000000
 weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 
