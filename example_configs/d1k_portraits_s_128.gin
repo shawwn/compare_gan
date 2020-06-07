@@ -8,8 +8,8 @@
 # Recommended training platform: TPU v3-128.
 
 dataset.name = "danbooru_128"
-options.datasets = "gs://darnbooru-euw4a/datasets/d1k-portraits-s/d1k-portraits-s-0*"
-options.labels = "gs://darnbooru-euw4a/datasets/d1k-portraits-s/d1k-portraits-s-labels.txt"
+options.datasets = "gs://dota-euw4a/datasets/d1k-portraits-s/d1k-portraits-s-0*"
+options.labels = "gs://dota-euw4a/datasets/d1k-portraits-s/d1k-portraits-s-labels.txt"
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
 options.z_dim = 120

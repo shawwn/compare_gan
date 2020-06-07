@@ -10,7 +10,7 @@
 options.description = "BigGAN 256x256 on danbooru2019-s with g_flood=0.05 and d_flood=0.20"
 
 dataset.name = "images_256"
-options.datasets = "gs://darnbooru-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://darnbooru-euw4a/datasets/e621-s/e621-s-0*,gs://darnbooru-euw4a/datasets/portraits/portraits-0*,gs://darnbooru-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*"
+options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*"
 options.random_labels = True
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "random"
