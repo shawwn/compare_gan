@@ -719,6 +719,12 @@ def _transform_imagnet_image(image, target_image_shape, crop_method, seed):
     begin = tf.cast(begin, tf.int32)
     begin = tf.concat([begin, [0]], axis=0)  # Add channel dimension.
     image = tf.slice(image, begin, [size, size, 3])
+  elif crop_method == "resize_with_pad":
+    image = tf.image.resize_with_pad(
+      image, target_image_shape[1], target_image_shape[0],
+      method=tf.image.ResizeMethod.AREA)
+    image.set_shape(target_image_shape)
+    return image
   elif crop_method != "none":
     raise ValueError("Unsupported crop method: {}".format(crop_method))
   image = tf.image.resize_images(
