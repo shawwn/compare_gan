@@ -6,7 +6,7 @@ export TPU_HOST=${TPU_HOST:-10.255.128.2}
 export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-3}"
 tmux-set-title "bigrun84 ${TPU_NAME}"
 export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun84/}"
-export DATASETS=gs://darnbooru-euw4a/datasets/d1k2019-512-sq/d1k2019-512-sq-0*
+export DATASETS=gs://dota-euw4a/datasets/d1k2019-512-sq/d1k2019-512-sq-0*
 export NUM_CLASSES=1000
 export TPU_SPLIT_COMPILE_AND_EXECUTE=1
 export TF_TPU_WATCHDOG_TIMEOUT=1800
