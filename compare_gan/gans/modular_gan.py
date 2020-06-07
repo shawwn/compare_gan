@@ -806,12 +806,12 @@ class ModularGAN(AbstractGAN):
     self.d_loss += self._lambda * penalty_loss
 
   def flood_loss(self):
-    d_flood = self.options.get("d_flood", 0.0)
-    if d_flood > 0.0:
+    d_flood = self.options.get("d_flood", None)
+    if d_flood is not None:
       logging.info("Using d_flood=%f", d_flood)
       self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
 
-    g_flood = self.options.get("g_flood", 0.0)
-    if g_flood > 0.0:
+    g_flood = self.options.get("g_flood", None)
+    if g_flood is not None:
       logging.info("Using g_flood=%f", g_flood)
       self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
