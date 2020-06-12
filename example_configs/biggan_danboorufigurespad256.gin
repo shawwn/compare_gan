@@ -71,3 +71,7 @@ run_config.experimental_host_call_every_n_steps = 50
 # Drop D's flood loss to 0.125
 options.g_flood = 0.05
 options.d_flood = 0.125
+
+# Halve the LRs
+ModularGAN.g_lr_mul = 0.5
+ModularGAN.d_lr_mul = 0.5
