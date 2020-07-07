@@ -8,7 +8,7 @@
 # Recommended training platform: TPU v3-128.
 
 dataset.name = "images_256"
-options.datasets = "gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://dota-euw4a/datasets/octo2k/octo2k-0*"
+options.datasets = "gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,11*gs://dota-euw4a/datasets/octo2k/octo2k-0*"
 options.random_labels = True
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "resize_with_pad"
