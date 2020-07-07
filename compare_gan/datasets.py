@@ -43,6 +43,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 import functools
 import tensorflow as tf
+import re
 
 FLAGS = flags.FLAGS
 
@@ -57,7 +58,7 @@ flags.DEFINE_boolean(
     "If True don't load datasets from disk but create fake values.")
 
 flags.DEFINE_integer(
-    "data_shuffle_buffer_size", 10000,
+    "data_shuffle_buffer_size", 100000,
     "Number of examples for the shuffle buffer.")
 
 # Deprecated, only used for "replacing labels". TFDS will always use 64 threads.
@@ -208,7 +209,12 @@ class ImageNet(object):
     # allowing us to cache larger datasets in memory.
     dataset = None
     for pattern in file_patterns:
+      count, pattern = re.findall("([0-9]+[*])?(gs://.*)", pattern)[0]
+      count = count.rstrip('*')
+      count = 1 if len(count) <= 0 else int(count)
       x = tf.data.Dataset.list_files(pattern, shuffle=False, seed=seed)
+      if count != 1:
+        x = x.repeat(count)
       x = x.shard(num_hosts, index)
       dataset = x if dataset is None else dataset.concatenate(x)
 
