@@ -73,5 +73,5 @@ options.g_flood = 0.05
 options.d_flood = 0.125
 
 # Halve the LRs
-ModularGAN.g_lr_mul = 0.5
+ModularGAN.g_lr_mul = 1.0
 ModularGAN.d_lr_mul = 0.5
