@@ -54,7 +54,8 @@ run_config.save_checkpoints_steps = 250
 #resnet_biggan.Generator.channel_multipliers = "16, 16, 8, 8, 4, 2, 1"
 #resnet_biggan.Discriminator.channel_multipliers = "1, 2, 4, 8, 8, 16, 16"
 
-## Multi-dataset run: mix in e621-s+e621-s-Portraits, Danbooru2019 SFW 512, Danbooru2019 Portraits, Danbooru2019 Figures, Danbooru2019 Palm
+## Multi-dataset run: mix in e621-s+e621-s-Portraits, Danbooru2019 SFW 512, Danbooru2019 Portraits, Danbooru2019 Figures, Danbooru2019 PALM
+## Total _n_=4,513,983 (command: `gsutil cat 'gs://dota-euw4a/datasets/e621-s/e621-s-filenames.txt' 'gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-filenames.txt' 'gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-filenames.txt' 'gs://dota-euw4a/datasets/portraits/portraits-filenames.txt' 'gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-filenames.txt' 'gs://dota-euw4a/datasets/palm/palm-filenames.txt'`)
 options.datasets = "gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://dota-euw4a/datasets/palm/palm-0*"
 
 ## Expand model size due to using multiple large datasets:
@@ -62,6 +63,6 @@ resnet_biggan.Generator.ch = 128
 resnet_biggan.Discriminator.ch = 128
 
 # balancing:
-ModularGAN.g_lr_mul = 3.0
+ModularGAN.g_lr_mul = 3.3
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
-ModularGAN.d_lr_mul = 0.05
+ModularGAN.d_lr_mul = 0.10
