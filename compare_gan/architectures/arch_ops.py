@@ -43,6 +43,8 @@ from tensorflow.contrib.tpu.python.tpu import tpu_function
 from tensorflow.python.training import moving_averages  # pylint: disable=g-direct-tensorflow-import
 
 
+use_assign_forbidden = False
+
 @gin.configurable("weights")
 def weight_initializer(initializer=consts.NORMAL_INIT, stddev=0.02):
   """Returns the initializer for the given name.
@@ -187,8 +189,12 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
         tf.equal(update_accus, 1),
         update_accus_fn,
         tf.no_op)
-    with tf.control_dependencies([dep]):
+
+    if use_assign_forbidden:
       return accu_mean / accu_counter, accu_variance / accu_counter
+    else:
+      with tf.control_dependencies([dep]):
+        return accu_mean / accu_counter, accu_variance / accu_counter
 
 
 @gin.configurable(whitelist=["decay", "epsilon", "use_cross_replica_mean",
@@ -601,8 +607,11 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
       u = tf.math.l2_normalize(tf.matmul(v, w), epsilon=epsilon)
 
   # Update the approximation.
-  with tf.control_dependencies([tf.assign(u_var, u, name="update_u")]):
-    u = tf.identity(u)
+  if use_assign_forbidden:
+      u = tf.identity(u)
+  else:
+    with tf.control_dependencies([tf.assign(u_var, u, name="update_u")]):
+      u = tf.identity(u)
 
   # The authors of SN-GAN chose to stop gradient propagating through u and v
   # and we maintain that option.
