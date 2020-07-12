@@ -63,6 +63,6 @@ resnet_biggan.Generator.ch = 128
 resnet_biggan.Discriminator.ch = 128
 
 # balancing:
-ModularGAN.g_lr_mul = 3.0
+ModularGAN.g_lr_mul = 2.9
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
-ModularGAN.d_lr_mul = 0.04
+ModularGAN.d_lr_mul = 0.05
