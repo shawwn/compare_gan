@@ -4,7 +4,7 @@ options.num_classes = 1000
 train_imagenet_transform.crop_method = "resize_with_pad"
 options.z_dim = 140
 options.g_flood = 0.05
-options.d_flood = 0.2
+options.d_flood = 0.3
 resnet_biggan.Generator.blocks_with_attention = "128"
 resnet_biggan.Discriminator.blocks_with_attention = "128"
 
@@ -65,4 +65,4 @@ resnet_biggan.Discriminator.ch = 128
 # balancing:
 ModularGAN.g_lr_mul = 3.0
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
-ModularGAN.d_lr_mul = 0.06
+ModularGAN.d_lr_mul = 0.04
