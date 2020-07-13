@@ -10,7 +10,7 @@ resnet_biggan.Discriminator.blocks_with_attention = "128"
 
 options.architecture = "resnet_biggan_arch"
 ModularGAN.conditional = True
-options.batch_size = 1536
+options.batch_size = 1024
 options.gan_class = @ModularGAN
 options.lamba = 1
 options.training_steps = 250000
