@@ -31,7 +31,7 @@ standardize_batch.use_cross_replica_mean = True
 standardize_batch.use_evonorm = True
 
 # Discriminator
-options.disc_iters = 1
+options.disc_iters = 2
 D.spectral_norm = True
 resnet_biggan.Discriminator.project_y = True
 
