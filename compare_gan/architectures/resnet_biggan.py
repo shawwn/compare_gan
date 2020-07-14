@@ -94,6 +94,7 @@ class BigGanResNetBlock(resnet_ops.ResNetBlock):
 
   def __init__(self,
                add_shortcut=True,
+               use_relu=True,
                **kwargs):
     """Constructs a new ResNet block for BigGAN.
 
@@ -103,6 +104,7 @@ class BigGanResNetBlock(resnet_ops.ResNetBlock):
     """
     super(BigGanResNetBlock, self).__init__(**kwargs)
     self._add_shortcut = add_shortcut
+    self._use_relu = use_relu
 
   def apply(self, inputs, z, y, is_training):
     """"ResNet block containing possible down/up sampling, shared for G / D.
@@ -129,9 +131,13 @@ class BigGanResNetBlock(resnet_ops.ResNetBlock):
       outputs = self.batch_norm(
           outputs, z=z, y=y, is_training=is_training, name="bn1")
       if self._layer_norm:
+        logging.info("[Block] %s using layer_norm", inputs.shape)
         outputs = ops.layer_norm(outputs, is_training=is_training, scope="ln1")
 
-      outputs = tf.nn.relu(outputs)
+      if self._use_relu:
+        outputs = tf.nn.relu(outputs)
+      else:
+        logging.info("[Block] %s skipping relu", inputs.shape)
       outputs = self._get_conv(
           outputs, self._in_channels, self._out_channels, self._scale1,
           suffix="conv1")
@@ -141,7 +147,8 @@ class BigGanResNetBlock(resnet_ops.ResNetBlock):
       if self._layer_norm:
         outputs = ops.layer_norm(outputs, is_training=is_training, scope="ln2")
 
-      outputs = tf.nn.relu(outputs)
+      if self._use_relu:
+        outputs = tf.nn.relu(outputs)
       outputs = self._get_conv(
           outputs, self._out_channels, self._out_channels, self._scale2,
           suffix="conv2")
