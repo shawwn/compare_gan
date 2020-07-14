@@ -69,5 +69,5 @@ resnet_biggan.Discriminator.ch = 128
 # balancing:
 ModularGAN.g_lr_mul = 0.50
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
-ModularGAN.d_lr_mul = 0.75
+ModularGAN.d_lr_mul = 0.55
 options.description = "EvoNorm-s1 test run, on Figures only; attempt to test out EvoNorm as a BN replacement & find good LR hyperparameters. (Serious instabilities have been hampering finding good LR pairs; may be due to dropping d_iter to 1, restabilized at d_iter=2; unclear how much progress it's making...)"  
