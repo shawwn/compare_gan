@@ -77,6 +77,8 @@ def cross_replica_mean(inputs, group_size=None):
   num_replicas = tpu_function.get_tpu_context().number_of_shards
   if not group_size:
     group_size = num_replicas
+  if not group_size:
+    group_size = 1
   if group_size == 1:
     return inputs
   if group_size != num_replicas:
