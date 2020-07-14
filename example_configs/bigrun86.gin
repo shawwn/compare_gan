@@ -48,8 +48,8 @@ tf.train.AdamOptimizer.beta2 = 0.999
 z.distribution_fn = @tf.random.normal
 eval_z.distribution_fn = @tf.random.normal
 
-run_config.iterations_per_loop = 500
-run_config.save_checkpoints_steps = 500
+run_config.iterations_per_loop = 1000
+run_config.save_checkpoints_steps = 1000
 
 #resnet_biggan.Generator.channel_multipliers = "16, 16, 8, 8, 4, 2, 1"
 #resnet_biggan.Discriminator.channel_multipliers = "1, 2, 4, 8, 8, 16, 16"
