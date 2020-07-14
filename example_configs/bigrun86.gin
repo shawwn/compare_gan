@@ -31,7 +31,7 @@ standardize_batch.use_cross_replica_mean = True
 standardize_batch.use_evonorm = True
 
 # Discriminator
-options.disc_iters = 3
+options.disc_iters = 2
 D.spectral_norm = True
 resnet_biggan.Discriminator.project_y = True
 
@@ -66,4 +66,4 @@ resnet_biggan.Discriminator.ch = 128
 ModularGAN.g_lr_mul = 1.7
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
 ModularGAN.d_lr_mul = 0.25
-options.description = "EvoNorm-s1 test run, on n=4.5 (combined e621+Danbooru datasets); attempt to test out EvoNorm as a BN replacement & find good LR hyperparameters. (Serious instabilities have been hampering finding good LR pairs; may be due to dropping d_iter to 1, restabilized at d_iter=2; current experiment: increasing to d_iter=3)"
+options.description = "EvoNorm-s1 test run, on n=4.5 (combined e621+Danbooru datasets); attempt to test out EvoNorm as a BN replacement & find good LR hyperparameters. (Serious instabilities have been hampering finding good LR pairs; may be due to dropping d_iter to 1, restabilized at d_iter=2)"
