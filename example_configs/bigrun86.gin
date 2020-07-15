@@ -63,9 +63,8 @@ run_config.save_checkpoints_steps = 1000
 ## Single-dataset run: Figures only
 options.datasets = "gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*"
 
-## Expand model size due to using multiple large datasets:
-# resnet_biggan.Generator.ch = 128
-# resnet_biggan.Discriminator.ch = 128
+resnet_biggan.Generator.ch = 96
+resnet_biggan.Discriminator.ch = 96
 
 # balancing:
 ModularGAN.g_lr_mul = 1.0
