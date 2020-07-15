@@ -25,6 +25,7 @@ ModularGAN.g_use_ema = True
 resnet_biggan.Generator.hierarchical_z = False
 resnet_biggan.Generator.stylegan_z = True
 resnet_biggan.Generator.embed_y = True
+resnet_biggan.Generator.embed_y_dim = 512
 standardize_batch.decay = 0.9
 standardize_batch.epsilon = 1e-5
 standardize_batch.use_moving_averages = False
