@@ -280,7 +280,8 @@ class Generator(abstract_arch.AbstractGenerator):
                      use_bias=self._embed_bias)
     if self._stylegan_z:
       z_per_block = stylegan_ops.G_main(num_blocks + 1, z, None, is_training=is_training, latent_size=z_dim)
-      z0, z_per_block = z_per_block[0], tf.unstack(z_per_block[1:])
+      z_per_block = tf.unstack(z_per_block, axis=1)
+      z0, z_per_block = z_per_block[0], z_per_block[1:]
       if y is not None:
         y_per_block = [tf.concat([zi, y], 1) for zi in z_per_block]
     elif self._hierarchical_z:
