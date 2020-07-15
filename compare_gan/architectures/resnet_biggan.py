@@ -330,7 +330,6 @@ class Generator(abstract_arch.AbstractGenerator):
       net = tf.nn.relu(net)
     else:
       logging.info("[Generator] skipping relu")
-    net = tf.nn.relu(net)
     net = ops.conv2d(net, output_dim=self._image_shape[2], k_h=3, k_w=3,
                      d_h=1, d_w=1, name="final_conv",
                      use_sn=self._spectral_norm)
