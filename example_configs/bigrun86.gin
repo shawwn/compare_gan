@@ -6,7 +6,7 @@ options.z_dim = 140
 options.g_flood = 0.05
 options.d_flood = 0.05
 resnet_biggan.Generator.blocks_with_attention = "128"
-resnet_biggan.Discriminator.blocks_with_attention = "128"
+resnet_biggan.Discriminator.blocks_with_attention = "64"
 
 options.architecture = "resnet_biggan_arch"
 ModularGAN.conditional = True
@@ -71,4 +71,4 @@ resnet_biggan.Discriminator.ch = 128
 ModularGAN.g_lr_mul = 1.0
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
 ModularGAN.d_lr_mul = 1.0
-options.description = "EvoNorm-s1 test run, on Figures only; Evonorm-s1 is not working, so switch back to BN to check that BigGAN as a whole is still working in this config/set of changes."  
+options.description = "EvoNorm-s1 test run, on Figures only; Evonorm-s1 is not working, so switch back to BN to check that BigGAN as a whole is still working in this config/set of changes."
