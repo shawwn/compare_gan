@@ -180,6 +180,7 @@ class Generator(abstract_arch.AbstractGenerator):
                embed_bias=False,
                channel_multipliers=None,
                plain_tanh=False,
+               use_relu=True,
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -207,6 +208,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_y_dim = embed_y_dim
     self._embed_bias = embed_bias
     self._plain_tanh = plain_tanh
+    self._use_relu = use_relu
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
@@ -324,6 +326,10 @@ class Generator(abstract_arch.AbstractGenerator):
     # Use unconditional batch norm.
     logging.info("[Generator] before final processing: %s", net.shape)
     net = ops.batch_norm(net, is_training=is_training, name="final_norm")
+    if self._use_relu:
+      net = tf.nn.relu(net)
+    else:
+      logging.info("[Generator] skipping relu")
     net = tf.nn.relu(net)
     net = ops.conv2d(net, output_dim=self._image_shape[2], k_h=3, k_w=3,
                      d_h=1, d_w=1, name="final_conv",
