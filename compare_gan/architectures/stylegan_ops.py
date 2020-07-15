@@ -1,3 +1,5 @@
+import gin
+
 import numpy as np
 import tensorflow as tf
 
@@ -161,6 +163,7 @@ def apply_bias_act(x, act='linear', alpha=None, gain=None, lrmul=1, bias_var='bi
 # Transforms the input latent code (z) to the disentangled latent code (w).
 # Used in configs B-F (Table 1).
 
+@gin.configurable
 def G_mapping(
     latents_in,                             # First input: Latent vectors (Z) [minibatch, latent_size].
     labels_in,                              # Second input: Conditioning labels [minibatch, label_size].
@@ -218,6 +221,7 @@ def G_mapping(
 # Composed of two sub-networks (mapping and synthesis) that are defined below.
 # Used in configs B-F (Table 1).
 
+@gin.configurable
 def G_main(
     num_layers,
     latents_in,                                         # First input: Latent vectors (Z) [minibatch, latent_size].

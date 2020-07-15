@@ -74,3 +74,5 @@ resnet_biggan.Discriminator.ch = 128
 ModularGAN.g_lr_mul = 1.0
 ModularGAN.d_lr_mul = 1.0
 options.description = "Stylegan-Z test run"
+
+G_main.style_mixing_prob = 0
