@@ -27,10 +27,10 @@ standardize_batch.decay = 0.9
 standardize_batch.epsilon = 1e-5
 standardize_batch.use_moving_averages = False
 standardize_batch.use_cross_replica_mean = True
-## NOTE: EvoNorm-s1 experimental use!
-standardize_batch.use_evonorm = True
-BigGanResNetBlock.use_relu = False
-resnet_biggan.Generator.use_relu = False
+## NOTE: testing EvoNorm-s1 experimental use! currently: BN
+standardize_batch.use_evonorm = False
+BigGanResNetBlock.use_relu = True
+resnet_biggan.Generator.use_relu = True
 
 # Discriminator
 options.disc_iters = 2
@@ -71,4 +71,4 @@ resnet_biggan.Discriminator.ch = 128
 ModularGAN.g_lr_mul = 1.0
 ## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
 ModularGAN.d_lr_mul = 1.0
-options.description = "EvoNorm-s1 test run, on Figures only; attempt to test out EvoNorm as a BN replacement & find good LR hyperparameters. (Serious instabilities have been hampering finding good LR pairs; may be due to dropping d_iter to 1, restabilized at d_iter=2; unclear how much progress it's making...)"  
+options.description = "EvoNorm-s1 test run, on Figures only; Evonorm-s1 is not working, so switch back to BN to check that BigGAN as a whole is still working in this config/set of changes."  
