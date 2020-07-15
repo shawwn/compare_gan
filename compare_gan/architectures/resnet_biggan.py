@@ -79,6 +79,7 @@ from absl import logging
 from compare_gan.architectures import abstract_arch
 from compare_gan.architectures import arch_ops as ops
 from compare_gan.architectures import resnet_ops
+from compare_gan.architectures import stylegan_ops
 
 import gin
 from six.moves import range
@@ -173,6 +174,7 @@ class Generator(abstract_arch.AbstractGenerator):
   def __init__(self,
                ch=96,
                blocks_with_attention="64",
+               stylegan_z=False,
                hierarchical_z=True,
                embed_z=False,
                embed_y=True,
@@ -203,12 +205,15 @@ class Generator(abstract_arch.AbstractGenerator):
     self._blocks_with_attention.discard('')
     self._channel_multipliers = None if channel_multipliers is None else [int(x.strip()) for x in channel_multipliers.split(",")]
     self._hierarchical_z = hierarchical_z
+    self._stylegan_z = stylegan_z
     self._embed_z = embed_z
     self._embed_y = embed_y
     self._embed_y_dim = embed_y_dim
     self._embed_bias = embed_bias
     self._plain_tanh = plain_tanh
     self._use_relu = use_relu
+    if hierarchical_z and stylegan_z:
+      raise ValueError("Must set either hierarchical_z or stylegan_z, not both")
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
@@ -273,8 +278,12 @@ class Generator(abstract_arch.AbstractGenerator):
     if self._embed_y:
       y = ops.linear(y, self._embed_y_dim, scope="embed_y", use_sn=False,
                      use_bias=self._embed_bias)
-    y_per_block = num_blocks * [y]
-    if self._hierarchical_z:
+    if self._stylegan_z:
+      z_per_block = stylegan_ops.G_main(num_blocks + 1, z, None, is_training=is_training, latent_size=z_dim)
+      z0, z_per_block = z_per_block[0], z_per_block[1:]
+      if y is not None:
+        y_per_block = [tf.concat([zi, y], 1) for zi in z_per_block]
+    elif self._hierarchical_z:
       z_per_block = tf.split(z, num_blocks + 1, axis=1)
       z0, z_per_block = z_per_block[0], z_per_block[1:]
       if y is not None:
@@ -282,6 +291,7 @@ class Generator(abstract_arch.AbstractGenerator):
     else:
       z0 = z
       z_per_block = num_blocks * [z]
+      y_per_block = num_blocks * [y]
 
     logging.info("[Generator] z0=%s, z_per_block=%s, y_per_block=%s",
                  z0.shape, [str(shape_or_none(t)) for t in z_per_block],
