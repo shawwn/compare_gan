@@ -70,5 +70,3 @@ options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs
 # Increase discriminator LR by 3x
 ModularGAN.g_lr_mul = 1.0
 ModularGAN.d_lr_mul = 3.0
-
-

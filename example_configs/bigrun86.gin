@@ -5,14 +5,14 @@ train_imagenet_transform.crop_method = "resize_with_pad"
 options.z_dim = 140
 options.g_flood = 0.05
 options.d_flood = 0.05
-resnet_biggan.Generator.blocks_with_attention = "128"
-resnet_biggan.Discriminator.blocks_with_attention = "64"
+resnet_biggan.Generator.blocks_with_attention = "B5"
+resnet_biggan.Discriminator.blocks_with_attention = "B2"
 
 options.architecture = "resnet_biggan_arch"
 ModularGAN.conditional = True
-options.batch_size = 1024
+options.batch_size = 2048
 options.gan_class = @ModularGAN
-options.lamba = 1
+options.lamba = 1 # misspelling intentional
 options.training_steps = 250000
 weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
@@ -28,9 +28,9 @@ standardize_batch.epsilon = 1e-5
 standardize_batch.use_moving_averages = False
 standardize_batch.use_cross_replica_mean = True
 ## NOTE: testing EvoNorm-s1 experimental use! currently: BN
-standardize_batch.use_evonorm = False
-BigGanResNetBlock.use_relu = True
-resnet_biggan.Generator.use_relu = True
+# standardize_batch.use_evonorm = False
+# BigGanResNetBlock.use_relu = True
+# resnet_biggan.Generator.use_relu = True
 
 # Discriminator
 options.disc_iters = 2
@@ -64,11 +64,10 @@ run_config.save_checkpoints_steps = 1000
 options.datasets = "gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*"
 
 ## Expand model size due to using multiple large datasets:
-resnet_biggan.Generator.ch = 128
-resnet_biggan.Discriminator.ch = 128
+# resnet_biggan.Generator.ch = 128
+# resnet_biggan.Discriminator.ch = 128
 
 # balancing:
 ModularGAN.g_lr_mul = 1.0
-## NOTE: D usually wins, and EvoNorm should make it more powerful, so set it even lower than usual:
-ModularGAN.d_lr_mul = 1.0
-options.description = "EvoNorm-s1 test run, on Figures only; Evonorm-s1 is not working, so switch back to BN to check that BigGAN as a whole is still working in this config/set of changes."
+ModularGAN.d_lr_mul = 3.0
+options.description = "BigGAN test run, on Figures only; Evonorm-s1 is not working, so switch back to BN to check that BigGAN as a whole is still working in this config/set of changes. Reverting back to `biggan_danbooru256.gin` working config."
