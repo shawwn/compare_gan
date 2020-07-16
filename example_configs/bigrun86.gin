@@ -25,7 +25,7 @@ resnet_biggan.Generator.hierarchical_z = True
 resnet_biggan.Generator.embed_y = True
 standardize_batch.decay = 0.9
 standardize_batch.epsilon = 1e-5
-standardize_batch.use_moving_averages = False
+standardize_batch.use_moving_averages = True
 standardize_batch.use_cross_replica_mean = True
 ## NOTE: testing EvoNorm-s1 experimental use! currently: BN
 # standardize_batch.use_evonorm = False
