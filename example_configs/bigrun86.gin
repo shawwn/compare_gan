@@ -67,6 +67,6 @@ resnet_biggan.Generator.ch = 96
 resnet_biggan.Discriminator.ch = 96
 
 # balancing:
-ModularGAN.g_lr_mul = 1.0
+ModularGAN.g_lr_mul = 0.3
 ModularGAN.d_lr_mul = 3.0
 options.description = "BigGAN test run, on Figures only; Evonorm-s1 is not working, so switch back to BN to check that BigGAN as a whole is still working in this config/set of changes. Reverting back to `biggan_danbooru256.gin` working config."
