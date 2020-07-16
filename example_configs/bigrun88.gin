@@ -1,5 +1,5 @@
 dataset.name = "images_256"
-options.random_labels = True
+options.random_labels = False
 options.num_classes = 1000
 train_imagenet_transform.crop_method = "resize_with_pad"
 options.z_dim = 512
