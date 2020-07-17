@@ -65,5 +65,5 @@ resnet_biggan.Discriminator.ch = 96
 
 # balancing:
 ModularGAN.g_lr_mul = 1.3
-ModularGAN.d_lr_mul = 1.0
+ModularGAN.d_lr_mul = 2.0
 options.description = "BigGAN test run, on Figures only; Batchnorm restored. Testing reversion of moving_averages (disabling it is more efficient, but possibly has screwed up BN all along?)"
