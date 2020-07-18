@@ -92,7 +92,7 @@ class TpuSummaries(object):
       logging.info("TpuSummaries.image: skipping duplicate %s", name)
     else:
       self._image_entries.append(
-          TpuSummaryEntry(summary.image, name, tensor, reduce_fn))
+          TpuSummaryEntry(summary.image, name, tensor, reduce_fn, countdown=None))
 
   def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean, countdown=None):
     """Add a summary for a scalar tensor."""
