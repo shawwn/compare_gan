@@ -668,6 +668,7 @@ def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
           "bias",
           [output_size],
           initializer=tf.constant_initializer(bias_start))
+      bias = graph_spectral_norm(bias)
       outputs += bias
     return outputs
 
