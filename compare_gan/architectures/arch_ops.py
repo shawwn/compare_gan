@@ -588,7 +588,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left"):
   # Use power iteration method to approximate the spectral norm.
   # The authors suggest that one round of power iteration was sufficient in the
   # actual experiment to achieve satisfactory performance.
-  power_iteration_rounds = 1
+  power_iteration_rounds = 10
   for _ in range(power_iteration_rounds):
     if singular_value == "left":
       # `v` approximates the first right singular vector of matrix `w`.
