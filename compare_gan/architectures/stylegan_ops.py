@@ -284,6 +284,7 @@ def G_main(
     #lod_in = tf.get_variable('lod', initializer=np.float32(0), trainable=False, use_resource=True)
     lod_in = tf.constant(np.float32(0))
     dlatent_avg = tf.get_variable('dlatent_avg', shape=[dlatent_size], initializer=tf.initializers.zeros(), trainable=False, use_resource=True)
+    dlatent_avg = ops.graph_spectral_norm(dlatent_avg)
 
     # Evaluate mapping network.
     #dlatents = components.mapping.get_output_for(latents_in, labels_in, is_training=is_training, **kwargs)
