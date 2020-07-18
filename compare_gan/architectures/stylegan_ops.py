@@ -179,8 +179,13 @@ def G_mapping(
     mapping_lrmul           = 0.01,         # Learning rate multiplier for the mapping layers.
     mapping_nonlinearity    = 'lrelu',      # Activation function: 'relu', 'lrelu', etc.
     normalize_latents       = True,         # Normalize latent vectors (Z) before feeding them to the mapping layers?
+    normalize_function      = 'mean',       # 'mean' or 'sum'
     dtype                   = 'float32',    # Data type to use for activations and outputs.
     **_kwargs):                             # Ignore unrecognized keyword args.
+
+    if normalize_function not in ['mean', 'sum']:
+        raise ValueError("Unknown normalize_function {!r}".format(normalize_function))
+    normalize_function = tf.reduce_sum if normalize_function == 'sum' else tf.reduce_mean
 
     act = mapping_nonlinearity
 
@@ -201,7 +206,7 @@ def G_mapping(
     # Normalize latents.
     if normalize_latents:
         with tf.variable_scope('Normalize'):
-            x *= tf.rsqrt(tf.reduce_mean(tf.square(x), axis=1, keepdims=True) + 1e-8)
+            x *= tf.rsqrt(normalize_function(tf.square(x), axis=1, keepdims=True) + 1e-8)
 
     # Mapping layers.
     for layer_idx in range(mapping_layers):
