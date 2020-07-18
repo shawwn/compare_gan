@@ -654,14 +654,19 @@ from compare_gan.tpu import tpu_summaries
 def graph_name(name):
   name = name.split(':')[0]
   name = name.split('/kernel')[0]
+  #name = name.replace('/ExponentialMovingAverage', '')
+  if '/ExponentialMovingAverage' in name:
+    return
   if name.startswith('generator/'):
     name = name.replace('generator/', '')
-    return 'G_' + name
-  elif name.startswith('discriminator/'):
+    if not name.startswith('G_'):
+      name = 'G_' + name
+    return name
+  if name.startswith('discriminator/'):
     name = name.replace('discriminator/', '')
-    return 'D_' + name
-  else:
-    logging.info("[ops] Not graphing %s", name)
+    if not name.startswith('D_'):
+      name = 'D_' + name
+    return name
 
 def graph_spectral_norm(w):
   name = graph_name(w.name)
@@ -670,6 +675,8 @@ def graph_spectral_norm(w):
     logging.info("[ops] Graphing spectral norm name=%s (was %s), %s", name, w.name, repr(w))
     w1, norm = spectral_norm(w)
     tpu_summaries.TpuSummaries.inst.scalar(name, norm, countdown=2) # the specnorm needs a few iters to become accurate
+  else:
+    logging.info("[ops] Not graphing %s", w.name)
   return w
 
 def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
