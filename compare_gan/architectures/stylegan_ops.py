@@ -161,7 +161,7 @@ def dense_layer(x, fmaps, gain=1, use_wscale=True, lrmul=1, weight_var='weight')
 def apply_bias_act(x, act='linear', alpha=None, gain=None, lrmul=1, bias_var='bias'):
     b = tf.get_variable(bias_var, shape=[x.shape[1]], initializer=tf.initializers.zeros(), use_resource=True) * lrmul
     b = tf.identity(b, name=bias_var)
-    b = ops.graph_spectral_norm(b)
+    b = ops.graph_spectral_norm(b, init=0.0)
     return fused_bias_act(x, b=tf.cast(b, x.dtype), act=act, alpha=alpha, gain=gain)
 
 #----------------------------------------------------------------------------
@@ -286,7 +286,7 @@ def G_main(
     #lod_in = tf.get_variable('lod', initializer=np.float32(0), trainable=False, use_resource=True)
     lod_in = tf.constant(np.float32(0))
     dlatent_avg = tf.get_variable('dlatent_avg', shape=[dlatent_size], initializer=tf.initializers.zeros(), trainable=False, use_resource=True)
-    dlatent_avg = ops.graph_spectral_norm(dlatent_avg)
+    dlatent_avg = ops.graph_spectral_norm(dlatent_avg, init=0.0)
 
     # Evaluate mapping network.
     #dlatents = components.mapping.get_output_for(latents_in, labels_in, is_training=is_training, **kwargs)

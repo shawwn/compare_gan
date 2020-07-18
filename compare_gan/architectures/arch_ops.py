@@ -104,7 +104,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
       trainable=False,
       partitioner=None,
       collections=variable_collections)
-  moving_mean = graph_spectral_norm(moving_mean)
+  moving_mean = graph_spectral_norm(moving_mean, init=0.0)
   moving_variance = tf.get_variable(
       "moving_variance",
       shape=variance.shape,
@@ -112,7 +112,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
       trainable=False,
       partitioner=None,
       collections=variable_collections)
-  moving_variance = graph_spectral_norm(moving_variance)
+  moving_variance = graph_spectral_norm(moving_variance, init=1.0)
   if is_training:
     logging.debug("Adding update ops for moving averages of mean and variance.")
     # Update variables for mean and variance during training.
@@ -191,8 +191,8 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
       return mean, variance
 
     logging.debug("Using accumulated moments.")
-    accu_mean = graph_spectral_norm(accu_mean)
-    accu_variance = graph_spectral_norm(accu_variance)
+    accu_mean = graph_spectral_norm(accu_mean, init=0.0)
+    accu_variance = graph_spectral_norm(accu_variance, init=0.0)
     # Return the accumulated batch statistics and add current batch statistics
     # to accumulators if update_accus variables equals 1.
     def update_accus_fn():
@@ -377,7 +377,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
           [num_channels],
           collections=collections,
           initializer=tf.ones_initializer())
-      gamma = graph_spectral_norm(gamma)
+      gamma = graph_spectral_norm(gamma, init=1.0)
       outputs *= gamma
     if center:
       beta = tf.get_variable(
@@ -385,7 +385,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
           [num_channels],
           collections=collections,
           initializer=tf.zeros_initializer())
-      beta = graph_spectral_norm(beta)
+      beta = graph_spectral_norm(beta, init=0.0)
       outputs += beta
     return outputs
 
@@ -496,7 +496,7 @@ def evonorm_s0(inputs,
           [num_channels],
           collections=collections,
           initializer=tf.ones_initializer())
-        gamma = graph_spectral_norm(gamma)
+        gamma = graph_spectral_norm(gamma, init=1.0)
         outputs *= gamma
 
       if center:
@@ -505,7 +505,7 @@ def evonorm_s0(inputs,
           [num_channels],
           collections=collections,
           initializer=tf.zeros_initializer())
-        beta = graph_spectral_norm(beta)
+        beta = graph_spectral_norm(beta, init=0.0)
         outputs += beta
 
       outputs = tf.cast(outputs, inputs_dtype)
@@ -526,7 +526,7 @@ def group_std(x, groups=32, eps=1e-5):
 
 def trainable_variable_ones(shape, name="v"):
   x = tf.get_variable(name, shape=shape, initializer=tf.ones_initializer())
-  x = graph_spectral_norm(x)
+  x = graph_spectral_norm(x, init=1.0)
   return x
 
 #/ evonorm functions
@@ -582,6 +582,10 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
   # if len(inputs.shape) < 2:
   #   raise ValueError(
   #       "Spectral norm can only be applied to multi-dimensional tensors")
+
+  if len(inputs.shape) <= 0:
+    logging.info("[ops] spectral norm of a float is itself; returning as-is. name=%s %s", inputs.name, repr(inputs))
+    return inputs, inputs
 
   # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
   # to (C_out, C_in * KH * KW). Our Conv2D kernel shape is (KH, KW, C_in, C_out)
@@ -676,13 +680,13 @@ def graph_name(name):
       name = 'D_' + name
     return name
 
-def graph_spectral_norm(w):
+def graph_spectral_norm(w, init=None):
   name = graph_name(w.name)
   assert tpu_summaries.TpuSummaries.inst is not None
   if name is not None and not tpu_summaries.TpuSummaries.inst.has(name):
-    logging.info("[ops] Graphing spectral norm name=%s (was %s), %s", name, w.name, repr(w))
+    logging.info("[ops] Graphing name=%s (was %s), %s", name, w.name, repr(w))
     w1, norm = spectral_norm(w)
-    tpu_summaries.TpuSummaries.inst.scalar(name, norm, countdown=2) # the specnorm needs a few iters to become accurate
+    tpu_summaries.TpuSummaries.inst.scalar(name, norm, countdown=2, init=init) # the specnorm needs a few iters to become accurate
   else:
     logging.info("[ops] Not graphing %s", w.name)
   return w
@@ -705,7 +709,7 @@ def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
           "bias",
           [output_size],
           initializer=tf.constant_initializer(bias_start))
-      bias = graph_spectral_norm(bias)
+      bias = graph_spectral_norm(bias, init=bias_start)
       outputs += bias
     return outputs
 
@@ -724,7 +728,7 @@ def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
     if use_bias:
       bias = tf.get_variable(
           "bias", [output_dim], initializer=tf.constant_initializer(0.0))
-      bias = graph_spectral_norm(bias)
+      bias = graph_spectral_norm(bias, init=0.0)
       outputs += bias
   return outputs
 
@@ -910,7 +914,7 @@ def non_local_block(x, name, use_sn):
     attn_g = tf.matmul(attn, g)
     attn_g = tf.reshape(attn_g, [-1, h, w, num_channels_g])
     sigma = tf.get_variable("sigma", [], initializer=tf.zeros_initializer())
-    sigma = graph_spectral_norm(sigma)
+    sigma = graph_spectral_norm(sigma, init=0.0)
     attn_g = conv1x1(attn_g, num_channels, name="conv2d_attn_g", use_sn=use_sn,
                      use_bias=False)
     return x + sigma * attn_g
