@@ -92,6 +92,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
       trainable=False,
       partitioner=None,
       collections=variable_collections)
+  moving_mean = graph_spectral_norm(moving_mean)
   moving_variance = tf.get_variable(
       "moving_variance",
       shape=variance.shape,
@@ -99,6 +100,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
       trainable=False,
       partitioner=None,
       collections=variable_collections)
+  moving_variance = graph_spectral_norm(moving_variance)
   if is_training:
     logging.debug("Adding update ops for moving averages of mean and variance.")
     # Update variables for mean and variance during training.
@@ -172,9 +174,13 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
     variance = tf.identity(variance, "variance")
 
     if is_training:
+      mean = graph_spectral_norm(mean)
+      variance = graph_spectral_norm(variance)
       return mean, variance
 
     logging.debug("Using accumulated moments.")
+    accu_mean = graph_spectral_norm(accu_mean)
+    accu_variance = graph_spectral_norm(accu_variance)
     # Return the accumulated batch statistics and add current batch statistics
     # to accumulators if update_accus variables equals 1.
     def update_accus_fn():
