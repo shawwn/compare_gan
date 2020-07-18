@@ -365,6 +365,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
           [num_channels],
           collections=collections,
           initializer=tf.ones_initializer())
+      gamma = graph_spectral_norm(gamma)
       outputs *= gamma
     if center:
       beta = tf.get_variable(
@@ -372,6 +373,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
           [num_channels],
           collections=collections,
           initializer=tf.zeros_initializer())
+      beta = graph_spectral_norm(beta)
       outputs += beta
     return outputs
 
@@ -482,6 +484,7 @@ def evonorm_s0(inputs,
           [num_channels],
           collections=collections,
           initializer=tf.ones_initializer())
+        gamma = graph_spectral_norm(gamma)
         outputs *= gamma
 
       if center:
@@ -490,6 +493,7 @@ def evonorm_s0(inputs,
           [num_channels],
           collections=collections,
           initializer=tf.zeros_initializer())
+        beta = graph_spectral_norm(beta)
         outputs += beta
 
       outputs = tf.cast(outputs, inputs_dtype)
@@ -509,7 +513,9 @@ def group_std(x, groups=32, eps=1e-5):
   return tf.reshape(std, [N, H, W, C])
 
 def trainable_variable_ones(shape, name="v"):
-  return tf.get_variable(name, shape=shape, initializer=tf.ones_initializer())
+  x = tf.get_variable(name, shape=shape, initializer=tf.ones_initializer())
+  x = graph_spectral_norm(x)
+  return x
 
 #/ evonorm functions
 
