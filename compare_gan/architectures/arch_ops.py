@@ -563,7 +563,7 @@ def layer_norm(input_, is_training, scope):
 
 @gin.configurable(blacklist=["inputs"])
 def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=True,
-                  save_in_checkpoint=False, power_iteration_rounds=1):
+                  save_in_checkpoint=False, power_iteration_rounds=2):
   """Performs Spectral Normalization on a weight tensor.
 
   Details of why this is helpful for GAN's can be found in "Spectral
@@ -921,7 +921,8 @@ def non_local_block(x, name, use_sn):
 
 
 @op_scope
-def noise_block(x, name, randomize_noise=True):
+@gin.configurable(whitelist=['stddev'])
+def noise_block(x, name, randomize_noise=True, stddev=0.02):
   with tf.variable_scope(name):
     N, H, W, C = tf.shape(x)[0], x.shape[1], x.shape[2], x.shape[3]
     if randomize_noise:
@@ -929,7 +930,7 @@ def noise_block(x, name, randomize_noise=True):
     else:
       noise = tf.random_normal([H, W, C], dtype=x.dtype, seed=0)
       noise = tf.tile([noise], [N, 1, 1, 1])
-    noise_strength = tf.get_variable('noise_strength', shape=[C], initializer=tf.initializers.zeros(), use_resource=True)
+    noise_strength = tf.get_variable('noise_strength', shape=[C], initializer=weight_initializer(stddev=stddev), use_resource=True)
     noise_strength = graph_spectral_norm(noise_strength, init=0.0)
     x += noise * tf.cast(noise_strength, x.dtype)
     return x
