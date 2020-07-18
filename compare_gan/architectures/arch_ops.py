@@ -634,6 +634,8 @@ def graph_name(name):
   elif name.startswith('discriminator/'):
     name = name.replace('discriminator/', '')
     return 'D_' + name
+  else:
+    logging.info("[ops] Not graphing %s", name)
 
 def graph_spectral_norm(w):
   name = graph_name(w.name)
