@@ -651,6 +651,12 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
 
 from compare_gan.tpu import tpu_summaries
 
+def bias_name(name):
+  if name.endswith('/bias'):
+    parts = name.split('/')
+    return parts[0] + '_bias' + '/'.join(parts[1:-1])
+  return name
+
 def graph_name(name):
   name = name.split(':')[0]
   name = name.split('/kernel')[0]
@@ -659,11 +665,13 @@ def graph_name(name):
     return
   if name.startswith('generator/'):
     name = name.replace('generator/', '')
+    name = bias_name(name)
     if not name.startswith('G_'):
       name = 'G_' + name
     return name
   if name.startswith('discriminator/'):
     name = name.replace('discriminator/', '')
+    name = bias_name(name)
     if not name.startswith('D_'):
       name = 'D_' + name
     return name
