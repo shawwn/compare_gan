@@ -52,6 +52,8 @@ import os
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
 
+from tensorflow.python.ops.summary_ops_v2 import record_if
+
 
 TpuSummaryEntry = collections.namedtuple(
     "TpuSummaryEntry", "summary_fn name tensor reduce_fn countdown")
@@ -153,7 +155,7 @@ class TpuSummaries(object):
               countdown_decrement = countdown.assign_sub(tf.sign(countdown))
               with tf.control_dependencies([countdown_decrement]):
                 summary_ready = tf.less_equal(countdown, 0)
-            with summary.record_if(summary_ready):
+            with record_if(summary_ready):
               e.summary_fn(e.name, value, step=step)
       offset += len(self._scalar_entries)
       ops.append(summary.all_summary_ops())
