@@ -17,6 +17,7 @@ options.training_steps = 250000
 weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 spectral_norm.use_resource = True
+spectral_norm.save_in_checkpoint = False
 
 # Generator
 G.batch_norm_fn = @conditional_batch_norm

@@ -538,7 +538,7 @@ def layer_norm(input_, is_training, scope):
 
 
 @gin.configurable(blacklist=["inputs"])
-def spectral_norm(inputs, epsilon=1e-12, singular_value="left", use_resource=False):
+def spectral_norm(inputs, epsilon=1e-12, singular_value="left", use_resource=False, save_in_checkpoint=True):
   """Performs Spectral Normalization on a weight tensor.
 
   Details of why this is helpful for GAN's can be found in "Spectral
@@ -581,7 +581,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left", use_resource=Fal
       shape=u_shape,
       dtype=w.dtype,
       initializer=tf.random_normal_initializer(),
-      #collections=[tf.GraphKeys.LOCAL_VARIABLES],
+      collections=None if save_in_checkpoint else [tf.GraphKeys.LOCAL_VARIABLES],
       use_resource=use_resource,
       trainable=False)
   u = u_var
