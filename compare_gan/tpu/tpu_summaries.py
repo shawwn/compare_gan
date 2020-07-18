@@ -155,7 +155,7 @@ class TpuSummaries(object):
               with tf.control_dependencies([countdown_decrement]):
                 ready = tf.less_equal(countdown, 0)
           if e.init is not None:
-            op = tf.not_equal(value, tf.cast(e.init, value.dtype))
+            op = tf.reduce_any(tf.not_equal(value, tf.cast(e.init, value.dtype)))
             ready = tf.logical_and(ready, op) if ready is not None else op
           if ready is not None:
             with record_if(ready):
