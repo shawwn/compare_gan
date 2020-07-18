@@ -42,6 +42,18 @@ import tensorflow as tf
 from tensorflow.contrib.tpu.python.tpu import tpu_function
 from tensorflow.python.training import moving_averages  # pylint: disable=g-direct-tensorflow-import
 
+import functools
+
+
+def op_scope(fn, name=None):
+    if name is None:
+        name = fn.__name__
+    @functools.wraps(fn)
+    def _fn(*args, **kwargs):
+        with tf.name_scope(fn.__name__):
+            return fn(*args, **kwargs)
+    return _fn
+
 
 @gin.configurable("weights")
 def weight_initializer(initializer=consts.NORMAL_INIT, stddev=0.02):
