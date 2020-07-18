@@ -658,7 +658,7 @@ from compare_gan.tpu import tpu_summaries
 def bias_name(name):
   if name.endswith('/bias'):
     parts = name.split('/')
-    return parts[0] + '_bias' + '/'.join(parts[1:-1])
+    return parts[0] + '_bias/' + '/'.join(parts[1:-1])
   return name
 
 def graph_name(name):
