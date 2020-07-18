@@ -646,7 +646,7 @@ def graph_spectral_norm(w):
   if name is not None and not tpu_summaries.TpuSummaries.inst.has(name):
     logging.info("[ops] Graphing spectral norm name=%s (was %s), %s", name, w.name, repr(w))
     w1, norm = spectral_norm(w)
-    tpu_summaries.TpuSummaries.inst.scalar(name, norm)
+    tpu_summaries.TpuSummaries.inst.scalar(name, norm, countdown=5) # the specnorm needs a few iters to become accurate
   return w
 
 def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,

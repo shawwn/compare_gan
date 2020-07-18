@@ -54,7 +54,7 @@ summary = tf.contrib.summary  # TensorFlow Summary API v2.
 
 
 TpuSummaryEntry = collections.namedtuple(
-    "TpuSummaryEntry", "summary_fn name tensor reduce_fn")
+    "TpuSummaryEntry", "summary_fn name tensor reduce_fn countdown")
 
 @gin.configurable(blacklist=["log_dir"])
 class TpuSummaries(object):
@@ -94,7 +94,7 @@ class TpuSummaries(object):
       self._image_entries.append(
           TpuSummaryEntry(summary.image, name, tensor, reduce_fn))
 
-  def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean):
+  def scalar(self, name, tensor, reduce_fn=tf.math.reduce_mean, countdown=None):
     """Add a summary for a scalar tensor."""
     if not self.record:
       return
@@ -105,7 +105,7 @@ class TpuSummaries(object):
       if tensor.shape.ndims == 0:
         tensor = tf.expand_dims(tensor, 0)
       self._scalar_entries.append(
-          TpuSummaryEntry(summary.scalar, name, tensor, reduce_fn))
+          TpuSummaryEntry(summary.scalar, name, tensor, reduce_fn, countdown))
 
   def get_host_call(self):
     """Returns the tuple (host_call_fn, host_call_args) for TPUEstimatorSpec."""
@@ -139,7 +139,22 @@ class TpuSummaries(object):
             self._save_summary_steps, step):
         for i, e in enumerate(self._scalar_entries):
           value = e.reduce_fn(args[i + offset])
-          e.summary_fn(e.name, value, step=step)
+          if e.countdown is None:
+            e.summary_fn(e.name, value, step=step)
+          else:
+            with ops.device("cpu:0"):
+              countdown = tf.get_local_variable(
+                e.name + "_countdown",
+                initializer=tf.constant_initializer(e.countdown),
+                shape=(),
+                dtype=tf.int64,
+                trainable=False,
+                use_resource=True)
+              countdown_decrement = countdown.assign_sub(tf.sign(countdown))
+              with tf.control_dependencies([countdown_decrement]):
+                summary_ready = tf.less_equal(countdown, 0)
+            with summary.record_if(summary_ready):
+              e.summary_fn(e.name, value, step=step)
       offset += len(self._scalar_entries)
       ops.append(summary.all_summary_ops())
     return tf.group(ops)
