@@ -656,9 +656,6 @@ def graph_name(name):
   name = name.split('/kernel')[0]
   if name.startswith('generator/'):
     name = name.replace('generator/', '')
-    # hack for mapping network
-    if name.startswith('Dense'):
-      return 'G_mapping/' + name
     return 'G_' + name
   elif name.startswith('discriminator/'):
     name = name.replace('discriminator/', '')
