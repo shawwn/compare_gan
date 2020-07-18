@@ -538,7 +538,8 @@ def layer_norm(input_, is_training, scope):
 
 
 @gin.configurable(blacklist=["inputs"])
-def spectral_norm(inputs, epsilon=1e-12, singular_value="left", use_resource=False, save_in_checkpoint=True):
+def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=True,
+                  save_in_checkpoint=False, power_iteration_rounds=2):
   """Performs Spectral Normalization on a weight tensor.
 
   Details of why this is helpful for GAN's can be found in "Spectral
@@ -554,9 +555,9 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left", use_resource=Fal
   Returns:
     The normalized weight tensor.
   """
-  if len(inputs.shape) < 2:
-    raise ValueError(
-        "Spectral norm can only be applied to multi-dimensional tensors")
+  # if len(inputs.shape) < 2:
+  #   raise ValueError(
+  #       "Spectral norm can only be applied to multi-dimensional tensors")
 
   # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
   # to (C_out, C_in * KH * KW). Our Conv2D kernel shape is (KH, KW, C_in, C_out)
@@ -589,7 +590,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="left", use_resource=Fal
   # Use power iteration method to approximate the spectral norm.
   # The authors suggest that one round of power iteration was sufficient in the
   # actual experiment to achieve satisfactory performance.
-  power_iteration_rounds = 1
+  #power_iteration_rounds = 1
   for _ in range(power_iteration_rounds):
     if singular_value == "left":
       # `v` approximates the first right singular vector of matrix `w`.
