@@ -126,7 +126,7 @@ class ImageNet(object):
     return features, labels
 
   @staticmethod
-  @gin.configurable("dataset")
+  @gin.configurable("dataset_parser")
   def dataset_parser_static(value, num_classes, label_bias=0):
     """Parses an image and its label from a serialized ResNet-50 TFExample.
 
