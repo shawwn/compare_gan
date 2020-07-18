@@ -183,6 +183,8 @@ class Generator(abstract_arch.AbstractGenerator):
                channel_multipliers=None,
                plain_tanh=False,
                use_relu=True,
+               use_noise=False,
+               randomize_noise=True,
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -212,6 +214,8 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_bias = embed_bias
     self._plain_tanh = plain_tanh
     self._use_relu = use_relu
+    self._use_noise = use_noise
+    self._randomize_noise = randomize_noise
     if hierarchical_z and stylegan_z:
       raise ValueError("Must set either hierarchical_z or stylegan_z, not both")
 
@@ -313,6 +317,8 @@ class Generator(abstract_arch.AbstractGenerator):
     blocks_with_attention = set(self._blocks_with_attention)
     for block_idx in range(num_blocks):
       name = "B{}".format(block_idx + 1)
+      if self._use_noise:
+        net = ops.noise_block(net, name=name, randomize_noise=self._randomize_noise)
       block = self._resnet_block(
           name=name,
           in_channels=in_channels[block_idx],
@@ -336,6 +342,8 @@ class Generator(abstract_arch.AbstractGenerator):
     # Final processing of the net.
     # Use unconditional batch norm.
     logging.info("[Generator] before final processing: %s", net.shape)
+    if self._use_noise:
+      net = ops.noise_block(net, name="final_norm", randomize_noise=self._randomize_noise)
     net = ops.batch_norm(net, is_training=is_training, name="final_norm")
     if self._use_relu:
       net = tf.nn.relu(net)
@@ -361,6 +369,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
                blocks_with_attention="64",
                project_y=True,
                channel_multipliers=None,
+               use_noise=False,
+               randomize_noise=True,
                **kwargs):
     """Constructor for BigGAN discriminator.
 
@@ -377,6 +387,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     self._blocks_with_attention.discard('')
     self._channel_multipliers = None if channel_multipliers is None else [int(x.strip()) for x in channel_multipliers.split(",")]
     self._project_y = project_y
+    self._use_noise = use_noise
+    self._randomize_noise = randomize_noise
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
@@ -444,6 +456,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     blocks_with_attention = set(self._blocks_with_attention)
     for block_idx in range(num_blocks):
       name = "B{}".format(block_idx + 1)
+      if self._use_noise:
+        net = ops.noise_block(net, name=name, randomize_noise=self._randomize_noise)
       is_last_block = block_idx == num_blocks - 1
       block = self._resnet_block(
           name=name,
@@ -463,6 +477,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
 
     # Final part
     logging.info("[Discriminator] before final processing: %s", net.shape)
+    if self._use_noise:
+      net = ops.noise_block(net, name="final_fc", randomize_noise=self._randomize_noise)
     net = tf.nn.relu(net)
     h = tf.math.reduce_sum(net, axis=[1, 2])
     out_logit = ops.linear(h, 1, scope="final_fc", use_sn=self._spectral_norm)
