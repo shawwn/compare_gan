@@ -142,7 +142,7 @@ class TpuSummaries(object):
           if e.countdown is None:
             e.summary_fn(e.name, value, step=step)
           else:
-            with ops.device("cpu:0"):
+            with tf.device("cpu:0"):
               countdown = tf.get_local_variable(
                 e.name + "_countdown",
                 initializer=tf.constant_initializer(e.countdown),
