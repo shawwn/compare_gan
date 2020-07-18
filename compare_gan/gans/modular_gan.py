@@ -854,13 +854,44 @@ class ModularGAN(AbstractGAN):
         discriminator=self.discriminator)
     self.d_loss += self._lambda * penalty_loss
 
-  def flood_loss(self):
-    d_flood = self.options.get("d_flood", None)
-    if d_flood is not None:
-      logging.info("Using d_flood=%f", d_flood)
-      self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
+  @staticmethod
+  @gin.configurable("stop_loss", blacklist=["g_loss", "d_loss"])
+  def stop_loss(g_loss, d_loss,
+                g_stop_d_above=None, # Recommended: 1.50
+                g_stop_g_below=None, # Recommended: 0.05
+                d_stop_g_above=None, # Recommended: None
+                d_stop_d_below=None, # Recommended: 0.20
+                max_loss=128.0,
+                min_loss=-128.0,
+                enabled=False):
+    if enabled:
+      g_stop_d_above = max_loss if g_stop_d_above is None else g_stop_d_above
+      g_stop_g_below = min_loss if g_stop_g_below is None else g_stop_g_below
+      d_stop_g_above = max_loss if d_stop_g_above is None else d_stop_g_above
+      d_stop_d_below = min_loss if d_stop_d_below is None else d_stop_d_below
+      logging.info("Using g_stop_d_above=%f", g_stop_d_above)
+      logging.info("Using g_stop_g_below=%f", g_stop_g_below)
+      logging.info("Using d_stop_g_above=%f", d_stop_g_above)
+      logging.info("Using d_stop_d_below=%f", d_stop_d_below)
+      def lt(a, b): return tf.maximum(0.0, tf.math.sign(b - a))
+      def gt(a, b): return tf.maximum(0.0, tf.math.sign(a - b))
+      g_stop = lt(d_loss, g_stop_d_above) * gt(g_loss, g_stop_g_below)
+      d_stop = lt(g_loss, d_stop_g_above) * gt(d_loss, d_stop_d_below)
+      g_loss *= g_stop
+      d_loss *= d_stop
+    return g_loss, d_loss
 
-    g_flood = self.options.get("g_flood", None)
-    if g_flood is not None:
-      logging.info("Using g_flood=%f", g_flood)
-      self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+  @gin.configurable("flood_loss")
+  def flood_loss(self, enabled=True):
+    if enabled:
+      d_flood = self.options.get("d_flood", None)
+      if d_flood is not None:
+        logging.info("Using d_flood=%f", d_flood)
+        self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
+
+      g_flood = self.options.get("g_flood", None)
+      if g_flood is not None:
+        logging.info("Using g_flood=%f", g_flood)
+        self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
+
+    self.g_loss, self.d_loss = ModularGAN.stop_loss(self.g_loss, self.d_loss)
