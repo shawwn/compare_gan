@@ -170,6 +170,7 @@ def apply_bias_act(x, act='linear', alpha=None, gain=None, lrmul=1, bias_var='bi
 # Used in configs B-F (Table 1).
 
 @gin.configurable
+@ops.op_scope
 def G_mapping(
     latents_in,                             # First input: Latent vectors (Z) [minibatch, latent_size].
     labels_in,                              # Second input: Conditioning labels [minibatch, label_size].
