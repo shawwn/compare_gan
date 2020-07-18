@@ -576,7 +576,8 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
   # so it should be reshaped to (KH * KW * C_in, C_out), and similarly for other
   # layers that put output channels as last dimension. This implies that w
   # here is equivalent to w.T in the paper.
-  w = tf.reshape(inputs, (-1, inputs.shape[-1]))
+  c = inputs.shape[-1] if len(inputs.shape) > 0 else 1
+  w = tf.reshape(inputs, (-1, c))
 
   # Choose whether to persist the first left or first right singular vector.
   # As the underlying matrix is PSD, this should be equivalent, but in practice
@@ -885,6 +886,7 @@ def non_local_block(x, name, use_sn):
     attn_g = tf.matmul(attn, g)
     attn_g = tf.reshape(attn_g, [-1, h, w, num_channels_g])
     sigma = tf.get_variable("sigma", [], initializer=tf.zeros_initializer())
+    sigma = graph_spectral_norm(sigma)
     attn_g = conv1x1(attn_g, num_channels, name="conv2d_attn_g", use_sn=use_sn,
                      use_bias=False)
     return x + sigma * attn_g
