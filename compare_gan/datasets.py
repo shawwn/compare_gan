@@ -126,7 +126,8 @@ class ImageNet(object):
     return features, labels
 
   @staticmethod
-  def dataset_parser_static(value, num_classes):
+  @gin.configurable("dataset")
+  def dataset_parser_static(value, num_classes, label_bias=0):
     """Parses an image and its label from a serialized ResNet-50 TFExample.
 
        This only decodes the image, which is prepared for caching.
@@ -154,9 +155,9 @@ class ImageNet(object):
     image_bytes = tf.reshape(parsed['image/encoded'], shape=[])
     image = tf.io.decode_image(image_bytes, 3)
 
-    # Subtract one so that labels are in [0, 1000).
+    # Subtract label_bias so that labels are in [0, 1000).
     label = tf.cast(
-        tf.reshape(parsed['image/class/label'], shape=[]), dtype=tf.int32) - 0
+        tf.reshape(parsed['image/class/label'], shape=[]), dtype=tf.int32) - label_bias
 
     embedding = parsed['image/class/embedding'].values
 

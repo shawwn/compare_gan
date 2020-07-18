@@ -72,6 +72,7 @@ run_config.save_checkpoints_steps = 1000
 
 ## Single-dataset run: imagenet only
 options.datasets = "gs://dota-euw4a/datasets/imagenet/train-0*" 
+dataset.label_bias = 1
 
 ## Expand model size due to using multiple large datasets:
 resnet_biggan.Generator.ch = 128
