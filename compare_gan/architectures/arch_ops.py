@@ -699,6 +699,7 @@ def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
     if use_bias:
       bias = tf.get_variable(
           "bias", [output_dim], initializer=tf.constant_initializer(0.0))
+      bias = graph_spectral_norm(bias)
       outputs += bias
   return outputs
 
