@@ -930,7 +930,7 @@ def noise_block(x, name, randomize_noise=True, stddev=0.02):
     else:
       noise = tf.random_normal([H, W, C], dtype=x.dtype, seed=0)
       noise = tf.tile([noise], [N, 1, 1, 1])
-    noise_strength = tf.get_variable('noise_strength', shape=[C], initializer=weight_initializer(stddev=stddev), use_resource=True)
+    noise_strength = tf.get_variable('noise_strength', shape=[C], initializer=tf.initializers.random_normal(stddev=stddev), use_resource=True)
     noise_strength = graph_spectral_norm(noise_strength, init=0.0)
     x += noise * tf.cast(noise_strength, x.dtype)
     return x
