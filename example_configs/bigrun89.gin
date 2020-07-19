@@ -7,9 +7,9 @@ options.g_flood = 0.05
 options.d_flood = 0.20
 flood_loss.enabled = False
 stop_loss.enabled = True
-#stop_loss.g_stop_d_above = 1.50
+stop_loss.g_stop_d_above = 1.50
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
-stop_loss.d_stop_d_below = 0.05
+stop_loss.d_stop_d_below = 0.20
 resnet_biggan.Generator.blocks_with_attention = "128"
 resnet_biggan.Discriminator.blocks_with_attention = "128"
 
