@@ -9,7 +9,7 @@ flood_loss.enabled = False
 stop_loss.enabled = True
 #stop_loss.g_stop_d_above = 1.50
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
-stop_loss.d_stop_d_below = 0.30
+stop_loss.d_stop_d_below = 0.05
 resnet_biggan.Generator.blocks_with_attention = "128"
 resnet_biggan.Discriminator.blocks_with_attention = "128"
 
@@ -23,7 +23,7 @@ weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 spectral_norm.use_resource = True
 spectral_norm.save_in_checkpoint = False
-spectral_norm.power_iteration_rounds = 1 # this run somehow became a validation test
+spectral_norm.power_iteration_rounds = 10
 
 # Generator
 G.batch_norm_fn = @conditional_batch_norm
@@ -88,3 +88,5 @@ ModularGAN.d_lr_mul = 1.0
 options.description = "Stylegan-Z test run"
 
 G_main.style_mixing_prob = 0
+
+noise_block.stddev = 0.00
