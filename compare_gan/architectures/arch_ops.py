@@ -592,8 +592,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
   # so it should be reshaped to (KH * KW * C_in, C_out), and similarly for other
   # layers that put output channels as last dimension. This implies that w
   # here is equivalent to w.T in the paper.
-  c = inputs.shape[-1] if len(inputs.shape) > 0 else 1
-  w = tf.reshape(inputs, (-1, c))
+  w = tf.reshape(inputs, (-1, inputs.shape[-1]))
 
   # Choose whether to persist the first left or first right singular vector.
   # As the underlying matrix is PSD, this should be equivalent, but in practice
