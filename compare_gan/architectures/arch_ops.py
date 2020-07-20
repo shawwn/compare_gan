@@ -1050,7 +1050,7 @@ def ones(shape, dtype=dtypes.float32, name=None):
 class Zeros(init_ops.Initializer):
   """Initializer that generates tensors initialized to 0."""
 
-  def __call__(self, shape, dtype=dtypes.float32):
+  def __call__(self, shape, dtype=dtypes.float32, partition_info=None):
     dtype = dtypes.as_dtype(dtype)
     return zeros(shape, dtype)
 
@@ -1058,7 +1058,7 @@ class Zeros(init_ops.Initializer):
 class Ones(init_ops.Initializer):
   """Initializer that generates tensors initialized to 1."""
 
-  def __call__(self, shape, dtype=dtypes.float32):
+  def __call__(self, shape, dtype=dtypes.float32, partition_info=None):
     """Returns a tensor object initialized as specified by the initializer.
 
     Args:
