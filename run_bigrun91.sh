@@ -4,7 +4,7 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 export TPU_HOST=${TPU_HOST:-10.255.128.3}
 export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-8}"
 
-export RUN_NAME="bigrun91"
+export RUN_NAME="${RUN_NAME:-bigrun91}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
 export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun91c/}"
 export GIN_CONFIG="example_configs/bigrun91.gin"
