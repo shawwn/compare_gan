@@ -33,6 +33,7 @@ import functools
 
 from absl import logging
 
+from compare_gan.architectures import arch_ops
 from compare_gan.gans import consts
 from compare_gan.tpu import tpu_ops
 import gin
@@ -100,7 +101,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
   moving_mean = tf.get_variable(
       "moving_mean",
       shape=mean.shape,
-      initializer=tf.zeros_initializer(),
+      initializer=arch_ops.zeros_initializer(),
       trainable=False,
       partitioner=None,
       collections=variable_collections)
@@ -108,7 +109,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
   moving_variance = tf.get_variable(
       "moving_variance",
       shape=variance.shape,
-      initializer=tf.ones_initializer(),
+      initializer=arch_ops.ones_initializer(),
       trainable=False,
       partitioner=None,
       collections=variable_collections)
@@ -159,13 +160,13 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
     accu_mean = tf.get_variable(
         "accu_mean",
         shape=mean.shape,
-        initializer=tf.zeros_initializer(),
+        initializer=arch_ops.zeros_initializer(),
         trainable=False,
         collections=variable_collections)
     accu_variance = tf.get_variable(
         "accu_variance",
         shape=variance.shape,
-        initializer=tf.zeros_initializer(),
+        initializer=arch_ops.zeros_initializer(),
         trainable=False,
         collections=variable_collections)
     accu_counter = tf.get_variable(
@@ -178,7 +179,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
         "update_accus",
         shape=[],
         dtype=tf.int32,
-        initializer=tf.zeros_initializer(),
+        initializer=arch_ops.zeros_initializer(),
         trainable=False,
         collections=variable_collections)
 
@@ -376,7 +377,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
           "gamma",
           [num_channels],
           collections=collections,
-          initializer=tf.ones_initializer())
+          initializer=arch_ops.ones_initializer())
       gamma = graph_spectral_norm(gamma, init=1.0)
       outputs *= gamma
     if center:
@@ -384,7 +385,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
           "beta",
           [num_channels],
           collections=collections,
-          initializer=tf.zeros_initializer())
+          initializer=arch_ops.zeros_initializer())
       beta = graph_spectral_norm(beta, init=0.0)
       outputs += beta
     return outputs
@@ -495,7 +496,7 @@ def evonorm_s0(inputs,
           "gamma",
           [num_channels],
           collections=collections,
-          initializer=tf.ones_initializer())
+          initializer=arch_ops.ones_initializer())
         gamma = graph_spectral_norm(gamma, init=1.0)
         outputs *= gamma
 
@@ -504,7 +505,7 @@ def evonorm_s0(inputs,
           "beta",
           [num_channels],
           collections=collections,
-          initializer=tf.zeros_initializer())
+          initializer=arch_ops.zeros_initializer())
         beta = graph_spectral_norm(beta, init=0.0)
         outputs += beta
 
@@ -525,7 +526,7 @@ def group_std(x, groups=32, eps=1e-5):
   return tf.reshape(std, [N, H, W, C])
 
 def trainable_variable_ones(shape, name="v"):
-  x = tf.get_variable(name, shape=shape, initializer=tf.ones_initializer())
+  x = tf.get_variable(name, shape=shape, initializer=arch_ops.ones_initializer())
   x = graph_spectral_norm(x, init=1.0)
   return x
 
@@ -912,7 +913,7 @@ def non_local_block(x, name, use_sn):
 
     attn_g = tf.matmul(attn, g)
     attn_g = tf.reshape(attn_g, [-1, h, w, num_channels_g])
-    sigma = tf.get_variable("sigma", [], initializer=tf.zeros_initializer())
+    sigma = tf.get_variable("sigma", [], initializer=arch_ops.zeros_initializer())
     sigma = graph_spectral_norm(sigma, init=0.0)
     attn_g = conv1x1(attn_g, num_channels, name="conv2d_attn_g", use_sn=use_sn,
                      use_bias=False)
@@ -933,3 +934,147 @@ def noise_block(x, name, randomize_noise=True, stddev=0.00):
     noise_strength = graph_spectral_norm(noise_strength, init=0.0)
     x += noise * tf.cast(noise_strength, x.dtype)
     return x
+
+
+from tensorflow.python.framework import constant_op
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import tensor_shape
+from tensorflow.python.ops import init_ops
+
+
+def zeros(shape, dtype=dtypes.float32, name=None):
+  """Creates a tensor with all elements set to zero.
+
+  This operation returns a tensor of type `dtype` with shape `shape` and
+  all elements set to zero.
+
+  For example:
+
+  ```python
+  tf.zeros([3, 4], tf.int32)  # [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+  ```
+
+  Args:
+    shape: A list of integers, a tuple of integers, or a 1-D `Tensor` of type
+      `int32`.
+    dtype: The type of an element in the resulting `Tensor`.
+    name: A name for the operation (optional).
+
+  Returns:
+    A `Tensor` with all elements set to zero.
+  """
+  dtype = dtypes.as_dtype(dtype).base_dtype
+  with ops.name_scope(name, "zeros", [shape]) as name:
+    if dtype == dtypes.bool:
+      zero = False
+    elif dtype == dtypes.string:
+      zero = ""
+    else:
+      zero = 0
+
+    if not isinstance(shape, ops.Tensor):
+      try:
+        # Note from @theshawwn: I think this logic is somehow causing variables
+        # not to train the first time they're initialized; they remain at zero
+        # until the run restarts.
+
+        # # Create a constant if it won't be very big. Otherwise create a fill op
+        # # to prevent serialized GraphDefs from becoming too large.
+        # output = _constant_if_small(zero, shape, dtype, name)
+        # if output is not None:
+        #   return output
+
+        # Go through tensor shapes to get int64-if-needed semantics
+        shape = constant_op._tensor_shape_tensor_conversion_function(
+            tensor_shape.TensorShape(shape))
+      except (TypeError, ValueError):
+        # Happens when shape is a list with tensor elements
+        shape = ops.convert_to_tensor(shape, dtype=dtypes.int32)
+    if not shape._shape_tuple():
+      shape = tf.reshape(shape, [-1])  # Ensure it's a vector
+    output = tf.fill(shape, tf.constant(zero, dtype=dtype), name=name)
+  assert output.dtype.base_dtype == dtype
+  return output
+
+
+def ones(shape, dtype=dtypes.float32, name=None):
+  """Creates a tensor with all elements set to 1.
+
+  This operation returns a tensor of type `dtype` with shape `shape` and all
+  elements set to 1.
+
+  For example:
+
+  ```python
+  tf.ones([2, 3], tf.int32)  # [[1, 1, 1], [1, 1, 1]]
+  ```
+
+  Args:
+    shape: A list of integers, a tuple of integers, or a 1-D `Tensor` of type
+      `int32`.
+    dtype: The type of an element in the resulting `Tensor`.
+    name: A name for the operation (optional).
+
+  Returns:
+    A `Tensor` with all elements set to 1.
+  """
+  dtype = dtypes.as_dtype(dtype).base_dtype
+  with ops.name_scope(name, "ones", [shape]) as name:
+    one = True if dtype == dtypes.bool else 1
+    if not isinstance(shape, ops.Tensor):
+      try:
+        # Note from @theshawwn: I think this logic is somehow causing variables
+        # not to train the first time they're initialized; they remain at zero
+        # until the run restarts.
+
+        # # Create a constant if it won't be very big. Otherwise create a fill op
+        # # to prevent serialized GraphDefs from becoming too large.
+        # output = _constant_if_small(one, shape, dtype, name)
+        # if output is not None:
+        #   return output
+
+        # Go through tensor shapes to get int64-if-needed semantics
+        shape = constant_op._tensor_shape_tensor_conversion_function(
+            tensor_shape.TensorShape(shape))
+      except (TypeError, ValueError):
+        # Happens when shape is a list with tensor elements
+        shape = ops.convert_to_tensor(shape, dtype=dtypes.int32)
+    if not shape._shape_tuple():
+      shape = tf.reshape(shape, [-1])  # Ensure it's a vector
+    output = tf.fill(shape, tf.constant(one, dtype=dtype), name=name)
+  assert output.dtype.base_dtype == dtype
+  return output
+
+
+class Zeros(init_ops.Initializer):
+  """Initializer that generates tensors initialized to 0."""
+
+  def __call__(self, shape, dtype=dtypes.float32):
+    dtype = dtypes.as_dtype(dtype)
+    return zeros(shape, dtype)
+
+
+class Ones(init_ops.Initializer):
+  """Initializer that generates tensors initialized to 1."""
+
+  def __call__(self, shape, dtype=dtypes.float32):
+    """Returns a tensor object initialized as specified by the initializer.
+
+    Args:
+      shape: Shape of the tensor.
+      dtype: Optional dtype of the tensor. Only numeric or boolean dtypes are
+       supported.
+
+    Raises:
+      ValuesError: If the dtype is not numeric or boolean.
+    """
+    dtype = dtypes.as_dtype(dtype)
+    if not dtype.is_numpy_compatible or dtype == dtypes.string:
+      raise ValueError("Expected numeric or boolean dtype, got %s." % dtype)
+    return ones(shape, dtype)
+
+
+zeros_initializer = Zeros
+ones_initializer = Ones
+
