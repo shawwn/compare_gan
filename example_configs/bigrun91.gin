@@ -90,3 +90,6 @@ options.description = "Stylegan-Z test run"
 G_main.style_mixing_prob = 0
 
 noise_block.stddev = 0.00
+
+discriminator/noise_block.noise_multiplier = 0.01
+generator/noise_block.noise_multiplier = 0.01

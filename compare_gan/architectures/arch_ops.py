@@ -922,7 +922,7 @@ def non_local_block(x, name, use_sn):
 
 @op_scope
 @gin.configurable(whitelist=['stddev'])
-def noise_block(x, name, randomize_noise=True, stddev=0.00):
+def noise_block(x, name, randomize_noise=True, stddev=0.00, noise_multiplier=1.0):
   with tf.variable_scope(name):
     N, H, W, C = tf.shape(x)[0], x.shape[1], x.shape[2], x.shape[3]
     if randomize_noise:
@@ -932,6 +932,7 @@ def noise_block(x, name, randomize_noise=True, stddev=0.00):
       noise = tf.tile([noise], [N, 1, 1, 1])
     noise_strength = tf.get_variable('noise_strength', shape=[C], initializer=tf.initializers.random_normal(stddev=stddev), use_resource=True)
     noise_strength = graph_spectral_norm(noise_strength, init=0.0)
+    noise_strength *= noise_multiplier
     x += noise * tf.cast(noise_strength, x.dtype)
     return x
 
