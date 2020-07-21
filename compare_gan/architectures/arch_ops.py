@@ -923,6 +923,9 @@ def non_local_block(x, name, use_sn):
 @op_scope
 @gin.configurable(blacklist=['x', 'name'])
 def noise_block(x, name, randomize_noise=True, stddev=0.00, noise_multiplier=1.0):
+  logging.info("%s/noise_block(x=%s, name=%s, randomize_noise=%s, stddev=%s, noise_multiplier=%s)",
+               gin.current_scope_str(),
+               *[repr(v) for v in [x, name, randomize_noise, stddev, noise_multiplier]])
   with tf.variable_scope(name):
     N, H, W, C = tf.shape(x)[0], x.shape[1], x.shape[2], x.shape[3]
     if randomize_noise:
