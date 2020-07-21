@@ -23,7 +23,7 @@ weights.initializer = "orthogonal"
 spectral_norm.singular_value = "auto"
 spectral_norm.use_resource = True
 spectral_norm.save_in_checkpoint = False
-spectral_norm.power_iteration_rounds = 10
+spectral_norm.power_iteration_rounds = 2
 
 # Generator
 G.batch_norm_fn = @conditional_batch_norm
