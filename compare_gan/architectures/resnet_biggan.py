@@ -451,7 +451,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     with gin.config_scope("discriminator"):
       return self._apply(x, y, is_training)
 
-  def _apply(self, z, y, is_training):
+  def _apply(self, x, y, is_training):
     logging.info("[Discriminator] inputs are x=%s, y=%s", x.shape,
                  None if y is None else y.shape)
     resnet_ops.validate_image_inputs(x)
