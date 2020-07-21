@@ -267,6 +267,10 @@ class Generator(abstract_arch.AbstractGenerator):
     Returns:
       A tensor of size [batch_size] + self._image_shape with values in [0, 1].
     """
+    with gin.config_scope("generator"):
+      return self._apply(z, y, is_training)
+
+  def _apply(self, z, y, is_training):
     shape_or_none = lambda t: None if t is None else t.shape
     logging.info("[Generator] inputs are z=%s, y=%s", z.shape, shape_or_none(y))
     # Each block upscales by a factor of 2.
@@ -444,6 +448,10 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
       before the final output activation function and logits form the second
       last layer.
     """
+    with gin.config_scope("discriminator"):
+      return self._apply(x, y, is_training)
+
+  def _apply(self, z, y, is_training):
     logging.info("[Discriminator] inputs are x=%s, y=%s", x.shape,
                  None if y is None else y.shape)
     resnet_ops.validate_image_inputs(x)

@@ -242,9 +242,8 @@ class ModularGAN(AbstractGAN):
         raise NotImplementedError(
             "Generator architecture {} not implemented.".format(
                 self._architecture))
-      with gin.config_scope("generator"):
-        self._generator = architecture_fns[self._architecture](
-            image_shape=self._dataset.image_shape)
+      self._generator = architecture_fns[self._architecture](
+          image_shape=self._dataset.image_shape)
     return self._generator
 
   @property
@@ -267,8 +266,7 @@ class ModularGAN(AbstractGAN):
         raise NotImplementedError(
             "Discriminator architecture {} not implemented.".format(
                 self._architecture))
-      with gin.config_scope("discriminator"):
-        self._discriminator = architecture_fns[self._architecture]()
+      self._discriminator = architecture_fns[self._architecture]()
     return self._discriminator
 
   def as_estimator(self, run_config, batch_size, use_tpu):
