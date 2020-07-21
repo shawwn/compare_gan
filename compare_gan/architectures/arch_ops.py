@@ -932,8 +932,7 @@ def noise_block(x, name, randomize_noise=True, stddev=0.00, noise_multiplier=1.0
       noise = tf.tile([noise], [N, 1, 1, 1])
     noise_strength = tf.get_variable('noise_strength', shape=[C], initializer=tf.initializers.random_normal(stddev=stddev), use_resource=True)
     noise_strength = graph_spectral_norm(noise_strength, init=0.0)
-    noise_strength *= noise_multiplier
-    x += noise * tf.cast(noise_strength, x.dtype)
+    x += noise * tf.cast(noise_strength * noise_multiplier, x.dtype)
     return x
 
 
