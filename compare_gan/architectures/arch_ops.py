@@ -917,6 +917,10 @@ def non_local_block(x, name, use_sn):
     sigma = graph_spectral_norm(sigma, init=0.0)
     attn_g = conv1x1(attn_g, num_channels, name="conv2d_attn_g", use_sn=use_sn,
                      use_bias=False)
+    # idea: Try abs(sigma). G's sigma always seems to train such that its value is negative.
+    # (This is mostly out of curiosity rather than effectiveness. I doubt abs(sigma) would
+    # force it to change much. But it would be interesting to check whether the conv layer
+    # just before sigma ends up inverting its own weights to compensate for abs(sigma).
     return x + sigma * attn_g
 
 
