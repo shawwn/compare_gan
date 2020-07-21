@@ -115,7 +115,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
       collections=variable_collections)
   moving_variance = graph_spectral_norm(moving_variance, init=1.0)
   if is_training:
-    logging.debug("Adding update ops for moving averages of mean and variance.")
+    logging.info("Adding update ops for moving averages of mean and variance.")
     # Update variables for mean and variance during training.
     update_moving_mean = moving_averages.assign_moving_average(
         moving_mean,
@@ -130,7 +130,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
     tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, update_moving_mean)
     tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, update_moving_variance)
     return mean, variance
-  logging.debug("Using moving mean and variance.")
+  logging.info("Using moving mean and variance.")
   return moving_mean, moving_variance
 
 
@@ -191,7 +191,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
       variance = graph_spectral_norm(variance)
       return mean, variance
 
-    logging.debug("Using accumulated moments.")
+    logging.info("Using accumulated moments.")
     accu_mean = graph_spectral_norm(accu_mean, init=0.0)
     accu_variance = graph_spectral_norm(accu_variance, init=0.0)
     # Return the accumulated batch statistics and add current batch statistics
@@ -281,7 +281,7 @@ def standardize_batch(inputs,
     # Default to global batch norm only on TPUs.
     use_cross_replica_mean = (
         tpu_function.get_tpu_context().number_of_shards is not None)
-    logging.debug("Automatically determined use_cross_replica_mean=%s.",
+    logging.info("Automatically determined use_cross_replica_mean=%s.",
                   use_cross_replica_mean)
 
   inputs = tf.convert_to_tensor(inputs)

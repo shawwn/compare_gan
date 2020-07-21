@@ -94,7 +94,7 @@ def cross_replica_mean(inputs, group_size=None):
 
 
 @gin.configurable(blacklist=["inputs", "axis"])
-def cross_replica_moments(inputs, axis, parallel=True, group_size=None):
+def cross_replica_moments(inputs, axis, parallel=False, group_size=None):
   """Compute mean and variance of the inputs tensor across TPU replicas.
 
   Args:

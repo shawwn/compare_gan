@@ -92,7 +92,7 @@ def _has_arg(fn, arg_name):
 def call_with_accepted_args(fn, **kwargs):
   """Calls `fn` only with the keyword arguments that `fn` accepts."""
   kwargs = {k: v for k, v in six.iteritems(kwargs) if _has_arg(fn, k)}
-  logging.debug("Calling %s with args %s.", fn, kwargs)
+  logging.info("Calling %s with args %s.", fn, kwargs)
   return fn(**kwargs)
 
 
