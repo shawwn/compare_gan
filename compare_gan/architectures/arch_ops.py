@@ -921,7 +921,7 @@ def non_local_block(x, name, use_sn):
 
 
 @op_scope
-@gin.configurable(whitelist=['stddev'])
+@gin.configurable(blacklist=['x', 'name'])
 def noise_block(x, name, randomize_noise=True, stddev=0.00, noise_multiplier=1.0):
   with tf.variable_scope(name):
     N, H, W, C = tf.shape(x)[0], x.shape[1], x.shape[2], x.shape[3]
