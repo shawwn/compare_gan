@@ -68,7 +68,7 @@ class TpuSummaries(object):
   all the TPU cores.
   """
 
-  def __init__(self, log_dir, save_summary_steps=1, save_image_steps=50):
+  def __init__(self, log_dir, save_summary_steps=1, save_image_steps=50, append_shapes=False):
     self._log_dir = log_dir
     self._image_entries = []
     self._scalar_entries = []
@@ -77,6 +77,7 @@ class TpuSummaries(object):
     self.record = True
     self._save_summary_steps = save_summary_steps
     self._save_image_steps = save_image_steps
+    self._append_shapes = append_shapes
     #assert TpuSummaries.inst is None
     TpuSummaries.inst = self
 
@@ -93,6 +94,9 @@ class TpuSummaries(object):
     if self.has(name):
       logging.info("TpuSummaries.image: skipping duplicate %s", name)
     else:
+      tensor = tf.convert_to_tensor(tensor)
+      if self._append_shapes:
+        name += '_' + '{}'.format(tensor.shape).strip('()').replace(', ', 'x')
       self._image_entries.append(
           TpuSummaryEntry(summary.image, name, tensor, reduce_fn, countdown=None, init=None))
 
@@ -104,6 +108,8 @@ class TpuSummaries(object):
       logging.info("TpuSummaries.scalar: skipping duplicate %s", name)
     else:
       tensor = tf.convert_to_tensor(tensor)
+      if self._append_shapes:
+        name += '_' + '{}'.format(tensor.shape).strip('()').replace(', ', 'x')
       if tensor.shape.ndims == 0:
         tensor = tf.expand_dims(tensor, 0)
       self._scalar_entries.append(
