@@ -255,8 +255,8 @@ class Generator(abstract_arch.AbstractGenerator):
     out_channels = [self._ch * c for c in channel_multipliers[1:]]
     return in_channels, out_channels
 
-  @gin.configurable("Generator_stylegan_z_args")
   @property
+  @gin.configurable("Generator_stylegan_z_args")
   def G_main_args(self, **args):
     return args
 
