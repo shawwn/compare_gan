@@ -34,7 +34,7 @@ from compare_gan.gans.modular_gan import ModularGAN
 from compare_gan.gans.s3gan import S3GAN
 from compare_gan.gans.ssgan import SSGAN
 from compare_gan.gans.clgan import CLGAN
-from compare_gan.arch_ops import censored_normal
+from compare_gan.architectures.arch_ops import censored_normal
 
 
 # Required import to configure core TF classes and functions.
