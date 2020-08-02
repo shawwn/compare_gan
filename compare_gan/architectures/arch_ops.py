@@ -1085,3 +1085,37 @@ class Ones(init_ops.Initializer):
 zeros_initializer = Zeros
 ones_initializer = Ones
 
+
+from tensorflow.python.eager import context
+from tensorflow.python.framework import dtypes
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import random_seed
+from tensorflow.python.framework import tensor_util
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import control_flow_ops
+from tensorflow.python.ops import gen_random_ops
+from tensorflow.python.ops import math_ops
+
+
+def censored_normal(shape,
+                  mean=0.0,
+                  stddev=1.0,
+                  clip_min=0.0,
+                  clip_max=1.0,
+                  dtype=dtypes.float32,
+                  seed=None,
+                  name=None):
+
+  with ops.name_scope(name, "censored_normal", [shape, mean, stddev]) as name:
+    shape_tensor = tensor_util.shape_tensor(shape)
+    mean_tensor = ops.convert_to_tensor(mean, dtype=dtype, name="mean")
+    stddev_tensor = ops.convert_to_tensor(stddev, dtype=dtype, name="stddev")
+    seed1, seed2 = random_seed.get_seed(seed)
+    rnd = gen_random_ops.random_standard_normal(
+        shape_tensor, dtype, seed=seed1, seed2=seed2)
+    mul = rnd * stddev_tensor
+    value = math_ops.add(mul, mean_tensor, name=name)
+    value = tf.clip_by_value(value, clip_min, clip_max)
+    tensor_util.maybe_set_static_shape(value, shape)
+    return value
+
