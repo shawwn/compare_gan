@@ -576,6 +576,7 @@ class ModularGAN(AbstractGAN):
           y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
             fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
+            fs[-1]["generated_ema"] = tf.stop_gradient(fs[-1]["generated_ema"])
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
@@ -600,6 +601,7 @@ class ModularGAN(AbstractGAN):
           y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter):
             f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
+            f["generated_ema"] = tf.stop_gradient(f["generated_ema"])
 
     return fs, ls
 
