@@ -81,6 +81,10 @@ resnet_biggan.Discriminator.ch = 128
 # balancing:
 ModularGAN.g_lr_mul = 1.0
 ModularGAN.d_lr_mul = 1.0
-options.description = "Stylegan-Z test run"
+options.description = "Stylegan-Z (w) test run; added mixture latent (censored normals) at ~step 567,000 to allow discreteness/sparsity"
+
+## mixture latent parameters; currently left at defaults for a N(0,1) rectified normal:
+# censored_normal.mean, mean, stddev, clip_min
+censored_normal.clip_max = 100 # fix implementation error: censored normals are bounded only one direction, we want a https://en.wikipedia.org/wiki/Rectified_Gaussian_distribution - a spike at 0 (half the samples) and then 0-infinity (the other half)
 
 G_main.style_mixing_prob = 0
