@@ -255,6 +255,11 @@ class Generator(abstract_arch.AbstractGenerator):
     out_channels = [self._ch * c for c in channel_multipliers[1:]]
     return in_channels, out_channels
 
+  @gin.configurable("Generator_stylegan_z_args")
+  @property
+  def G_main_args(self, **args):
+    return args
+
   def apply(self, z, y, is_training):
     """Build the generator network for the given inputs.
 
@@ -287,7 +292,10 @@ class Generator(abstract_arch.AbstractGenerator):
       y = ops.linear(y, self._embed_y_dim, scope="embed_y", use_sn=False,
                      use_bias=self._embed_bias)
     if self._stylegan_z:
-      z_per_block = stylegan_ops.G_main(num_blocks + 1, z, None, is_training=is_training, latent_size=z_dim)
+      z_args = self.G_main_args
+      z_args['is_training'] = z_args.pop('is_training', is_training)
+      tf.logging.info('[Generator] scope: %s stylegan_z_args: %s', gin.current_scope_str(), z_args)
+      z_per_block = stylegan_ops.G_main(num_blocks + 1, z, None, latent_size=z_dim, **z_args)
       z_per_block = tf.unstack(z_per_block, axis=1)
       z0, z_per_block = z_per_block[0], z_per_block[1:]
       if y is not None:
