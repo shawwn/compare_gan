@@ -1097,6 +1097,8 @@ from tensorflow.python.ops import gen_random_ops
 from tensorflow.python.ops import math_ops
 
 
+@op_scope
+@gin.configurable(blacklist=['shape', 'dtype', 'seed', 'name'])
 def censored_normal(shape,
                   mean=0.0,
                   stddev=1.0,
