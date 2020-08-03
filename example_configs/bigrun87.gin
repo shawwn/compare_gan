@@ -82,8 +82,8 @@ resnet_biggan.Generator.ch = 128
 resnet_biggan.Discriminator.ch = 128
 
 # balancing:
-ModularGAN.g_lr_mul = 1.3
-ModularGAN.d_lr_mul = 1.2
+ModularGAN.g_lr_mul = 1.952
+ModularGAN.d_lr_mul = 1.8 
 options.description = "Stylegan-Z (w) test run; added mixture latent (censored normals) at ~step 567,000 to allow discreteness/sparsity"
 
 ## mixture latent parameters; currently left at defaults for a N(0,1) rectified normal:
