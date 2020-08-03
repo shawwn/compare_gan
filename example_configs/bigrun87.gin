@@ -61,7 +61,7 @@ ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 tf.train.AdamOptimizer.beta1 = 0.0
 tf.train.AdamOptimizer.beta2 = 0.999
 
-z.distribution_fn = @tf.random.normal
+z.distribution_fn = @censored_normal
 eval_z.distribution_fn = @censored_normal
 
 run_config.iterations_per_loop = 1000
