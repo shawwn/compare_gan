@@ -2,7 +2,7 @@
 set -ex
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 export TPU_HOST=${TPU_HOST:-10.255.128.3}
-export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-13}"
+export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-11}"
 
 export RUN_NAME="bigrun87"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
