@@ -88,9 +88,10 @@ def _get_cluster():
 @gin.configurable("run_config")
 def _get_run_config(tf_random_seed=None,
                     single_core=False,
-                    iterations_per_loop=250,
-                    save_checkpoints_steps=250,
-                    keep_checkpoint_every_n_hours=0.5,
+                    iterations_per_loop=1000,
+                    save_checkpoints_steps=3000,
+                    save_checkpoints_secs=None, # Set this to 3600 for one checkpoint per hour; also set save_checkpoints_steps to None
+                    keep_checkpoint_every_n_hours=1.0,
                     keep_checkpoint_max=10,
                     experimental_host_call_every_n_steps=50):
   """Return `RunConfig` for TPUs."""
@@ -102,6 +103,7 @@ def _get_run_config(tf_random_seed=None,
       model_dir=FLAGS.model_dir,
       tf_random_seed=tf_random_seed,
       save_checkpoints_steps=save_checkpoints_steps,
+      save_checkpoints_secs=save_checkpoints_secs,
       keep_checkpoint_max=keep_checkpoint_max,
       keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
       cluster=_get_cluster(),
