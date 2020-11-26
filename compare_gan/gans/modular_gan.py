@@ -577,6 +577,14 @@ class ModularGAN(AbstractGAN):
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter), gin.config_scope("ema"):
             fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
             fs[-1]["generated_ema"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_7"] = self.generator(0.7*z, y=y, is_training=True)
+            fs[-1]["generated_ema_z_mul_0_7"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_5"] = self.generator(0.5*z, y=y, is_training=True)
+            fs[-1]["generated_ema_z_mul_0_5"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_3"] = self.generator(0.3*z, y=y, is_training=True)
+            fs[-1]["generated_ema_z_mul_0_3"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_0"] = self.generator(0.0*z, y=y, is_training=True)
+            fs[-1]["generated_ema_z_mul_0_0"] = tf.stop_gradient(fs[-1]["generated_ema"])
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
@@ -602,6 +610,14 @@ class ModularGAN(AbstractGAN):
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter), gin.config_scope("ema"):
             f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
             f["generated_ema"] = tf.stop_gradient(f["generated_ema"])
+            f["generated_ema_z_mul_0_7"] = self.generator(0.7*z, y=y, is_training=True)
+            f["generated_ema_z_mul_0_7"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_5"] = self.generator(0.5*z, y=y, is_training=True)
+            f["generated_ema_z_mul_0_5"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_3"] = self.generator(0.3*z, y=y, is_training=True)
+            f["generated_ema_z_mul_0_3"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_0"] = self.generator(0.0*z, y=y, is_training=True)
+            f["generated_ema_z_mul_0_0"] = tf.stop_gradient(fs[-1]["generated_ema"])
 
     return fs, ls
 
