@@ -194,9 +194,9 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
         # N=256 is fine, and there's no obvious benefit to doing more
         # accumulations.
         return tf.group([
-            tf.assign(accu_mean, mean, read_value=False),
-            tf.assign(accu_variance, variance, read_value=False),
-            tf.assign(accu_counter, 1, read_value=False),
+            tf.assign(accu_mean, mean),
+            tf.assign(accu_variance, variance),
+            tf.assign(accu_counter, 1),
         ])
       mean = graph_spectral_norm(mean)
       variance = graph_spectral_norm(variance)
