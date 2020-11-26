@@ -256,7 +256,7 @@ class Generator(abstract_arch.AbstractGenerator):
     return in_channels, out_channels
 
   @property
-  @gin.configurable("Generator_stylegan_z_args")
+  @gin.configurable("Generator_z_args")
   def G_main_args(self, **args):
     return args
 
@@ -294,7 +294,7 @@ class Generator(abstract_arch.AbstractGenerator):
     if self._stylegan_z:
       z_args = self.G_main_args
       z_args['is_training'] = z_args.pop('is_training', is_training)
-      tf.logging.info('[Generator] scope: %s stylegan_z_args: %s', gin.current_scope_str(), z_args)
+      tf.logging.info('[Generator] scope: %s z_args: %s', gin.current_scope_str(), z_args)
       z_per_block = stylegan_ops.G_main(num_blocks + 1, z, None, latent_size=z_dim, **z_args)
       z_per_block = tf.unstack(z_per_block, axis=1)
       z0, z_per_block = z_per_block[0], z_per_block[1:]
