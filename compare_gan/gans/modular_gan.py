@@ -578,13 +578,13 @@ class ModularGAN(AbstractGAN):
             fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
             fs[-1]["generated_ema"] = tf.stop_gradient(fs[-1]["generated_ema"])
             fs[-1]["generated_ema_z_mul_0_7"] = self.generator(0.7*z, y=y, is_training=True)
-            fs[-1]["generated_ema_z_mul_0_7"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_7"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_7"])
             fs[-1]["generated_ema_z_mul_0_5"] = self.generator(0.5*z, y=y, is_training=True)
-            fs[-1]["generated_ema_z_mul_0_5"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_5"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_5"])
             fs[-1]["generated_ema_z_mul_0_3"] = self.generator(0.3*z, y=y, is_training=True)
-            fs[-1]["generated_ema_z_mul_0_3"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_3"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_3"])
             fs[-1]["generated_ema_z_mul_0_0"] = self.generator(0.0*z, y=y, is_training=True)
-            fs[-1]["generated_ema_z_mul_0_0"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema_z_mul_0_0"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_0"])
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
@@ -611,13 +611,13 @@ class ModularGAN(AbstractGAN):
             f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
             f["generated_ema"] = tf.stop_gradient(f["generated_ema"])
             f["generated_ema_z_mul_0_7"] = self.generator(0.7*z, y=y, is_training=True)
-            f["generated_ema_z_mul_0_7"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_7"] = tf.stop_gradient(f["generated_ema_z_mul_0_7"])
             f["generated_ema_z_mul_0_5"] = self.generator(0.5*z, y=y, is_training=True)
-            f["generated_ema_z_mul_0_5"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_5"] = tf.stop_gradient(f["generated_ema_z_mul_0_5"])
             f["generated_ema_z_mul_0_3"] = self.generator(0.3*z, y=y, is_training=True)
-            f["generated_ema_z_mul_0_3"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_3"] = tf.stop_gradient(f["generated_ema_z_mul_0_3"])
             f["generated_ema_z_mul_0_0"] = self.generator(0.0*z, y=y, is_training=True)
-            f["generated_ema_z_mul_0_0"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            f["generated_ema_z_mul_0_0"] = tf.stop_gradient(f["generated_ema_z_mul_0_0"])
 
     return fs, ls
 
