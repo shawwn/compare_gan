@@ -789,6 +789,8 @@ class ModularGAN(AbstractGAN):
     self._tpu_summary.scalar("loss/g", g_loss)
     if self._g_use_ema:
       self._add_images_to_summary(fs[0]["generated_ema"], "fake_images_ema", params)
+      self._add_images_to_summary(fs[0]["generated_ema_z_mul_0_7"], "fake_images_ema_z_mul_0_7", params)
+      self._add_images_to_summary(fs[0]["generated_ema_z_mul_0_0"], "fake_images_ema_z_mul_0_0", params)
     self._add_images_to_summary(fs[0]["generated"], "fake_images", params)
     self._add_images_to_summary(fs[0]["images"], "real_images", params)
 
