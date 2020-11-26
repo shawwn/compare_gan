@@ -185,7 +185,6 @@ class Generator(abstract_arch.AbstractGenerator):
                use_relu=True,
                use_noise=False,
                randomize_noise=True,
-               truncation_psi=None,
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -219,9 +218,6 @@ class Generator(abstract_arch.AbstractGenerator):
     self._randomize_noise = randomize_noise
     if hierarchical_z and stylegan_z:
       raise ValueError("Must set either hierarchical_z or stylegan_z, not both")
-    if truncation_psi is None:
-      truncation_psi = 0.7 if 'ema' in gin.current_scope_str() else None
-    self._truncation_psi = truncation_psi
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
@@ -261,7 +257,7 @@ class Generator(abstract_arch.AbstractGenerator):
 
   @property
   @gin.configurable("Generator_z_args")
-  def z_args(self, **args):
+  def G_main_args(self, **args):
     return args
 
   def apply(self, z, y, is_training):
@@ -285,10 +281,6 @@ class Generator(abstract_arch.AbstractGenerator):
     # Each block upscales by a factor of 2.
     seed_size = 4
     z_dim = z.shape[1].value
-    z_args = self.z_args
-    z_args['is_training'] = z_args.pop('is_training', is_training)
-    z_args['truncation_psi'] = z_args.pop('truncation_psi', self._truncation_psi)
-    tf.logging.info('[Generator] scope: %s z_args: %s', gin.current_scope_str(), z_args)
 
     in_channels, out_channels = self._get_in_out_channels()
     num_blocks = len(in_channels)
@@ -300,21 +292,20 @@ class Generator(abstract_arch.AbstractGenerator):
       y = ops.linear(y, self._embed_y_dim, scope="embed_y", use_sn=False,
                      use_bias=self._embed_bias)
     if self._stylegan_z:
+      z_args = self.G_main_args
+      z_args['is_training'] = z_args.pop('is_training', is_training)
+      tf.logging.info('[Generator] scope: %s z_args: %s', gin.current_scope_str(), z_args)
       z_per_block = stylegan_ops.G_main(num_blocks + 1, z, None, latent_size=z_dim, **z_args)
       z_per_block = tf.unstack(z_per_block, axis=1)
       z0, z_per_block = z_per_block[0], z_per_block[1:]
       if y is not None:
         y_per_block = [tf.concat([zi, y], 1) for zi in z_per_block]
     elif self._hierarchical_z:
-      if z_args['truncation_psi'] is not None and z_args['truncation_psi'] != 1.0:
-        z *= z_args['truncation_psi']
       z_per_block = tf.split(z, num_blocks + 1, axis=1)
       z0, z_per_block = z_per_block[0], z_per_block[1:]
       if y is not None:
         y_per_block = [tf.concat([zi, y], 1) for zi in z_per_block]
     else:
-      if z_args['truncation_psi'] is not None and z_args['truncation_psi'] != 1.0:
-        z *= z_args['truncation_psi']
       z0 = z
       z_per_block = num_blocks * [z]
       y_per_block = num_blocks * [y]
