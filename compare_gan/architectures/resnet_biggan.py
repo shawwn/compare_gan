@@ -260,7 +260,7 @@ class Generator(abstract_arch.AbstractGenerator):
   def G_main_args(self, **args):
     return args
 
-  def apply(self, z, y, is_training):
+  def apply(self, z, y, *, is_training, **kwds):
     """Build the generator network for the given inputs.
 
     Args:
@@ -273,9 +273,9 @@ class Generator(abstract_arch.AbstractGenerator):
       A tensor of size [batch_size] + self._image_shape with values in [0, 1].
     """
     with gin.config_scope("generator"):
-      return self._apply(z, y, is_training)
+      return self._apply(z, y, is_training, **kwds)
 
-  def _apply(self, z, y, is_training):
+  def _apply(self, z, y, *, is_training, truncation=None, **kwds):
     shape_or_none = lambda t: None if t is None else t.shape
     logging.info("[Generator] inputs are z=%s, y=%s", z.shape, shape_or_none(y))
     # Each block upscales by a factor of 2.
@@ -291,6 +291,9 @@ class Generator(abstract_arch.AbstractGenerator):
     if self._embed_y:
       y = ops.linear(y, self._embed_y_dim, scope="embed_y", use_sn=False,
                      use_bias=self._embed_bias)
+    if truncation is not None:
+      z *= truncation
+      y *= truncation
     if self._stylegan_z:
       z_args = self.G_main_args
       z_args['is_training'] = z_args.pop('is_training', is_training)
