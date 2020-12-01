@@ -581,10 +581,10 @@ class ModularGAN(AbstractGAN):
             fs[-1]["generated_ema_truncation_0_5"] = self.generator(z, y=y, is_training=True, truncation=0.5)
             fs[-1]["generated_ema_truncation_0_3"] = self.generator(z, y=y, is_training=True, truncation=0.3)
             fs[-1]["generated_ema_truncation_0_0"] = self.generator(z, y=y, is_training=True, truncation=0.0)
-            fs[-1]["generated_ema_truncation_0_7"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_7"])
-            fs[-1]["generated_ema_truncation_0_5"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_5"])
-            fs[-1]["generated_ema_truncation_0_3"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_3"])
-            fs[-1]["generated_ema_truncation_0_0"] = tf.stop_gradient(fs[-1]["generated_ema_z_mul_0_0"])
+            fs[-1]["generated_ema_truncation_0_7"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_7"])
+            fs[-1]["generated_ema_truncation_0_5"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_5"])
+            fs[-1]["generated_ema_truncation_0_3"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_3"])
+            fs[-1]["generated_ema_truncation_0_0"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_0"])
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
@@ -614,10 +614,10 @@ class ModularGAN(AbstractGAN):
             f["generated_ema_truncation_0_5"] = self.generator(z, y=y, is_training=True, truncation=0.5)
             f["generated_ema_truncation_0_3"] = self.generator(z, y=y, is_training=True, truncation=0.3)
             f["generated_ema_truncation_0_0"] = self.generator(z, y=y, is_training=True, truncation=0.0)
-            f["generated_ema_truncation_0_7"] = tf.stop_gradient(f["generated_ema_z_mul_0_7"])
-            f["generated_ema_truncation_0_5"] = tf.stop_gradient(f["generated_ema_z_mul_0_5"])
-            f["generated_ema_truncation_0_3"] = tf.stop_gradient(f["generated_ema_z_mul_0_3"])
-            f["generated_ema_truncation_0_0"] = tf.stop_gradient(f["generated_ema_z_mul_0_0"])
+            f["generated_ema_truncation_0_7"] = tf.stop_gradient(f["generated_ema_truncation_0_7"])
+            f["generated_ema_truncation_0_5"] = tf.stop_gradient(f["generated_ema_truncation_0_5"])
+            f["generated_ema_truncation_0_3"] = tf.stop_gradient(f["generated_ema_truncation_0_3"])
+            f["generated_ema_truncation_0_0"] = tf.stop_gradient(f["generated_ema_truncation_0_0"])
 
     return fs, ls
 
