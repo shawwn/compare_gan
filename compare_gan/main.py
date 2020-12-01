@@ -110,27 +110,23 @@ def _get_run_config(tf_random_seed=None,
       tpu_config=tpu_config)
 
 
-
-
-def _get_task_manager():
+def _get_task_manager(model_dir):
   """Returns a TaskManager for this experiment."""
-  score_file = os.path.join(FLAGS.model_dir, FLAGS.score_filename)
+  score_file = os.path.join(model_dir, FLAGS.score_filename)
   return runner_lib.TaskManagerWithCsvResults(
-      model_dir=FLAGS.model_dir, score_file=score_file)
+      model_dir=model_dir, score_file=score_file)
 
 
-def main(unused_argv):
-  logging.info("Gin config: %s\nGin bindings: %s",
-               FLAGS.gin_config, FLAGS.gin_bindings)
-  gin.parse_config_files_and_bindings(FLAGS.gin_config, FLAGS.gin_bindings)
+@gin.configurable("begin_run")
+def _begin_run(model_dir):
 
-
+  FLAGS.model_dir = model_dir
   if FLAGS.use_tpu is None:
     FLAGS.use_tpu = bool(os.environ.get("TPU_NAME", ""))
     if FLAGS.use_tpu:
       logging.info("Found TPU %s.", os.environ["TPU_NAME"])
   run_config = _get_run_config()
-  task_manager = _get_task_manager()
+  task_manager = _get_task_manager(model_dir)
   options = runner_lib.get_options_dict()
   runner_lib.run_with_schedule(
       schedule=FLAGS.schedule,
@@ -143,6 +139,12 @@ def main(unused_argv):
   logging.info("I\"m done with my work, ciao!")
 
 
+def main(unused_argv):
+  logging.info("Gin config: %s\nGin bindings: %s",
+               FLAGS.gin_config, FLAGS.gin_bindings)
+  gin.parse_config_files_and_bindings(FLAGS.gin_config, FLAGS.gin_bindings)
+  _begin_run()
+
+
 if __name__ == "__main__":
-  flags.mark_flag_as_required("model_dir")
   app.run(main)
