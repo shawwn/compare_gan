@@ -726,6 +726,14 @@ def _transform_imagnet_image(image, target_image_shape, crop_method, seed):
     begin = tf.cast(begin, tf.int32)
     begin = tf.concat([begin, [0]], axis=0)  # Add channel dimension.
     image = tf.slice(image, begin, [size, size, 3])
+  elif crop_method == "top":
+    shape = tf.shape(image)
+    h, w = shape[0], shape[1]
+    size = tf.minimum(h, w)
+    begin = tf.cast([0, w - size], tf.float32) / 2.0
+    begin = tf.cast(begin, tf.int32)
+    begin = tf.concat([begin, [0]], axis=0)  # Add channel dimension.
+    image = tf.slice(image, begin, [size, size, 3])
   elif crop_method == "resize_with_pad":
     image = tf.image.resize_image_with_pad(
       image, target_image_shape[1], target_image_shape[0],
