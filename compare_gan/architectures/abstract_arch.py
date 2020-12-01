@@ -68,9 +68,9 @@ class AbstractGenerator(_Module):
     self._batch_norm_fn = batch_norm_fn
     self._spectral_norm = spectral_norm
 
-  def __call__(self, z, y, is_training, reuse=tf.AUTO_REUSE):
+  def __call__(self, z, y, *, is_training, reuse=tf.AUTO_REUSE, **kwds):
     with tf.variable_scope(self.name, values=[z, y], reuse=reuse):
-      outputs = self.apply(z=z, y=y, is_training=is_training)
+      outputs = utils.call_with_accepted_args(self.apply, z=z, y=y, is_training=is_training, **kwds)
     return outputs
 
   def batch_norm(self, inputs, **kwargs):
@@ -83,7 +83,7 @@ class AbstractGenerator(_Module):
     return utils.call_with_accepted_args(self._batch_norm_fn, **args)
 
   @abc.abstractmethod
-  def apply(self, z, y, is_training):
+  def apply(self, z, y, *, is_training, **kwds):
     """Apply the generator on a input.
 
     Args:
