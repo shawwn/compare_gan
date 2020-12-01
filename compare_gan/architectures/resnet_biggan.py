@@ -273,7 +273,7 @@ class Generator(abstract_arch.AbstractGenerator):
       A tensor of size [batch_size] + self._image_shape with values in [0, 1].
     """
     with gin.config_scope("generator"):
-      return self._apply(z, y, is_training, **kwds)
+      return self._apply(z, y, is_training=is_training, **kwds)
 
   def _apply(self, z, y, *, is_training, truncation=None, **kwds):
     shape_or_none = lambda t: None if t is None else t.shape
