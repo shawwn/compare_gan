@@ -26,10 +26,6 @@ def tf_zero_lag_ema(close, ec_var, ema_var, *, length=20.0, length_multiplier=1.
   return update_ops, read_ops
 
 
-def iszero(x):
-  return tf.equal(tf.cast(0, x.dtype), tf.reduce_sum(tf.abs(x)))
-
-
 def val(x, init=None):
   if hasattr(x, 'read_value'):
     result = x.read_value()
@@ -42,4 +38,7 @@ def val(x, init=None):
   else:
     return result
 
+
+def iszero(x):
+  return tf.equal(tf.cast(0, x.dtype), tf.reduce_sum(tf.abs(x)))
 
