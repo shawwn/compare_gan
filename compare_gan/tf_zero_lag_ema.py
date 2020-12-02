@@ -49,7 +49,6 @@ def getvar(name, **kws):
 
 @gin.configurable(whitelist=['gain_limit', 'gain_precision', 'length_multiplier'])
 def tf_zero_lag_ema(close, ec_var, ema_var, *, length=20.0, length_multiplier=1.0, gain_limit=500.0, gain_precision=100.0, dtype=tf.float32):
-  initializer_ops = []
   alpha = 2.0 / ((length * length_multiplier) + 1.0)
   ec_1 = val(ec_var, close)
   ema_1 = val(ema_var, close)
