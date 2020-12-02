@@ -54,15 +54,15 @@ def tf_zero_lag_ema(close, ec_var, ema_var, *, length=20.0, length_multiplier=1.
   ema_1 = val(ema_var, close)
   ema = alpha * close + (1.0 - alpha) * ema_1
   grid = tf.range(-gain_limit, gain_limit+1.0, delta=1.0, dtype=dtype)
-  gain = grid / gain_precision
+  gains = grid / gain_precision
   def fn(gain):
     ec = alpha * (ema + gain*(close - ec_1)) + (1.0 - alpha) * ec_1
     error = tf.linalg.norm(close - ec)
     return error
-  op = tf.vectorized_map(fn, gain)
-  least_error_idx = tf.argmin(op)
-  best_gain = gain[least_error_idx]
-  least_error = op[least_error_idx]
+  errors = tf.vectorized_map(fn, gains)
+  least_error_idx = tf.argmin(errors)
+  best_gain = gains[least_error_idx]
+  least_error = errors[least_error_idx]
   ec = alpha * (ema + best_gain*(close - ec_1)) + (1.0 - alpha) * ec_1
   read_ops = [ec, ema]
   update_ops = []
