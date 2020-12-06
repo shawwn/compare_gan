@@ -89,7 +89,7 @@ if __name__ == '__main__':
   # print out the end result.
   pp(plot)
   import matplotlib.pyplot as plt
-  plt.ylabel('signal strength')
+  plt.ylabel('input signal')
   plt.plot([zlema for zlema, ema, signal in plot])
   plt.plot([ema for zlema, ema, signal in plot])
   plt.plot([signal for zlema, ema, signal in plot])
