@@ -109,6 +109,7 @@ class TpuSummaries(object):
     current_scope = gin.current_scope_str()
     if re.search(r"\bema\b", current_scope):
       logging.info("TpuSummaries.scalar: skipping EMA scalar %s", name)
+      return
     if self.has(name):
       logging.info("TpuSummaries.scalar: skipping duplicate %s", name)
     else:
