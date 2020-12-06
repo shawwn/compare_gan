@@ -93,8 +93,8 @@ def cross_replica_mean(inputs, group_size=None):
       group_size, inputs.dtype)
 
 
-@gin.configurable(blacklist=["inputs", "axis"])
-def cross_replica_moments(inputs, axis, parallel=False, group_size=None):
+@gin.configurable(blacklist=["inputs", "axis", "keepdims"])
+def cross_replica_moments(inputs, axis, parallel=False, group_size=None, keepdims=False):
   """Compute mean and variance of the inputs tensor across TPU replicas.
 
   Args:
@@ -109,7 +109,7 @@ def cross_replica_moments(inputs, axis, parallel=False, group_size=None):
     Two tensors with mean and variance.
   """
   # Compute local mean and then average across replicas.
-  mean = tf.math.reduce_mean(inputs, axis=axis)
+  mean = tf.math.reduce_mean(inputs, axis=axis, keepdims=keepdims)
   mean = cross_replica_mean(mean)
   if parallel:
     # Compute variance using the E[x^2] - (E[x])^2 formula. This is less
@@ -122,6 +122,6 @@ def cross_replica_moments(inputs, axis, parallel=False, group_size=None):
     variance = mean_of_squares - mean_squared
   else:
     variance = tf.math.reduce_mean(
-        tf.math.square(inputs - mean), axis=axis)
+        tf.math.square(inputs - mean), axis=axis, keepdims=keepdims)
   variance = cross_replica_mean(variance, group_size=group_size)
   return mean, variance

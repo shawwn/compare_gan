@@ -534,10 +534,7 @@ def group_std(x, groups=32, eps=1e-5, use_cross_replica_mean=None):
   N, H, W, C = x.shape
   x = tf.reshape(x, [N, H, W, groups, C // groups])
   if use_cross_replica_mean:
-    _, var = tpu_ops.cross_replica_moments(x, [1, 2, 4])
-    var = tf.expand_dims(var, axis=1)
-    var = tf.expand_dims(var, axis=2)
-    var = tf.expand_dims(var, axis=4)
+    _, var = tpu_ops.cross_replica_moments(x, [1, 2, 4], keepdims=True)
   else:
     _, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
   std = tf.sqrt(var + eps)
