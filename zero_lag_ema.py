@@ -55,7 +55,31 @@ class ZeroLagEma:
 
 if __name__ == '__main__':
   from pprint import pprint as pp
-  from importlib import reload; import zero_lag_ema as zle; reload(zle); e = zle.ZeroLagEma(length=23, gain_limit=50)
-  plot = [e.add(0) for i in [1, -1]*5]; plot += [pp(vars(e)) or e.add(500 + i) for i in [1, -1, 0]*20]; plot += [pp(vars(e)) or e.add(0) for i in [1, -1]*5]; pp(plot)
+  # the following code implements "Figure 2" of the paper. At least,
+  # I thought it did. Figure 2 seems to show a signal starting at
+  # zero, jumping upwards, rapidly oscillating up and down, then
+  # finally dropping back to zero. Turns out, it's just a simple
+  # step function: zero, then 20, then zero. But it was a happy
+  # accident, because this has much more revealing behavior.
+  #
+  # Notice that the final ZLEMA value ends up oscillating up and down
+  # *even after the input drops back to zero*. This seems like
+  # unexpected, emergent behavior that the authors didn't point out.
+  # The usual behavior of an EMA is that if there's a rapid
+  # oscillation, the EMA value remains stable. But with ZLEMA, the
+  # error-corrected value and the EMA value end up interacting in some
+  # odd way that results in a rapid fluctuation even after the input
+  # signal has stabilized.
+  #
+  e = ZeroLagEma(length=23, gain_limit=50)
+  # first part of the signal: a constant zero value.
+  plot = [e.add(0) for i in [1, -1]*5]
+  # second part of the signal: an immediate step up to 500, followed
+  # by a rapid oscillation like: 501, 499, 500, 501, 499, 500, ....
+  plot += [pp(vars(e)) or e.add(500 + i) for i in [1, -1, 0]*20]
+  # final part of the signal: drop back to zero.
+  plot += [pp(vars(e)) or e.add(0) for i in [1, -1]*5]
+  # print out the end result.
+  pp(plot)
 
 
