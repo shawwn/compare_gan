@@ -71,6 +71,7 @@ def _parse_gin_config(config_path):
 
 @gin.configurable("options")
 def get_options_dict(batch_size=gin.REQUIRED,
+                     batch_per_core=None, # if set, this overrides batch_size depending on TPU size.
                      gan_class=gin.REQUIRED,
                      architecture=gin.REQUIRED,
                      training_steps=gin.REQUIRED,
@@ -114,6 +115,7 @@ def get_options_dict(batch_size=gin.REQUIRED,
   return {
       "use_tpu": FLAGS.use_tpu,  # For compatibility with AbstractGAN.
       "batch_size": batch_size,
+      "batch_per_core": batch_per_core,
       "gan_class": gan_class,
       "architecture": architecture,
       "training_steps": training_steps,
@@ -355,8 +357,16 @@ def run_with_schedule(schedule, run_config, task_manager, options, use_tpu,
               save_steps=run_config.save_checkpoints_steps))
       # (b/122782388): Remove hotfix.
       run_config = run_config.replace(save_checkpoints_steps=1000000)
+    if "batch_per_core" in options:
+      num_cores = int(os.environ['NUM_CORES'])
+      batch_size = options["batch_per_core"] * num_cores
+      logging.info("batch_size=%d (batch_per_core=%d with %d cores)",
+          batch_size, options["batch_per_core"], num_cores)
+    else:
+      batch_size = options["batch_size"]
+      logging.info("batch_size=%d", batch_size)
     estimator = gan.as_estimator(
-        run_config, batch_size=options["batch_size"], use_tpu=use_tpu)
+        run_config, batch_size=batch_size, use_tpu=use_tpu)
     estimator.train(
         input_fn=gan.input_fn,
         max_steps=int(1e6*options["training_steps"]),
