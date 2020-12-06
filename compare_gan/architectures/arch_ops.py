@@ -660,7 +660,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
 
     # Update the approximation and loop again (so that we return a
     # consistent result at training time vs inference time).
-    with tf.control_dependencies([tf.assign(u_var, u, read_value=False, name="update_u")]):
+    with tf.control_dependencies([u_var.assign(u, read_value=False, name="update_u")]):
       u = tf.identity(u)
 
   # The authors of SN-GAN chose to stop gradient propagating through u and v
