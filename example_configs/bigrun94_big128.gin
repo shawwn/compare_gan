@@ -156,7 +156,7 @@ options.num_classes = 1000
 options.random_labels = True
 options.training_steps = 250000
 options.transpose_input = False
-options.z_dim = 140
+options.z_dim = 120
 
 # Parameters for penalty:
 # ==============================================================================
