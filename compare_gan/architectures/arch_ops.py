@@ -30,6 +30,7 @@ from __future__ import division
 from __future__ import print_function
 
 import functools
+import re
 
 from absl import logging
 
@@ -42,8 +43,6 @@ import tensorflow as tf
 
 from tensorflow.contrib.tpu.python.tpu import tpu_function
 from tensorflow.python.training import moving_averages  # pylint: disable=g-direct-tensorflow-import
-
-import functools
 
 
 def op_scope(fn, name=None):
@@ -576,7 +575,7 @@ def layer_norm(input_, is_training, scope):
 
 @gin.configurable(blacklist=["inputs"])
 def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=True,
-                  save_in_checkpoint=False, power_iteration_rounds=2):
+                  save_in_checkpoint=False, power_iteration_rounds=2, is_training=None):
   """Performs Spectral Normalization on a weight tensor.
 
   Details of why this is helpful for GAN's can be found in "Spectral
@@ -592,13 +591,18 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
   Returns:
     The normalized weight tensor.
   """
-  # if len(inputs.shape) < 2:
-  #   raise ValueError(
-  #       "Spectral norm can only be applied to multi-dimensional tensors")
-
   if len(inputs.shape) <= 0:
     logging.info("[ops] spectral norm of a float is itself; returning as-is. name=%s %s", inputs.name, repr(inputs))
     return inputs, inputs
+
+  if is_training is None:
+    # we infer whether we're training or inferencing based on whether
+    # we're sampling from the EMA model or not.
+    current_scope = gin.current_scope_str()
+    if re.search(r"\bema\b", current_scope):
+      is_training = False
+    else:
+      is_training = True
 
   # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
   # to (C_out, C_in * KH * KW). Our Conv2D kernel shape is (KH, KW, C_in, C_out)
@@ -628,24 +632,30 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
       trainable=False)
   u = u_var
 
-  # Use power iteration method to approximate the spectral norm.
-  # The authors suggest that one round of power iteration was sufficient in the
-  # actual experiment to achieve satisfactory performance.
-  #power_iteration_rounds = 1
-  for _ in range(power_iteration_rounds):
-    if singular_value == "left":
-      # `v` approximates the first right singular vector of matrix `w`.
-      v = tf.math.l2_normalize(
-          tf.matmul(tf.transpose(w), u), axis=None, epsilon=epsilon)
-      u = tf.math.l2_normalize(tf.matmul(w, v), axis=None, epsilon=epsilon)
-    else:
-      v = tf.math.l2_normalize(tf.matmul(u, w, transpose_b=True),
-                               epsilon=epsilon)
-      u = tf.math.l2_normalize(tf.matmul(v, w), epsilon=epsilon)
+  while True:
+    # Use power iteration method to approximate the spectral norm.
+    # The authors suggest that one round of power iteration was sufficient in the
+    # actual experiment to achieve satisfactory performance.
+    #power_iteration_rounds = 1
+    for _ in range(power_iteration_rounds):
+      if singular_value == "left":
+        # `v` approximates the first right singular vector of matrix `w`.
+        v = tf.math.l2_normalize(
+            tf.matmul(tf.transpose(w), u), axis=None, epsilon=epsilon)
+        u = tf.math.l2_normalize(tf.matmul(w, v), axis=None, epsilon=epsilon)
+      else:
+        v = tf.math.l2_normalize(tf.matmul(u, w, transpose_b=True),
+                                 epsilon=epsilon)
+        u = tf.math.l2_normalize(tf.matmul(v, w), epsilon=epsilon)
 
-  # Update the approximation.
-  with tf.control_dependencies([tf.assign(u_var, u, name="update_u")]):
-    u = tf.identity(u)
+    # if we're inferencing, then we're done.
+    if not is_training:
+      break
+
+    # Update the approximation and loop again (so that we return a
+    # consistent result at training time vs inference time).
+    with tf.control_dependencies([tf.assign(u_var, u, read_value=False, name="update_u")]):
+      u = tf.identity(u)
 
   # The authors of SN-GAN chose to stop gradient propagating through u and v
   # and we maintain that option.
