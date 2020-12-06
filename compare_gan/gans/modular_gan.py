@@ -575,16 +575,16 @@ class ModularGAN(AbstractGAN):
           z = fs[-1]["z"]
           y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter), gin.config_scope("ema"):
-            fs[-1]["generated_ema"] = self.generator(z, y=y, is_training=True)
-            fs[-1]["generated_ema"] = tf.stop_gradient(fs[-1]["generated_ema"])
+            fs[-1]["generated_ema"               ] = self.generator(z, y=y, is_training=True)
             fs[-1]["generated_ema_truncation_0_7"] = self.generator(z, y=y, is_training=True, truncation=0.7)
             fs[-1]["generated_ema_truncation_0_5"] = self.generator(z, y=y, is_training=True, truncation=0.5)
             fs[-1]["generated_ema_truncation_0_3"] = self.generator(z, y=y, is_training=True, truncation=0.3)
-            fs[-1]["generated_ema_truncation_0_0"] = self.generator(z, y=y, is_training=True, truncation=0.0)
+            fs[-1]["generated_ema_truncation_0_1"] = self.generator(z, y=y, is_training=True, truncation=0.1)
+            fs[-1]["generated_ema"               ] = tf.stop_gradient(fs[-1]["generated_ema"               ])
             fs[-1]["generated_ema_truncation_0_7"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_7"])
             fs[-1]["generated_ema_truncation_0_5"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_5"])
             fs[-1]["generated_ema_truncation_0_3"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_3"])
-            fs[-1]["generated_ema_truncation_0_0"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_0"])
+            fs[-1]["generated_ema_truncation_0_1"] = tf.stop_gradient(fs[-1]["generated_ema_truncation_0_1"])
     else:
       for f in fs:
         sampled_y = f.get("sampled_y", None)
@@ -608,16 +608,16 @@ class ModularGAN(AbstractGAN):
           z = f["z"]
           y = sampled_y
           with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter), gin.config_scope("ema"):
-            f["generated_ema"] = self.generator(z, y=sampled_y, is_training=True)
-            f["generated_ema"] = tf.stop_gradient(f["generated_ema"])
+            f["generated_ema"               ] = self.generator(z, y=y, is_training=True)
             f["generated_ema_truncation_0_7"] = self.generator(z, y=y, is_training=True, truncation=0.7)
             f["generated_ema_truncation_0_5"] = self.generator(z, y=y, is_training=True, truncation=0.5)
             f["generated_ema_truncation_0_3"] = self.generator(z, y=y, is_training=True, truncation=0.3)
-            f["generated_ema_truncation_0_0"] = self.generator(z, y=y, is_training=True, truncation=0.0)
+            f["generated_ema_truncation_0_1"] = self.generator(z, y=y, is_training=True, truncation=0.1)
+            f["generated_ema"               ] = tf.stop_gradient(f["generated_ema"               ])
             f["generated_ema_truncation_0_7"] = tf.stop_gradient(f["generated_ema_truncation_0_7"])
             f["generated_ema_truncation_0_5"] = tf.stop_gradient(f["generated_ema_truncation_0_5"])
             f["generated_ema_truncation_0_3"] = tf.stop_gradient(f["generated_ema_truncation_0_3"])
-            f["generated_ema_truncation_0_0"] = tf.stop_gradient(f["generated_ema_truncation_0_0"])
+            f["generated_ema_truncation_0_1"] = tf.stop_gradient(f["generated_ema_truncation_0_1"])
 
     return fs, ls
 
@@ -788,11 +788,11 @@ class ModularGAN(AbstractGAN):
       self._tpu_summary.scalar("loss/d_{}".format(i), d_loss)
     self._tpu_summary.scalar("loss/g", g_loss)
     if self._g_use_ema:
-      self._add_images_to_summary(fs[0]["generated_ema"], "fake_images_ema", params)
+      self._add_images_to_summary(fs[0]["generated_ema"               ], "fake_images_ema_truncation_1_0", params)
       self._add_images_to_summary(fs[0]["generated_ema_truncation_0_7"], "fake_images_ema_truncation_0_7", params)
       self._add_images_to_summary(fs[0]["generated_ema_truncation_0_5"], "fake_images_ema_truncation_0_5", params)
       self._add_images_to_summary(fs[0]["generated_ema_truncation_0_3"], "fake_images_ema_truncation_0_3", params)
-      self._add_images_to_summary(fs[0]["generated_ema_truncation_0_0"], "fake_images_ema_truncation_0_0", params)
+      self._add_images_to_summary(fs[0]["generated_ema_truncation_0_1"], "fake_images_ema_truncation_0_1", params)
     self._add_images_to_summary(fs[0]["generated"], "fake_images", params)
     self._add_images_to_summary(fs[0]["images"], "real_images", params)
 
