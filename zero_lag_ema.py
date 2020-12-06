@@ -71,7 +71,7 @@ if __name__ == '__main__':
   # odd way that results in a rapid fluctuation even after the input
   # signal has stabilized.
   #
-  e = ZeroLagEma(length=23, gain_limit=50)
+  e = ZeroLagEma(length=4, gain_limit=50)
   # first part of the signal: a constant zero value.
   plot = [e.add(0) for i in [1, -1]*5]
   # second part of the signal: an immediate step up to 500, followed
