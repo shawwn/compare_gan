@@ -608,6 +608,7 @@ def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=Tru
       is_training = False
     else:
       is_training = True
+    logging.info("[ops] %s is_training=%s", current_scope, is_training)
 
   # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
   # to (C_out, C_in * KH * KW). Our Conv2D kernel shape is (KH, KW, C_in, C_out)
