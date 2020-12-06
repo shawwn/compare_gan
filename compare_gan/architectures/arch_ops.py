@@ -286,14 +286,15 @@ def standardize_batch(inputs,
   if data_format not in {"NCHW", "NHWC"}:
     raise ValueError(
         "Invalid data_format {}. Allowed: NCHW, NHWC.".format(data_format))
-  if use_evonorm:
-    return evonorm_s0(inputs, data_format=data_format, scale=False, center=False)
   if use_cross_replica_mean is None:
     # Default to global batch norm only on TPUs.
     use_cross_replica_mean = (
         tpu_function.get_tpu_context().number_of_shards is not None)
     logging.info("Automatically determined use_cross_replica_mean=%s.",
                   use_cross_replica_mean)
+  if use_evonorm:
+    return evonorm_s0(inputs, data_format=data_format, scale=False, center=False,
+                      use_cross_replica_mean=use_cross_replica_mean)
 
   inputs = tf.convert_to_tensor(inputs)
   inputs_dtype = inputs.dtype
@@ -462,7 +463,8 @@ def evonorm_s0(inputs,
               nonlinearity=True,
               name="evonorm-s0",
               scale=True,
-              center=True):
+              center=True,
+              use_cross_replica_mean=None):
 
   with tf.variable_scope(name, values=[inputs]):
     if data_format not in {"NCHW", "NHWC"}:
@@ -495,7 +497,7 @@ def evonorm_s0(inputs,
       if nonlinearity:
         v = trainable_variable_ones(shape=[num_channels])
         num = inputs * tf.nn.sigmoid(v * inputs)
-        outputs = num / group_std(inputs)
+        outputs = num / group_std(inputs, use_cross_replica_mean=use_cross_replica_mean)
       else:
         outputs = inputs
 
@@ -528,10 +530,13 @@ def instance_std(x, eps=1e-5):
   _, var = tf.nn.moments(x, axes=[1, 2], keepdims=True)
   return tf.sqrt(var + eps)
 
-def group_std(x, groups=32, eps=1e-5):
+def group_std(x, groups=32, eps=1e-5, use_cross_replica_mean=None):
   N, H, W, C = x.shape
   x = tf.reshape(x, [N, H, W, groups, C // groups])
-  _, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
+  if use_cross_replica_mean:
+    _, var = tpu_ops.cross_replica_moments(x, [1, 2, 4])
+  else:
+    _, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
   std = tf.sqrt(var + eps)
   std = tf.broadcast_to(std, x.shape)
   return tf.reshape(std, [N, H, W, C])
