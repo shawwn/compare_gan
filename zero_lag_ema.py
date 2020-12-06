@@ -53,8 +53,9 @@ class ZeroLagEma:
     return self.ec, self.ema
 
 
-# from pprint import pprint as pp
-# from importlib import reload; import zero_lag_ema as zle; reload(zle); e = zle.ZeroLagEma(length=23, gain_limit=50)
-# plot = [e.add(0) for i in [1, -1]*5]; plot += [pp(vars(e)) or e.add(500 + i) for i in [1, -1, 0]*20]; plot += [pp(vars(e)) or e.add(0) for i in [1, -1]*5]; pp(plot)
+if __name__ == '__main__':
+  from pprint import pprint as pp
+  from importlib import reload; import zero_lag_ema as zle; reload(zle); e = zle.ZeroLagEma(length=23, gain_limit=50)
+  plot = [e.add(0) for i in [1, -1]*5]; plot += [pp(vars(e)) or e.add(500 + i) for i in [1, -1, 0]*20]; plot += [pp(vars(e)) or e.add(0) for i in [1, -1]*5]; pp(plot)
 
 
