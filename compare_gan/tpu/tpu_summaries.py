@@ -48,6 +48,7 @@ import tensorflow as tf
 
 import gin
 import os
+import re
 
 
 summary = tf.contrib.summary  # TensorFlow Summary API v2.
@@ -104,6 +105,10 @@ class TpuSummaries(object):
     """Add a summary for a scalar tensor."""
     if not self.record:
       return
+    # if we're sampling from the EMA model, don't graph any scalars.
+    current_scope = gin.current_scope_str()
+    if re.search(r"\bema\b", current_scope):
+      logging.info("TpuSummaries.scalar: skipping EMA scalar %s", name)
     if self.has(name):
       logging.info("TpuSummaries.scalar: skipping duplicate %s", name)
     else:
