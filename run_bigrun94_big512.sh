@@ -2,12 +2,12 @@
 set -ex
 #export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 export TPU_HOST=${TPU_HOST:-10.255.128.3}
-export TPU_NAME="${TPU_NAME:-tpu-v3-32-euw4a-63}"
+export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-0}"
 
-export RUN_NAME="${RUN_NAME:-bigrun94_big512}"
+export RUN_NAME="${RUN_NAME:-bigrun94_big128}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun94_big512/}"
-export GIN_CONFIG="example_configs/bigrun94_big512.gin"
+export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun94_big128/}"
+export GIN_CONFIG="example_configs/bigrun94_big128.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
 logfile="logs/${RUN_NAME}-${date}.txt"
