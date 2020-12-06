@@ -141,7 +141,7 @@ options.batch_per_core = 2
 options.d_flood = 0.2
 options.datasets = \
     'gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*'
-options.description = 'BigGAN 512'
+options.description = 'BigGAN 128'
 options.disc_iters = 2
 options.discriminator_normalization = None
 options.g_flood = 0.05
@@ -156,7 +156,7 @@ options.num_classes = 1000
 options.random_labels = True
 options.training_steps = 250000
 options.transpose_input = False
-options.z_dim = 160
+options.z_dim = 140
 
 # Parameters for penalty:
 # ==============================================================================
