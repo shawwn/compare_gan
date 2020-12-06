@@ -50,7 +50,7 @@ class ZeroLagEma:
     # if self.ec < self.ema and self.ec_1 > self.ema:
     #   if 100*self.least_error / close > self.thresh:
     #     print('sell short next bar', close, vars(self))
-    return self.ec, self.ema
+    return self.ec, self.ema, close
 
 
 if __name__ == '__main__':
@@ -71,6 +71,13 @@ if __name__ == '__main__':
   # odd way that results in a rapid fluctuation even after the input
   # signal has stabilized.
   #
+  # If you want to use a traditional "decay" value, i.e. 0.9 for
+  # batchnorm, compute length like this:
+  #
+  #   decay = 0.9
+  #   length = (1.0 + decay) / (1.0 - decay)
+  #
+  #
   e = ZeroLagEma(length=4, gain_limit=50)
   # first part of the signal: a constant zero value.
   plot = [e.add(0) for i in [1, -1]*5]
@@ -81,5 +88,12 @@ if __name__ == '__main__':
   plot += [pp(vars(e)) or e.add(0) for i in [1, -1]*5]
   # print out the end result.
   pp(plot)
+  import matplotlib.pyplot as plt
+  plt.ylabel('signal strength')
+  plt.plot([zlema for zlema, ema, signal in plot])
+  plt.plot([ema for zlema, ema, signal in plot])
+  plt.plot([signal for zlema, ema, signal in plot])
+  plt.xlabel('length=%.2f (i.e. EMA decay=%.4f) with gain_limit=%.2f' % (e.length, 1.0 - e.alpha, e.gain_limit))
+  plt.show()
 
 
