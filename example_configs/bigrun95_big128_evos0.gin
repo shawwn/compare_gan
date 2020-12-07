@@ -120,7 +120,7 @@ ModularGAN.experimental_force_graph_unroll = False
 ModularGAN.experimental_joint_gen_for_disc = False
 ModularGAN.fit_label_distribution = False
 ModularGAN.g_lr = 0.0001
-ModularGAN.g_lr_mul = 5.0
+ModularGAN.g_lr_mul = 15.0
 ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.g_use_ema = True
 
@@ -141,7 +141,7 @@ options.batch_per_core = 2
 options.d_flood = 0.2
 options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
 options.description = 'BigGAN 128 evonorm-s0'
-options.disc_iters = 2
+options.disc_iters = 1
 options.discriminator_normalization = None
 options.g_flood = 0.05
 options.gan_class = @ModularGAN
