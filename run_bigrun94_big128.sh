@@ -6,7 +6,7 @@ export TPU_NAME="${TPU_NAME:-tpu-v3-32-euw4a-63}"
 
 export RUN_NAME="${RUN_NAME:-bigrun94_big128}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun94_big128/}"
+export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/}"
 export GIN_CONFIG="example_configs/bigrun94_big128.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -20,7 +20,7 @@ export TF_TPU_WATCHDOG_TIMEOUT=1800
 
 
 while true; do
-  timeout --signal=SIGKILL 8h python3 wrapper.py compare_gan/main.py --use_tpu --tfds_data_dir 'gs://dota-euw4a/tensorflow_datasets/' --model_dir "${MODEL_DIR}" --gin_config "$GIN_CONFIG" "$@" 2>&1 | tee -a "$logfile"
+  timeout --signal=SIGKILL 8h python3 wrapper.py compare_gan/main.py --use_tpu --tfds_data_dir 'gs://dota-euw4a/tensorflow_datasets/' --model_dir "${MODEL_DIR}" --gin_config "$GIN_CONFIG" --gin_bindings "begin_run.model_dir = '${MODEL_DIR}/'" --gin_bindings "begin_run.tpu_name = '${TPU_NAME}'" "$@" 2>&1 | tee -a "$logfile"
   if [ ! -z "$TPU_NO_RECREATE" ]
   then
     echo "Not recreating TPU."

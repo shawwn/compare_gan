@@ -136,7 +136,7 @@ normal.seed = None
 # Parameters for options:
 # ==============================================================================
 options.architecture = 'resnet_biggan_arch'
-options.batch_size = 1024
+options.batch_size = None
 options.batch_per_core = 2
 options.d_flood = 0.2
 options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
