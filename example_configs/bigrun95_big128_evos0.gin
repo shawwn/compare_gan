@@ -15,7 +15,7 @@ AdamOptimizer.use_locking = False
 
 # Parameters for begin_run:
 # ==============================================================================
-begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun95_big128_evos0/run1'
+begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun95_big128_evos0/run2'
 
 # Parameters for discriminator/resnet_biggan.BigGanResNetBlock:
 # ==============================================================================
@@ -120,7 +120,7 @@ ModularGAN.experimental_force_graph_unroll = False
 ModularGAN.experimental_joint_gen_for_disc = False
 ModularGAN.fit_label_distribution = False
 ModularGAN.g_lr = 0.0001
-ModularGAN.g_lr_mul = 3.0
+ModularGAN.g_lr_mul = 5.0
 ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.g_use_ema = True
 
@@ -225,6 +225,12 @@ stop_loss.g_stop_d_above = None
 stop_loss.g_stop_g_below = None
 stop_loss.max_loss = 128.0
 stop_loss.min_loss = -128.0
+
+
+stop_loss.enabled = True
+#stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
+stop_loss.g_stop_d_above = 1.50
+stop_loss.d_stop_d_below = 0.20
 
 # Parameters for TpuSummaries:
 # ==============================================================================
