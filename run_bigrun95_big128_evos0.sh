@@ -6,7 +6,7 @@ export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-1}"
 
 export RUN_NAME="${RUN_NAME:-bigrun95_big128_evos0}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://dota-euw4a/runs/bigrun95_big128_evos0/run3}"
+export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun95_big128_evos0/run3}"
 export GIN_CONFIG="example_configs/bigrun95_big128_evos0.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
