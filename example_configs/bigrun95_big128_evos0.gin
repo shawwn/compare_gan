@@ -15,7 +15,7 @@ AdamOptimizer.use_locking = False
 
 # Parameters for begin_run:
 # ==============================================================================
-begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun95_big128_evos0/run2'
+begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun95_big128_evos0'
 
 # Parameters for discriminator/resnet_biggan.BigGanResNetBlock:
 # ==============================================================================
@@ -110,7 +110,7 @@ loss.fn = @hinge
 # ==============================================================================
 ModularGAN.conditional = True
 ModularGAN.d_lr = 0.0005
-ModularGAN.d_lr_mul = 1.0
+ModularGAN.d_lr_mul = 0.5
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
