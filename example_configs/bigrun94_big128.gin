@@ -75,7 +75,7 @@ resnet_biggan.Discriminator.use_noise = False
 
 # Parameters for flood_loss:
 # ==============================================================================
-flood_loss.enabled = True
+flood_loss.enabled = False
 
 # Parameters for G:
 # ==============================================================================
