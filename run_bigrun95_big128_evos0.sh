@@ -20,7 +20,7 @@ export TF_TPU_WATCHDOG_TIMEOUT=1800
 
 
 while true; do
-  timeout --signal=SIGKILL 8h python3 wrapper.py compare_gan/main.py --use_tpu --tfds_data_dir 'gs://dota-euw4a/tensorflow_datasets/' --model_dir "${MODEL_DIR}" --gin_bindings "begin_run.tpu_name = '${TPU_NAME}'" "$@" 2>&1 | tee -a "$logfile"
+  timeout --signal=SIGKILL 8h python3 wrapper.py compare_gan/main.py --use_tpu --tfds_data_dir 'gs://dota-euw4a/tensorflow_datasets/' --model_dir "${MODEL_DIR}" --gin_config "$GIN_CONFIG" --gin_bindings "begin_run.tpu_name = '${TPU_NAME}'" "$@" 2>&1 | tee -a "$logfile"
   if [ ! -z "$TPU_NO_RECREATE" ]
   then
     echo "Not recreating TPU."
