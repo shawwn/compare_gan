@@ -110,7 +110,7 @@ loss.fn = @hinge
 # ==============================================================================
 ModularGAN.conditional = True
 ModularGAN.d_lr = 0.0005
-ModularGAN.d_lr_mul = 0.5
+ModularGAN.d_lr_mul = 0.01
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
