@@ -118,13 +118,17 @@ def _get_task_manager(model_dir):
 
 
 @gin.configurable("begin_run")
-def _begin_run(model_dir):
+def _begin_run(model_dir, tpu_name=None):
 
   FLAGS.model_dir = model_dir
+  if tpu_name is None:
+    os.environ.get("TPU_NAME", "")
+  if tpu_name is not None:
+    os.environ["TPU_NAME"] = tpu_name
   if FLAGS.use_tpu is None:
-    FLAGS.use_tpu = bool(os.environ.get("TPU_NAME", ""))
+    FLAGS.use_tpu = bool(tpu_name)
     if FLAGS.use_tpu:
-      logging.info("Found TPU %s.", os.environ["TPU_NAME"])
+      logging.info("Found TPU %s.", tpu_name)
   run_config = _get_run_config()
   task_manager = _get_task_manager(model_dir)
   options = runner_lib.get_options_dict()
