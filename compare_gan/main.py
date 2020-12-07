@@ -119,7 +119,7 @@ def _get_task_manager(model_dir):
 
 @gin.configurable("begin_run")
 def _begin_run(model_dir, tpu_name=None):
-
+  model_dir = model_dir.rstrip('/') # get rid of the darn "poison directory" bug
   FLAGS.model_dir = model_dir
   if tpu_name is None:
     os.environ.get("TPU_NAME", "")
