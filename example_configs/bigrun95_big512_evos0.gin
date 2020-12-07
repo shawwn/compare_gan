@@ -229,7 +229,7 @@ stop_loss.min_loss = -128.0
 
 stop_loss.enabled = True
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
-stop_loss.g_stop_d_above = 1.50
+#stop_loss.g_stop_d_above = 1.50 # causes initialization to fail; don't enable at start of run. TODO add a step delay.
 stop_loss.d_stop_d_below = 0.20
 
 # Parameters for TpuSummaries:
