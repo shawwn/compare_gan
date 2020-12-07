@@ -15,7 +15,7 @@ AdamOptimizer.use_locking = False
 
 # Parameters for begin_run:
 # ==============================================================================
-begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun95_big512_evos0/run0'
+begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun95_big512_evos0/run2'
 
 # Parameters for discriminator/resnet_biggan.BigGanResNetBlock:
 # ==============================================================================
