@@ -122,7 +122,7 @@ def _request_compute_metadata(path):
 _master = resolver.TPUClusterResolver.master
 
 def _tpu_host():
-  return os.environ.get('TPU_HOST', '10.255.128.3')
+  return os.environ.get('TPU_HOST', None)
 
 def mock_master(cls, *args, **kws):
   ip = _master(cls, *args, **kws)
