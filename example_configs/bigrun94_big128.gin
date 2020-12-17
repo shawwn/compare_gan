@@ -137,7 +137,7 @@ normal.seed = None
 # ==============================================================================
 options.architecture = 'resnet_biggan_arch'
 options.batch_size = None
-options.batch_per_core = 10
+options.batch_per_core = 32
 options.d_flood = 0.2
 
 # Counts for each dataset:
