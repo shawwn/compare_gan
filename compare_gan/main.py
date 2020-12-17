@@ -85,6 +85,29 @@ def _get_cluster():
   return cluster
 
 
+@gin.configurable("session_config")
+def _get_session_config(disable_optimizations=False):
+    if not disable_optimizations:
+      return None
+    rewriter_config = rewriter_config_pb2.RewriterConfig(
+        disable_model_pruning=True,
+        disable_meta_optimizer=True,
+        dependency_optimization=rewriter_config_pb2.RewriterConfig.OFF,
+        fail_on_optimizer_errors=True,
+        )
+    graph_options = config_pb2.GraphOptions(
+        rewrite_options=rewriter_config,
+        place_pruned_graph=True,
+        infer_shapes=True,
+        )
+    session_config = config_pb2.ConfigProto(
+        graph_options=graph_options,
+        allow_soft_placement=True,
+        isolate_session_state=False,
+        )
+    return session_config
+
+
 @gin.configurable("run_config")
 def _get_run_config(tf_random_seed=None,
                     single_core=False,
@@ -99,6 +122,7 @@ def _get_run_config(tf_random_seed=None,
       num_shards=1 if single_core else None,  # None = all cores.
       iterations_per_loop=iterations_per_loop,
       experimental_host_call_every_n_steps=experimental_host_call_every_n_steps)
+  session_config = _get_session_config()
   return tf.contrib.tpu.RunConfig(
       model_dir=FLAGS.model_dir,
       tf_random_seed=tf_random_seed,
@@ -108,6 +132,7 @@ def _get_run_config(tf_random_seed=None,
       keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
       cluster=_get_cluster(),
       tpu_config=tpu_config,
+      session_config=session_config,
       checkpoint_save_graph_def=False)
 
 

@@ -256,3 +256,6 @@ z.distribution_fn = @tf.random.normal
 z.maxval = 1.0
 z.minval = -1.0
 z.stddev = 1.0
+
+
+session_config.disable_optimizations = True
