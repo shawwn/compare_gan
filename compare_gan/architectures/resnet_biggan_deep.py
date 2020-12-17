@@ -242,7 +242,7 @@ class Generator(abstract_arch.AbstractGenerator):
     out_channels = [self._ch * c for c in channel_multipliers[1:]]
     return in_channels, out_channels
 
-  def apply(self, z, y, is_training):
+  def apply(self, z, y, *, is_training):
     """Build the generator network for the given inputs.
 
     Args:
@@ -254,8 +254,12 @@ class Generator(abstract_arch.AbstractGenerator):
     Returns:
       A tensor of size [batch_size] + self._image_shape with values in [0, 1].
     """
+    with gin.config_scope("generator"):
+      return self._apply(z, y, is_training=is_training)
+
+  def _apply(self, z, y, *, is_training):
     shape_or_none = lambda t: None if t is None else t.shape
-    logging.info("[Generator] inputs are z=%s, y=%s", z.shape, shape_or_none(y))
+    logging.info("[Generator] inputs are z=%s, y=%s, is_training=%s", z.shape, shape_or_none(y), is_training)
     seed_size = 4
 
     if self._embed_y:
@@ -380,7 +384,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     out_channels = [self._ch * c for c in channel_multipliers[1:]]
     return in_channels, out_channels
 
-  def apply(self, x, y, is_training):
+  def apply(self, x, y, *, is_training):
     """Apply the discriminator on a input.
 
     Args:
@@ -395,6 +399,10 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
       before the final output activation function and logits form the second
       last layer.
     """
+    with gin.config_scope("discriminator"):
+      return self._apply(x, y, is_training=is_training)
+
+  def _apply(self, x, y, *, is_training):
     logging.info("[Discriminator] inputs are x=%s, y=%s", x.shape,
                  None if y is None else y.shape)
     resnet_ops.validate_image_inputs(x)
