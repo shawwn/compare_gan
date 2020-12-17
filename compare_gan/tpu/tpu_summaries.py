@@ -138,43 +138,41 @@ class TpuSummaries(object):
     # batch dimension). Step is the same for all cores.
     step = step[0]
     logging.info("host_call_fn: args=%s", args)
-    with tf.name_scope('summary_writer/images'):
-      with summary.create_file_writer(os.path.join(self._log_dir, 'images'), name='summary_writer_images').as_default():
-        offset = 0
-        with summary.record_summaries_every_n_global_steps(
-                self._save_image_steps, step):
-          for i, e in enumerate(self._image_entries):
-            value = e.reduce_fn(args[i + offset])
-            e.summary_fn(e.name, value, step=step)
-        offset += len(self._image_entries)
-    with tf.name_scope('summary_writer/scalars'):
-      with summary.create_file_writer(os.path.join(self._log_dir, 'scalars'), name='summary_writer_scalars').as_default():
-        with summary.record_summaries_every_n_global_steps(
-              self._save_summary_steps, step):
-          for i, e in enumerate(self._scalar_entries):
-            value = e.reduce_fn(args[i + offset])
-            ready = None
-            if e.countdown is not None and False: # disable countdown for now
-              with tf.device("cpu:0"):
-                countdown = tf.get_local_variable(
-                  e.name + "_countdown",
-                  initializer=tf.constant_initializer(e.countdown),
-                  shape=(),
-                  dtype=tf.int64,
-                  trainable=False,
-                  use_resource=True)
-                countdown_decrement = countdown.assign_sub(tf.sign(countdown))
-                with tf.control_dependencies([countdown_decrement]):
-                  ready = tf.less_equal(countdown, 0)
-            if e.init is not None and False: # Disable this for now
-              op = tf.reduce_any(tf.not_equal(value, tf.cast(e.init, value.dtype)))
-              ready = tf.logical_and(ready, op) if ready is not None else op
-            if ready is not None:
-              with record_if(ready):
-                e.summary_fn(e.name, value, step=step)
-            else:
+    with summary.create_file_writer(os.path.join(self._log_dir, 'images'), name='summary_writer_images').as_default():
+      offset = 0
+      with summary.record_summaries_every_n_global_steps(
+              self._save_image_steps, step):
+        for i, e in enumerate(self._image_entries):
+          value = e.reduce_fn(args[i + offset])
+          e.summary_fn(e.name, value, step=step)
+      offset += len(self._image_entries)
+    with summary.create_file_writer(os.path.join(self._log_dir, 'scalars'), name='summary_writer_scalars').as_default():
+      with summary.record_summaries_every_n_global_steps(
+            self._save_summary_steps, step):
+        for i, e in enumerate(self._scalar_entries):
+          value = e.reduce_fn(args[i + offset])
+          ready = None
+          if e.countdown is not None and False: # disable countdown for now
+            with tf.device("cpu:0"):
+              countdown = tf.get_local_variable(
+                e.name + "_countdown",
+                initializer=tf.constant_initializer(e.countdown),
+                shape=(),
+                dtype=tf.int64,
+                trainable=False,
+                use_resource=True)
+              countdown_decrement = countdown.assign_sub(tf.sign(countdown))
+              with tf.control_dependencies([countdown_decrement]):
+                ready = tf.less_equal(countdown, 0)
+          if e.init is not None and False: # Disable this for now
+            op = tf.reduce_any(tf.not_equal(value, tf.cast(e.init, value.dtype)))
+            ready = tf.logical_and(ready, op) if ready is not None else op
+          if ready is not None:
+            with record_if(ready):
               e.summary_fn(e.name, value, step=step)
-        offset += len(self._scalar_entries)
+          else:
+            e.summary_fn(e.name, value, step=step)
+      offset += len(self._scalar_entries)
     ops = summary.all_summary_ops()
     logging.info("host_call: summary.all_summary_ops(): %s", ops)
     return ops
