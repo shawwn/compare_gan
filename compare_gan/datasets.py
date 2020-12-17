@@ -928,7 +928,7 @@ class ImagesDataset(ImagenetDataset):
     return ds
 
   def _shortcut(self, ds, params, seed, preprocess_fn=None):
-    ds = ds.cache() # cache the unparsed filtered dataset.
+    #ds = ds.cache() # cache the unparsed filtered dataset.
     ds = ds.apply(tf.contrib.data.shuffle_and_repeat(1024 * 16)) # fused shuffle and repeat
     assert "batch_size" in params
     def fused_parse(image_bytes, seed, preprocess_fn, parse_fn, num_classes):
@@ -951,7 +951,7 @@ class ImagesDataset(ImagenetDataset):
     ds = ds.prefetch(tf.contrib.data.AUTOTUNE)
     options = tf.data.Options()
     options.experimental_threading.max_intra_op_parallelism = 1
-    options.experimental_threading.private_threadpool_size = 48
+    options.experimental_threading.private_threadpool_size = 96
     ds = ds.with_options(options)
     return ds
 
