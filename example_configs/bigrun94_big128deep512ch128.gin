@@ -76,7 +76,6 @@ G.spectral_norm = True
 # ==============================================================================
 resnet_biggan_deep.Generator.blocks_with_attention = '128'
 resnet_biggan_deep.Generator.ch = 128
-resnet_biggan_deep.Generator.embed_bias = False
 resnet_biggan_deep.Generator.embed_y = True
 resnet_biggan_deep.Generator.embed_y_dim = 128
 resnet_biggan_deep.Generator.embed_z = False
