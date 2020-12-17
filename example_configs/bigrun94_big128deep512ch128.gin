@@ -57,8 +57,6 @@ dataset_parser.label_bias = 0
 resnet_biggan_deep.Discriminator.blocks_with_attention = '128'
 resnet_biggan_deep.Discriminator.ch = 128
 resnet_biggan_deep.Discriminator.project_y = True
-resnet_biggan_deep.Discriminator.randomize_noise = True
-resnet_biggan_deep.Discriminator.use_noise = False
 
 # Parameters for flood_loss:
 # ==============================================================================
@@ -78,11 +76,6 @@ resnet_biggan_deep.Generator.blocks_with_attention = '128'
 resnet_biggan_deep.Generator.ch = 128
 resnet_biggan_deep.Generator.embed_y = True
 resnet_biggan_deep.Generator.embed_y_dim = 128
-resnet_biggan_deep.Generator.plain_tanh = False
-resnet_biggan_deep.Generator.randomize_noise = True
-resnet_biggan_deep.Generator.stylegan_z = False
-resnet_biggan_deep.Generator.use_noise = False
-resnet_biggan_deep.Generator.use_relu = True
 resnet_biggan_deep.Generator.experimental_fast_conv_to_rgb = True
 
 # Parameters for hinge:
