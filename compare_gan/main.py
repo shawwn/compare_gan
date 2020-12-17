@@ -122,7 +122,7 @@ def _begin_run(model_dir, tpu_name=None):
   model_dir = model_dir.rstrip('/') # get rid of the darn "poison directory" bug
   FLAGS.model_dir = model_dir
   if tpu_name is None:
-    os.environ.get("TPU_NAME", "")
+    tpu_name = os.environ.get("TPU_NAME", "")
   if tpu_name is not None:
     os.environ["TPU_NAME"] = tpu_name
   if FLAGS.use_tpu is None:
