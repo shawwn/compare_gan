@@ -85,6 +85,10 @@ def _get_cluster():
   return cluster
 
 
+from tensorflow.core.protobuf import config_pb2
+from tensorflow.core.protobuf import rewriter_config_pb2
+
+
 @gin.configurable("session_config")
 def _get_session_config(disable_optimizations=False):
     if not disable_optimizations:
