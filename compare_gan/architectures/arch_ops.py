@@ -992,7 +992,7 @@ def weight_norm_deconv2d(x, output_dim,
 
 @op_scope
 @gin.configurable(blacklist=['x', 'name', 'use_sn'])
-def non_local_block(x, name, use_sn, memory_saving_matmul=True):
+def non_local_block(x, name, use_sn, memory_saving_matmul=False):
   """Self-attention (non-local) block.
 
   This method is used to exactly reproduce SAGAN and ignores Gin settings on
