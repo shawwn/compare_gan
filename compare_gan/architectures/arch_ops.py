@@ -593,6 +593,7 @@ def layer_norm(input_, is_training, scope):
       input_, trainable=is_training, scope=scope)
 
 @op_scope
+@gin.configurable(blacklist=["inputs"])
 def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
                   power_iteration_rounds=20):
   """Performs Spectral Normalization on a weight tensor.

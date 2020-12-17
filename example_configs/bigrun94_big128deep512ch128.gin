@@ -259,3 +259,5 @@ z.stddev = 1.0
 
 
 session_config.disable_optimizations = True
+
+spectral_norm_stateless.power_iteration_rounds = 2
