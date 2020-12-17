@@ -991,8 +991,8 @@ def weight_norm_deconv2d(x, output_dim,
       return x
 
 @op_scope
-@gin.configurable(blacklist=['x', 'name'])
-def non_local_block(x, name, use_sn):
+@gin.configurable(blacklist=['x', 'name', 'use_sn'])
+def non_local_block(x, name, use_sn, memory_saving_matmul=True):
   """Self-attention (non-local) block.
 
   This method is used to exactly reproduce SAGAN and ignores Gin settings on
@@ -1028,16 +1028,25 @@ def non_local_block(x, name, use_sn):
     phi = tf.layers.max_pooling2d(inputs=phi, pool_size=[2, 2], strides=2)
     phi = _spatial_flatten(phi)
 
-    attn = tf.matmul(theta, phi, transpose_b=True)
-    attn = tf.nn.softmax(attn)
-
     # G path
     g = conv1x1(x, num_channels_g, name="conv2d_g", use_sn=use_sn,
                 use_bias=False)
     g = tf.layers.max_pooling2d(inputs=g, pool_size=[2, 2], strides=2)
     g = _spatial_flatten(g)
 
-    attn_g = tf.matmul(attn, g)
+    def process(theta, phi, g):
+      attn = tf.matmul(theta, phi, transpose_b=True)
+      attn = tf.nn.softmax(attn)
+      attn_g = tf.matmul(attn, g)
+      return attn_g
+
+    if memory_saving_matmul:
+      attn_g = tf.stack([process(theta0, phi0, g0) for theta0, phi0, g0 in zip(
+        tf.unstack(theta, axis=0),
+        tf.unstack(phi, axis=0),
+        tf.unstack(g, axis=0))])
+    else:
+      attn_g = process(theta, phi, g)
     attn_g = tf.reshape(attn_g, [-1, h, w, num_channels_g])
     sigma = tf.get_variable("sigma", [], initializer=arch_ops.zeros_initializer())
     sigma = graph_spectral_norm(sigma, init=0.0)

@@ -138,6 +138,10 @@ ModularGAN.g_use_ema = False
 normal.mean = 0.0
 normal.seed = None
 
+# Parameters for non_local_block:
+# ==============================================================================
+non_local_block.memory_saving_matmul = True
+
 # Parameters for options:
 # ==============================================================================
 options.architecture = 'resnet_biggan_arch'
