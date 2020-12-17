@@ -598,16 +598,6 @@ def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
     logging.info("[ops] spectral norm of a float is itself; returning as-is. name=%s %s", inputs.name, repr(inputs))
     return inputs, inputs
 
-  if is_training is None:
-    # we infer whether we're training or inferencing based on whether
-    # we're sampling from the EMA model or not.
-    current_scope = gin.current_scope_str()
-    if re.search(r"\bema\b", current_scope):
-      is_training = False
-    else:
-      is_training = True
-    logging.info("[ops] %s is_training=%s", current_scope, is_training)
-
   # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
   # to (C_out, C_in * KH * KW). Our Conv2D kernel shape is (KH, KW, C_in, C_out)
   # so it should be reshaped to (KH * KW * C_in, C_out), and similarly for other
