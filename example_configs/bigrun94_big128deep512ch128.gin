@@ -1,0 +1,270 @@
+# Parameters for AdamOptimizer:
+# ==============================================================================
+AdamOptimizer.beta1 = 0.0
+AdamOptimizer.beta2 = 0.999
+AdamOptimizer.epsilon = 1e-08
+AdamOptimizer.use_locking = False
+
+# Parameters for generator/batch_norm:
+# ==============================================================================
+# None.
+
+# Parameters for ema/generator/batch_norm:
+# ==============================================================================
+# None.
+
+# Parameters for begin_run:
+# ==============================================================================
+begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun94_big128/deep512ch128/'
+
+# Parameters for generator/conditional_batch_norm:
+# ==============================================================================
+generator/conditional_batch_norm.use_bias = False
+
+# Parameters for ema/generator/conditional_batch_norm:
+# ==============================================================================
+ema/generator/conditional_batch_norm.use_bias = False
+
+# Parameters for generator/cross_replica_moments:
+# ==============================================================================
+generator/cross_replica_moments.group_size = None
+generator/cross_replica_moments.parallel = False
+generator/cross_replica_moments.use_traditional_moments = True
+
+# Parameters for ema/generator/cross_replica_moments:
+# ==============================================================================
+ema/generator/cross_replica_moments.group_size = None
+ema/generator/cross_replica_moments.parallel = False
+ema/generator/cross_replica_moments.use_traditional_moments = True
+
+# Parameters for D:
+# ==============================================================================
+D.batch_norm_fn = None
+D.layer_norm = False
+D.spectral_norm = True
+
+# Parameters for dataset:
+# ==============================================================================
+dataset.name = 'images_512'
+dataset.seed = 547
+
+# Parameters for dataset_parser:
+# ==============================================================================
+dataset_parser.label_bias = 0
+
+# Parameters for resnet_biggan_deep.Discriminator:
+# ==============================================================================
+resnet_biggan_deep.Discriminator.blocks_with_attention = '128'
+resnet_biggan_deep.Discriminator.ch = 128
+resnet_biggan_deep.Discriminator.channel_multipliers = None
+resnet_biggan_deep.Discriminator.project_y = True
+resnet_biggan_deep.Discriminator.randomize_noise = True
+resnet_biggan_deep.Discriminator.use_noise = False
+
+# Parameters for flood_loss:
+# ==============================================================================
+#flood_loss.enabled = False
+flood_loss.enabled = True
+options.d_flood = 0.2
+options.g_flood = 0.05
+
+# Parameters for G:
+# ==============================================================================
+G.batch_norm_fn = @conditional_batch_norm
+G.spectral_norm = True
+
+# Parameters for resnet_biggan_deep.Generator:
+# ==============================================================================
+resnet_biggan_deep.Generator.blocks_with_attention = '128'
+resnet_biggan_deep.Generator.ch = 128
+resnet_biggan_deep.Generator.channel_multipliers = None
+resnet_biggan_deep.Generator.embed_bias = False
+resnet_biggan_deep.Generator.embed_y = True
+resnet_biggan_deep.Generator.embed_y_dim = 128
+resnet_biggan_deep.Generator.embed_z = False
+resnet_biggan_deep.Generator.hierarchical_z = True
+resnet_biggan_deep.Generator.plain_tanh = False
+resnet_biggan_deep.Generator.randomize_noise = True
+resnet_biggan_deep.Generator.stylegan_z = False
+resnet_biggan_deep.Generator.use_noise = False
+resnet_biggan_deep.Generator.use_relu = True
+resnet_biggan_deep.Generator.experimental_fast_conv_to_rgb = True
+
+# Parameters for hinge:
+# ==============================================================================
+# None.
+
+# Parameters for loss:
+# ==============================================================================
+loss.fn = @hinge
+
+# Parameters for ModularGAN:
+# ==============================================================================
+ModularGAN.conditional = True
+ModularGAN.d_lr = 0.0005
+ModularGAN.d_lr_mul = 1.0
+ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
+ModularGAN.deprecated_split_disc_calls = False
+#ModularGAN.dynamic_range = False
+ModularGAN.ema_decay = 0.9999
+ModularGAN.ema_start_step = 2000
+ModularGAN.experimental_force_graph_unroll = False
+ModularGAN.experimental_force_graph_unroll_on_tpu = False
+ModularGAN.experimental_joint_gen_for_disc = False
+ModularGAN.fit_label_distribution = False
+ModularGAN.g_lr = 0.0001
+ModularGAN.g_lr_mul = 0.5
+ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
+ModularGAN.g_use_ema = True
+
+# Parameters for no_penalty:
+# ==============================================================================
+# None.
+
+# Parameters for normal:
+# ==============================================================================
+normal.mean = 0.0
+normal.seed = None
+
+# Parameters for non_local_block:
+# ==============================================================================
+#non_local_block.memory_saving_matmul = True
+non_local_block.memory_saving_matmul = False
+
+# Parameters for options:
+# ==============================================================================
+options.architecture = 'resnet_biggan_deep_arch'
+options.batch_size = None
+options.batch_per_core = 2
+
+# Counts for each dataset:
+# 2817346  gs://dota-euw4a/datasets/danbooru2019-s
+# 427774   gs://dota-euw4a/datasets/e621-s
+# 302652   gs://dota-euw4a/datasets/portraits
+# 51798    gs://dota-euw4a/datasets/e621-portraits-s-512
+# 58537    gs://dota-euw4a/datasets/palm
+# 855876   gs://dota-euw4a/datasets/danbooru2019figures
+# 104719   gs://arfa-euw4/datasets/ponies1024
+
+options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
+options.description = 'BigGAN-Deep-512 128ch'
+#options.disc_iters = 2
+options.disc_iters = 1
+options.discriminator_normalization = None
+options.gan_class = @ModularGAN
+options.image_grid_height = 4
+options.image_grid_resolution = 1024
+options.image_grid_width = 4
+options.labels = ''
+options.lamba = 1
+options.model_dir = None
+options.num_classes = 1000
+options.random_labels = True
+options.training_steps = 25000000
+options.transpose_input = False
+options.z_dim = 128
+
+# Parameters for penalty:
+# ==============================================================================
+penalty.fn = @no_penalty
+
+# Parameters for replace_labels:
+# ==============================================================================
+replace_labels.file_pattern = None
+
+# Parameters for run_config:
+# ==============================================================================
+run_config.experimental_host_call_every_n_steps = 25
+#run_config.iterations_per_loop = 1000
+run_config.iterations_per_loop = 25
+run_config.keep_checkpoint_every_n_hours = 0.5
+run_config.keep_checkpoint_max = 10
+run_config.save_checkpoints_steps = 250
+#run_config.save_checkpoints_secs = 600 # checkpoint every 10 min
+run_config.single_core = False
+run_config.tf_random_seed = None
+
+# Parameters for discriminator/spectral_norm:
+# ==============================================================================
+discriminator/spectral_norm.epsilon = 1e-12
+discriminator/spectral_norm.power_iteration_rounds = 20
+discriminator/spectral_norm.save_in_checkpoint = True
+discriminator/spectral_norm.singular_value = 'right'
+discriminator/spectral_norm.use_resource = True
+
+# Parameters for generator/spectral_norm:
+# ==============================================================================
+generator/spectral_norm.epsilon = 1e-12
+generator/spectral_norm.power_iteration_rounds = 20
+generator/spectral_norm.save_in_checkpoint = True
+generator/spectral_norm.singular_value = 'right'
+generator/spectral_norm.use_resource = True
+
+# Parameters for ema/generator/spectral_norm:
+# ==============================================================================
+ema/generator/spectral_norm.epsilon = 1e-12
+ema/generator/spectral_norm.power_iteration_rounds = 20
+ema/generator/spectral_norm.save_in_checkpoint = True
+ema/generator/spectral_norm.singular_value = 'right'
+ema/generator/spectral_norm.use_resource = True
+
+# Parameters for generator/standardize_batch:
+# ==============================================================================
+generator/standardize_batch.decay = 0.9
+generator/standardize_batch.epsilon = 1e-05
+generator/standardize_batch.use_cross_replica_mean = True
+generator/standardize_batch.use_evonorm = False
+generator/standardize_batch.use_moving_averages = False
+
+# Parameters for ema/generator/standardize_batch:
+# ==============================================================================
+ema/generator/standardize_batch.decay = 0.9
+ema/generator/standardize_batch.epsilon = 1e-05
+ema/generator/standardize_batch.use_cross_replica_mean = True
+ema/generator/standardize_batch.use_evonorm = False
+ema/generator/standardize_batch.use_moving_averages = False
+
+# Parameters for stop_loss:
+# ==============================================================================
+stop_loss.d_stop_d_below = None
+stop_loss.d_stop_g_above = None
+#stop_loss.enabled = False
+stop_loss.g_stop_d_above = None
+stop_loss.g_stop_g_below = None
+stop_loss.max_loss = 128.0
+stop_loss.min_loss = -128.0
+
+#stop_loss.enabled = True
+#stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
+stop_loss.g_stop_d_above = 1.50
+stop_loss.d_stop_d_below = 0.20
+stop_loss.enabled = False
+
+# Parameters for TpuSummaries:
+# ==============================================================================
+TpuSummaries.append_shapes = False
+TpuSummaries.save_image_steps = 25
+TpuSummaries.save_summary_steps = 1
+
+# Parameters for train_imagenet_transform:
+# ==============================================================================
+train_imagenet_transform.crop_method = 'top'
+
+# Parameters for discriminator/weights:
+# ==============================================================================
+discriminator/weights.initializer = 'orthogonal'
+
+# Parameters for generator/weights:
+# ==============================================================================
+generator/weights.initializer = 'orthogonal'
+
+# Parameters for ema/generator/weights:
+# ==============================================================================
+ema/generator/weights.initializer = 'orthogonal'
+
+# Parameters for z:
+# ==============================================================================
+z.distribution_fn = @tf.random.normal
+z.maxval = 1.0
+z.minval = -1.0
+z.stddev = 1.0
