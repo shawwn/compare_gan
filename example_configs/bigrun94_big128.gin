@@ -110,7 +110,7 @@ loss.fn = @hinge
 # ==============================================================================
 ModularGAN.conditional = True
 ModularGAN.d_lr = 0.0005
-ModularGAN.d_lr_mul = 1.0
+ModularGAN.d_lr_mul = 0.1
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
@@ -137,11 +137,22 @@ normal.seed = None
 # ==============================================================================
 options.architecture = 'resnet_biggan_arch'
 options.batch_size = None
-options.batch_per_core = 2
+options.batch_per_core = 10
 options.d_flood = 0.2
+
+# Counts for each dataset:
+# 2817346  gs://dota-euw4a/datasets/danbooru2019-s
+# 427774   gs://dota-euw4a/datasets/e621-s
+# 302652   gs://dota-euw4a/datasets/portraits
+# 51798    gs://dota-euw4a/datasets/e621-portraits-s-512
+# 58537    gs://dota-euw4a/datasets/palm
+# 855876   gs://dota-euw4a/datasets/danbooru2019figures
+# 104719   gs://arfa-euw4/datasets/ponies1024
+
 options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
 options.description = 'BigGAN 128'
-options.disc_iters = 2
+#options.disc_iters = 2
+options.disc_iters = 1
 options.discriminator_normalization = None
 options.g_flood = 0.05
 options.gan_class = @ModularGAN
