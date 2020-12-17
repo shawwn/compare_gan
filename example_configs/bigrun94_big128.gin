@@ -185,9 +185,9 @@ replace_labels.file_pattern = None
 
 # Parameters for run_config:
 # ==============================================================================
-run_config.experimental_host_call_every_n_steps = 5
+run_config.experimental_host_call_every_n_steps = 10
 #run_config.iterations_per_loop = 1000
-run_config.iterations_per_loop = 5
+run_config.iterations_per_loop = 10
 run_config.keep_checkpoint_every_n_hours = 0.5
 run_config.keep_checkpoint_max = 10
 run_config.save_checkpoints_steps = 50
@@ -254,7 +254,7 @@ stop_loss.enabled = False
 # Parameters for TpuSummaries:
 # ==============================================================================
 TpuSummaries.append_shapes = False
-TpuSummaries.save_image_steps = 5
+TpuSummaries.save_image_steps = 10
 TpuSummaries.save_summary_steps = 1
 
 # Parameters for train_imagenet_transform:
