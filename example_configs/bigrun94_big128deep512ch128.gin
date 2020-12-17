@@ -45,7 +45,7 @@ D.spectral_norm = True
 
 # Parameters for dataset:
 # ==============================================================================
-dataset.name = 'images_512'
+dataset.name = 'images_256'
 dataset.seed = 547
 
 # Parameters for dataset_parser:
@@ -54,15 +54,15 @@ dataset_parser.label_bias = 0
 
 # Parameters for resnet_biggan_deep.Discriminator:
 # ==============================================================================
-resnet_biggan_deep.Discriminator.blocks_with_attention = '128'
-resnet_biggan_deep.Discriminator.ch = 128
+resnet_biggan_deep.Discriminator.blocks_with_attention = '64'
+resnet_biggan_deep.Discriminator.ch = 96
 resnet_biggan_deep.Discriminator.project_y = True
 
 # Parameters for flood_loss:
 # ==============================================================================
-#flood_loss.enabled = False
-flood_loss.enabled = True
-options.d_flood = 0.2
+flood_loss.enabled = False
+#flood_loss.enabled = True
+options.d_flood = 0.10
 options.g_flood = 0.05
 
 # Parameters for G:
@@ -72,8 +72,8 @@ G.spectral_norm = True
 
 # Parameters for resnet_biggan_deep.Generator:
 # ==============================================================================
-resnet_biggan_deep.Generator.blocks_with_attention = '128'
-resnet_biggan_deep.Generator.ch = 128
+resnet_biggan_deep.Generator.blocks_with_attention = '64'
+resnet_biggan_deep.Generator.ch = 96
 resnet_biggan_deep.Generator.embed_y = True
 resnet_biggan_deep.Generator.embed_y_dim = 128
 resnet_biggan_deep.Generator.experimental_fast_conv_to_rgb = True
@@ -91,7 +91,7 @@ loss.fn = @hinge
 ModularGAN.conditional = True
 #ModularGAN.d_lr = 0.0005
 ModularGAN.d_lr  = 0.00002500
-ModularGAN.d_lr_mul = 1.0
+ModularGAN.d_lr_mul = 0.1
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
@@ -142,9 +142,9 @@ options.description = 'BigGAN-Deep-512 128ch'
 options.disc_iters = 1
 options.discriminator_normalization = None
 options.gan_class = @ModularGAN
-options.image_grid_height = 4
+options.image_grid_height = 8
 options.image_grid_resolution = 1024
-options.image_grid_width = 4
+options.image_grid_width = 8
 options.labels = ''
 options.lamba = 1
 options.model_dir = None
@@ -164,9 +164,9 @@ replace_labels.file_pattern = None
 
 # Parameters for run_config:
 # ==============================================================================
-run_config.experimental_host_call_every_n_steps = 5
+run_config.experimental_host_call_every_n_steps = 50
 #run_config.iterations_per_loop = 1000
-run_config.iterations_per_loop = 25
+run_config.iterations_per_loop = 250
 run_config.keep_checkpoint_every_n_hours = 0.5
 run_config.keep_checkpoint_max = 10
 run_config.save_checkpoints_steps = 250
@@ -177,7 +177,7 @@ run_config.tf_random_seed = None
 # Parameters for discriminator/spectral_norm:
 # ==============================================================================
 discriminator/spectral_norm.epsilon = 1e-12
-discriminator/spectral_norm.power_iteration_rounds = 1
+discriminator/spectral_norm.power_iteration_rounds = 20
 discriminator/spectral_norm.save_in_checkpoint = True
 discriminator/spectral_norm.singular_value = 'right'
 discriminator/spectral_norm.use_resource = True
@@ -185,7 +185,7 @@ discriminator/spectral_norm.use_resource = True
 # Parameters for generator/spectral_norm:
 # ==============================================================================
 generator/spectral_norm.epsilon = 1e-12
-generator/spectral_norm.power_iteration_rounds = 1
+generator/spectral_norm.power_iteration_rounds = 20
 generator/spectral_norm.save_in_checkpoint = True
 generator/spectral_norm.singular_value = 'right'
 generator/spectral_norm.use_resource = True
@@ -193,7 +193,7 @@ generator/spectral_norm.use_resource = True
 # Parameters for ema/generator/spectral_norm:
 # ==============================================================================
 ema/generator/spectral_norm.epsilon = 1e-12
-ema/generator/spectral_norm.power_iteration_rounds = 1
+ema/generator/spectral_norm.power_iteration_rounds = 20
 ema/generator/spectral_norm.save_in_checkpoint = True
 ema/generator/spectral_norm.singular_value = 'right'
 ema/generator/spectral_norm.use_resource = True
@@ -224,16 +224,15 @@ stop_loss.g_stop_g_below = None
 stop_loss.max_loss = 128.0
 stop_loss.min_loss = -128.0
 
-#stop_loss.enabled = True
+stop_loss.enabled = True
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
 stop_loss.g_stop_d_above = 1.50
 stop_loss.d_stop_d_below = 0.20
-stop_loss.enabled = False
 
 # Parameters for TpuSummaries:
 # ==============================================================================
 TpuSummaries.append_shapes = False
-TpuSummaries.save_image_steps = 25
+TpuSummaries.save_image_steps = 50
 TpuSummaries.save_summary_steps = 1
 
 # Parameters for train_imagenet_transform:
