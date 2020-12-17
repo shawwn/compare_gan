@@ -1,7 +1,8 @@
 #!/bin/bash
 set -ex
 #export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
-export TPU_HOST=${TPU_HOST:-10.255.128.3}
+#export TPU_HOST=${TPU_HOST:-10.255.128.3}
+unset TPU_HOST
 export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-2}"
 
 export RUN_NAME="${RUN_NAME:-bigrun94_big128}"
