@@ -137,7 +137,8 @@ def _get_run_config(tf_random_seed=None,
       cluster=_get_cluster(),
       tpu_config=tpu_config,
       session_config=session_config,
-      checkpoint_save_graph_def=False)
+      # checkpoint_save_graph_def=False # TF 2 only?
+      )
 
 
 def _get_task_manager(model_dir):
