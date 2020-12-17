@@ -116,6 +116,7 @@ class ModularGAN(AbstractGAN):
                deprecated_split_disc_calls=False,
                experimental_joint_gen_for_disc=False,
                experimental_force_graph_unroll=False,
+               experimental_force_graph_unroll_on_tpu=True,
                g_use_ema=False,
                ema_decay=0.9999,
                ema_start_step=4000,
@@ -174,6 +175,7 @@ class ModularGAN(AbstractGAN):
     self._deprecated_split_disc_calls = deprecated_split_disc_calls
     self._experimental_joint_gen_for_disc = experimental_joint_gen_for_disc
     self._experimental_force_graph_unroll = experimental_force_graph_unroll
+    self._experimental_force_graph_unroll_on_tpu = experimental_force_graph_unroll_on_tpu
     self._g_use_ema = g_use_ema
     self._ema_decay = ema_decay
     self._ema_start_step = ema_start_step
@@ -271,7 +273,7 @@ class ModularGAN(AbstractGAN):
 
   def as_estimator(self, run_config, batch_size, use_tpu):
     """Returns a TPUEstimator for this GAN."""
-    unroll_graph = self._experimental_force_graph_unroll or use_tpu
+    unroll_graph = self._experimental_force_graph_unroll or (use_tpu and self._experimental_force_graph_unroll_on_tpu)
     num_sub_steps = self._get_num_sub_steps(unroll_graph=unroll_graph)
     return tf.contrib.tpu.TPUEstimator(
         config=run_config,
@@ -704,7 +706,7 @@ class ModularGAN(AbstractGAN):
       raise ValueError("Only training mode is supported.")
 
     use_tpu = params["use_tpu"]
-    unroll_graph = self._experimental_force_graph_unroll or use_tpu
+    unroll_graph = self._experimental_force_graph_unroll or (use_tpu and self._experimental_force_graph_unroll_on_tpu)
     num_sub_steps = self._get_num_sub_steps(unroll_graph=unroll_graph)
     if unroll_graph:
       logging.warning("Graph will be unrolled.")

@@ -120,12 +120,14 @@ ModularGAN.deprecated_split_disc_calls = False
 ModularGAN.ema_decay = 0.9999
 ModularGAN.ema_start_step = 4000
 ModularGAN.experimental_force_graph_unroll = False
+ModularGAN.experimental_force_graph_unroll_on_tpu = False
 ModularGAN.experimental_joint_gen_for_disc = False
 ModularGAN.fit_label_distribution = False
 ModularGAN.g_lr = 0.0001
 ModularGAN.g_lr_mul = 4.0
 ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
-ModularGAN.g_use_ema = True
+#ModularGAN.g_use_ema = True
+ModularGAN.g_use_ema = False
 
 # Parameters for no_penalty:
 # ==============================================================================
