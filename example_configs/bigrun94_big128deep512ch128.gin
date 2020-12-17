@@ -125,7 +125,7 @@ non_local_block.memory_saving_matmul = False
 # ==============================================================================
 options.architecture = 'resnet_biggan_deep_arch'
 options.batch_size = None
-options.batch_per_core = 4
+options.batch_per_core = 2
 
 # Counts for each dataset:
 # 2817346  gs://dota-euw4a/datasets/danbooru2019-s
@@ -177,7 +177,7 @@ run_config.tf_random_seed = None
 # Parameters for discriminator/spectral_norm:
 # ==============================================================================
 discriminator/spectral_norm.epsilon = 1e-12
-discriminator/spectral_norm.power_iteration_rounds = 20
+discriminator/spectral_norm.power_iteration_rounds = 1
 discriminator/spectral_norm.save_in_checkpoint = True
 discriminator/spectral_norm.singular_value = 'right'
 discriminator/spectral_norm.use_resource = True
@@ -185,7 +185,7 @@ discriminator/spectral_norm.use_resource = True
 # Parameters for generator/spectral_norm:
 # ==============================================================================
 generator/spectral_norm.epsilon = 1e-12
-generator/spectral_norm.power_iteration_rounds = 20
+generator/spectral_norm.power_iteration_rounds = 1
 generator/spectral_norm.save_in_checkpoint = True
 generator/spectral_norm.singular_value = 'right'
 generator/spectral_norm.use_resource = True
@@ -193,7 +193,7 @@ generator/spectral_norm.use_resource = True
 # Parameters for ema/generator/spectral_norm:
 # ==============================================================================
 ema/generator/spectral_norm.epsilon = 1e-12
-ema/generator/spectral_norm.power_iteration_rounds = 20
+ema/generator/spectral_norm.power_iteration_rounds = 1
 ema/generator/spectral_norm.save_in_checkpoint = True
 ema/generator/spectral_norm.singular_value = 'right'
 ema/generator/spectral_norm.use_resource = True
