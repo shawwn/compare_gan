@@ -55,6 +55,7 @@ def op_scope(fn, name=None):
     return _fn
 
 
+@op_scope
 @gin.configurable("weights")
 def weight_initializer(initializer=consts.NORMAL_INIT, stddev=0.02):
   """Returns the initializer for the given name.
@@ -75,6 +76,7 @@ def weight_initializer(initializer=consts.NORMAL_INIT, stddev=0.02):
   raise ValueError("Unknown weight initializer {}.".format(initializer))
 
 
+@op_scope
 def _moving_moments_for_inference(mean, variance, is_training, decay):
   """Use moving averages of moments during inference.
 
@@ -133,6 +135,7 @@ def _moving_moments_for_inference(mean, variance, is_training, decay):
   return moving_mean, moving_variance
 
 
+@op_scope
 def _accumulated_moments_for_inference(mean, variance, is_training):
   """Use accumulated statistics for moments during inference.
 
@@ -186,6 +189,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
     variance = tf.identity(variance, "variance")
 
     if is_training:
+      @op_scope
       def update_accus_during_training_fn():
         # store the mean/variance computed over the entire
         # cross-replica batch, so that we don't have to bother
@@ -207,6 +211,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
     accu_variance = graph_spectral_norm(accu_variance, init=0.0)
     # Return the accumulated batch statistics and add current batch statistics
     # to accumulators if update_accus variables equals 1.
+    @op_scope
     def update_accus_fn():
       return tf.group([
           tf.assign_add(accu_mean, mean),
@@ -221,6 +226,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
       return accu_mean / accu_counter, accu_variance / accu_counter
 
 
+@op_scope
 @gin.configurable(whitelist=["decay", "epsilon", "use_cross_replica_mean",
                              "use_moving_averages", "use_evonorm"])
 def standardize_batch(inputs,
@@ -353,11 +359,13 @@ def standardize_batch(inputs,
   return outputs
 
 
+@op_scope
 @gin.configurable(blacklist=["inputs"])
 def no_batch_norm(inputs):
   return inputs
 
 
+@op_scope
 @gin.configurable(
     blacklist=["inputs", "is_training", "center", "scale", "name"])
 def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
@@ -403,6 +411,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
     return outputs
 
 
+@op_scope
 @gin.configurable(whitelist=["num_hidden"])
 def self_modulated_batch_norm(inputs, z, is_training, use_sn,
                               center=True, scale=True,
@@ -457,6 +466,7 @@ def self_modulated_batch_norm(inputs, z, is_training, use_sn,
 
 # evonorm functions
 
+@op_scope
 @gin.configurable(whitelist=["nonlinearity"])
 def evonorm_s0(inputs,
               data_format="NHWC",
@@ -526,10 +536,12 @@ def evonorm_s0(inputs,
 
     return outputs
 
+@op_scope
 def instance_std(x, eps=1e-5):
   _, var = tf.nn.moments(x, axes=[1, 2], keepdims=True)
   return tf.sqrt(var + eps)
 
+@op_scope
 def group_std(x, groups=32, eps=1e-5, use_cross_replica_mean=None):
   N, H, W, C = x.shape
   x = tf.reshape(x, [N, H, W, groups, C // groups])
@@ -541,6 +553,7 @@ def group_std(x, groups=32, eps=1e-5, use_cross_replica_mean=None):
   std = tf.broadcast_to(std, x.shape)
   return tf.reshape(std, [N, H, W, C])
 
+@op_scope
 def trainable_variable_ones(shape, name="v"):
   x = tf.get_variable(name, shape=shape, initializer=arch_ops.ones_initializer())
   x = graph_spectral_norm(x, init=1.0)
@@ -548,6 +561,7 @@ def trainable_variable_ones(shape, name="v"):
 
 #/ evonorm functions
 
+@op_scope
 @gin.configurable(whitelist=["use_bias"])
 def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
                            scale=True, name="batch_norm", use_bias=False):
@@ -573,10 +587,12 @@ def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
       return outputs
 
 
+@op_scope
 def layer_norm(input_, is_training, scope):
   return tf.contrib.layers.layer_norm(
       input_, trainable=is_training, scope=scope)
 
+@op_scope
 def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
                   power_iteration_rounds=20):
   """Performs Spectral Normalization on a weight tensor.
@@ -645,6 +661,7 @@ def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
 
 
 
+@op_scope
 @gin.configurable(blacklist=["inputs"])
 def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=True,
                   save_in_checkpoint=False, power_iteration_rounds=2, is_training=None):
@@ -791,6 +808,7 @@ def graph_spectral_norm(w, init=None):
     logging.info("[ops] Not graphing %s", w.name)
   return w
 
+@op_scope
 def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
            use_sn=False, use_bias=True):
   """Linear layer without the non-linear activation applied."""
@@ -814,6 +832,7 @@ def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
     return outputs
 
 
+@op_scope
 def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
            use_sn=False, use_bias=True):
   """Performs 2D convolution of the input."""
@@ -836,6 +855,7 @@ def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
 conv1x1 = functools.partial(conv2d, k_h=1, k_w=1, d_h=1, d_w=1)
 
 
+@op_scope
 def deconv2d(inputs, output_shape, k_h, k_w, d_h, d_w,
              stddev=0.02, name="deconv2d", use_sn=False):
   """Performs transposed 2D convolution of the input."""
@@ -853,11 +873,13 @@ def deconv2d(inputs, output_shape, k_h, k_w, d_h, d_w,
     return tf.reshape(tf.nn.bias_add(deconv, bias), tf.shape(deconv))
 
 
+@op_scope
 def lrelu(inputs, leak=0.2, name="lrelu"):
   """Performs leaky-ReLU on the input."""
   return tf.maximum(inputs, leak * inputs, name=name)
 
 
+@op_scope
 def weight_norm_linear(input_, output_size,
                        init=False, init_scale=1.0,
                        name="wn_linear",
@@ -892,6 +914,7 @@ def weight_norm_linear(input_, output_size,
       return x
 
 
+@op_scope
 def weight_norm_conv2d(input_, output_dim,
                        k_h, k_w, d_h, d_w,
                        init, init_scale,
@@ -928,6 +951,7 @@ def weight_norm_conv2d(input_, output_dim,
       return x
 
 
+@op_scope
 def weight_norm_deconv2d(x, output_dim,
                          k_h, k_w, d_h, d_w,
                          init=False, init_scale=1.0,
@@ -966,7 +990,8 @@ def weight_norm_deconv2d(x, output_dim,
       x = tf.nn.bias_add(x, b)
       return x
 
-
+@op_scope
+@gin.configurable(blacklist=['x', 'name'])
 def non_local_block(x, name, use_sn):
   """Self-attention (non-local) block.
 
@@ -982,6 +1007,7 @@ def non_local_block(x, name, use_sn):
   Returns:
     A tensor of the same shape after self-attention was applied.
   """
+  @op_scope
   def _spatial_flatten(inputs):
     shape = inputs.shape
     return tf.reshape(inputs, (-1, shape[1] * shape[2], shape[3]))
@@ -1050,6 +1076,7 @@ from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import init_ops
 
 
+@op_scope
 def zeros(shape, dtype=dtypes.float32, name=None):
   """Creates a tensor with all elements set to zero.
 
@@ -1105,6 +1132,7 @@ def zeros(shape, dtype=dtypes.float32, name=None):
   return output
 
 
+@op_scope
 def ones(shape, dtype=dtypes.float32, name=None):
   """Creates a tensor with all elements set to 1.
 
