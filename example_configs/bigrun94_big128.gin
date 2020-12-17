@@ -254,7 +254,7 @@ stop_loss.enabled = False
 # Parameters for TpuSummaries:
 # ==============================================================================
 TpuSummaries.append_shapes = False
-TpuSummaries.save_image_steps = 50
+TpuSummaries.save_image_steps = 5
 TpuSummaries.save_summary_steps = 1
 
 # Parameters for train_imagenet_transform:
