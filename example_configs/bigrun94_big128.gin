@@ -75,7 +75,10 @@ resnet_biggan.Discriminator.use_noise = False
 
 # Parameters for flood_loss:
 # ==============================================================================
-flood_loss.enabled = False
+#flood_loss.enabled = False
+flood_loss.enabled = True
+options.d_flood = 0.2
+options.g_flood = 0.05
 
 # Parameters for G:
 # ==============================================================================
@@ -110,7 +113,7 @@ loss.fn = @hinge
 # ==============================================================================
 ModularGAN.conditional = True
 ModularGAN.d_lr = 0.0005
-ModularGAN.d_lr_mul = 0.2
+ModularGAN.d_lr_mul = 1.0
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
@@ -120,7 +123,7 @@ ModularGAN.experimental_force_graph_unroll = False
 ModularGAN.experimental_joint_gen_for_disc = False
 ModularGAN.fit_label_distribution = False
 ModularGAN.g_lr = 0.0001
-ModularGAN.g_lr_mul = 1.0
+ModularGAN.g_lr_mul = 4.0
 ModularGAN.g_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.g_use_ema = True
 
@@ -137,8 +140,7 @@ normal.seed = None
 # ==============================================================================
 options.architecture = 'resnet_biggan_arch'
 options.batch_size = None
-options.batch_per_core = 32
-options.d_flood = 0.2
+options.batch_per_core = 128
 
 # Counts for each dataset:
 # 2817346  gs://dota-euw4a/datasets/danbooru2019-s
@@ -154,7 +156,6 @@ options.description = 'BigGAN 128'
 #options.disc_iters = 2
 options.disc_iters = 1
 options.discriminator_normalization = None
-options.g_flood = 0.05
 options.gan_class = @ModularGAN
 options.image_grid_height = 3
 options.image_grid_resolution = 1024
@@ -178,12 +179,12 @@ replace_labels.file_pattern = None
 
 # Parameters for run_config:
 # ==============================================================================
-run_config.experimental_host_call_every_n_steps = 50
+run_config.experimental_host_call_every_n_steps = 5
 #run_config.iterations_per_loop = 1000
-run_config.iterations_per_loop = 50
+run_config.iterations_per_loop = 5
 run_config.keep_checkpoint_every_n_hours = 0.5
 run_config.keep_checkpoint_max = 10
-run_config.save_checkpoints_steps = 1000
+run_config.save_checkpoints_steps = 50
 #run_config.save_checkpoints_secs = 600 # checkpoint every 10 min
 run_config.single_core = False
 run_config.tf_random_seed = None
@@ -232,16 +233,17 @@ ema/generator/standardize_batch.use_moving_averages = False
 # ==============================================================================
 stop_loss.d_stop_d_below = None
 stop_loss.d_stop_g_above = None
-stop_loss.enabled = False
+#stop_loss.enabled = False
 stop_loss.g_stop_d_above = None
 stop_loss.g_stop_g_below = None
 stop_loss.max_loss = 128.0
 stop_loss.min_loss = -128.0
 
-stop_loss.enabled = True
+#stop_loss.enabled = True
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
 stop_loss.g_stop_d_above = 1.50
 stop_loss.d_stop_d_below = 0.20
+stop_loss.enabled = False
 
 # Parameters for TpuSummaries:
 # ==============================================================================
