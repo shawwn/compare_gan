@@ -138,8 +138,7 @@ class TpuSummaries(object):
     # batch dimension). Step is the same for all cores.
     step = step[0]
     logging.info("host_call_fn: args=%s", args)
-    ops = []
-    with summary.create_file_writer(os.path.join(self._log_dir, 'images')).as_default():
+    with summary.create_file_writer(os.path.join(self._log_dir, 'images'), name='summary_writer_images').as_default():
       offset = 0
       with summary.record_summaries_every_n_global_steps(
               self._save_image_steps, step):
@@ -147,14 +146,13 @@ class TpuSummaries(object):
           value = e.reduce_fn(args[i + offset])
           e.summary_fn(e.name, value, step=step)
       offset += len(self._image_entries)
-      ops.append(summary.all_summary_ops())
-    with summary.create_file_writer(os.path.join(self._log_dir, 'scalars')).as_default():
+    with summary.create_file_writer(os.path.join(self._log_dir, 'scalars'), name='summary_writer_scalars').as_default():
       with summary.record_summaries_every_n_global_steps(
             self._save_summary_steps, step):
         for i, e in enumerate(self._scalar_entries):
           value = e.reduce_fn(args[i + offset])
           ready = None
-          if e.countdown is not None:
+          if e.countdown is not None and False: # disable countdown for now
             with tf.device("cpu:0"):
               countdown = tf.get_local_variable(
                 e.name + "_countdown",
@@ -175,8 +173,10 @@ class TpuSummaries(object):
           else:
             e.summary_fn(e.name, value, step=step)
       offset += len(self._scalar_entries)
-      ops.append(summary.all_summary_ops())
-    return tf.group(ops)
+    ops = summary.all_summary_ops()
+    logging.info("host_call: summary.all_summary_ops(): %s", ops)
+    return ops
+
 
 
 TpuSummaries.inst = None
