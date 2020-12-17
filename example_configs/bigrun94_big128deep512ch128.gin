@@ -78,7 +78,6 @@ resnet_biggan_deep.Generator.blocks_with_attention = '128'
 resnet_biggan_deep.Generator.ch = 128
 resnet_biggan_deep.Generator.embed_y = True
 resnet_biggan_deep.Generator.embed_y_dim = 128
-resnet_biggan_deep.Generator.embed_z = False
 resnet_biggan_deep.Generator.hierarchical_z = True
 resnet_biggan_deep.Generator.plain_tanh = False
 resnet_biggan_deep.Generator.randomize_noise = True
