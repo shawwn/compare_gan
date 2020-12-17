@@ -107,7 +107,8 @@ def _get_run_config(tf_random_seed=None,
       keep_checkpoint_max=keep_checkpoint_max,
       keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours,
       cluster=_get_cluster(),
-      tpu_config=tpu_config)
+      tpu_config=tpu_config,
+      checkpoint_save_graph_def=False)
 
 
 def _get_task_manager(model_dir):
