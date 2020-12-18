@@ -613,7 +613,7 @@ def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
   """
   if len(inputs.shape) <= 0:
     logging.info("[ops] spectral norm of a float is itself; returning as-is. name=%s %s", inputs.name, repr(inputs))
-    return inputs, inputs
+    return inputs
 
   # The paper says to flatten convnet kernel weights from (C_out, C_in, KH, KW)
   # to (C_out, C_in * KH * KW). Our Conv2D kernel shape is (KH, KW, C_in, C_out)
