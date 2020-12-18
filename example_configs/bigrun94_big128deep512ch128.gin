@@ -137,14 +137,14 @@ options.batch_per_core = 2
 # 104719   gs://arfa-euw4/datasets/ponies1024
 
 options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
-options.description = 'BigGAN-Deep-512 128ch'
+options.description = 'BigGAN-Deep-256 96ch'
 #options.disc_iters = 2
 options.disc_iters = 1
 options.discriminator_normalization = None
 options.gan_class = @ModularGAN
-options.image_grid_height = 8
+options.image_grid_height = 4
 options.image_grid_resolution = 1024
-options.image_grid_width = 8
+options.image_grid_width = 4
 options.labels = ''
 options.lamba = 1
 options.model_dir = None
