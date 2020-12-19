@@ -72,8 +72,8 @@ G.spectral_norm = True
 
 # Parameters for resnet_biggan_deep.Generator:
 # ==============================================================================
-resnet_biggan_deep.Generator.blocks_with_attention = '64'
-resnet_biggan_deep.Generator.ch = 96
+resnet_biggan_deep.Generator.blocks_with_attention = '128'
+resnet_biggan_deep.Generator.ch = 128
 resnet_biggan_deep.Generator.embed_y = True
 resnet_biggan_deep.Generator.embed_y_dim = 128
 resnet_biggan_deep.Generator.experimental_fast_conv_to_rgb = True
@@ -91,7 +91,7 @@ loss.fn = @hinge
 ModularGAN.conditional = True
 #ModularGAN.d_lr = 0.0005
 ModularGAN.d_lr  = 0.00002500
-ModularGAN.d_lr_mul = 1.0
+ModularGAN.d_lr_mul = 0.3
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
