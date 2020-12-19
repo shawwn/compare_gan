@@ -8,7 +8,7 @@ export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-56}"
 
 export RUN_NAME="${RUN_NAME:-bigrun94_big128deep256ch96}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec17/deep256ch96/run4_exact_deepmind_settings}"
+export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec17/deep256ch96/run5_g_ch128sa128_d_lrmul_0_3}"
 export GIN_CONFIG="example_configs/bigrun94_big128deep512ch128.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -34,6 +34,6 @@ while true; do
     echo "Recreating TPU in 30s."
     sleep 30
     # sudo pip3 install -U tpudiepie
-    pu recreate "$TPU_NAME" --yes
+    pu recreate "$TPU_NAME" --yes --retry 300
   fi
 done
