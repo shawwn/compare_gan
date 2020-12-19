@@ -60,9 +60,9 @@ resnet_biggan_deep.Discriminator.project_y = True
 
 # Parameters for flood_loss:
 # ==============================================================================
-flood_loss.enabled = False
+flood_loss.enabled = True
 #flood_loss.enabled = True
-options.d_flood = 0.10
+options.d_flood = 0.20
 options.g_flood = 0.05
 
 # Parameters for G:
@@ -228,6 +228,7 @@ stop_loss.enabled = True
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
 stop_loss.g_stop_d_above = 1.50
 stop_loss.d_stop_d_below = 0.20
+#stop_loss.d_stop_d_below = 0.40 # using 0.20 still resulted in collapse
 
 # Parameters for TpuSummaries:
 # ==============================================================================
