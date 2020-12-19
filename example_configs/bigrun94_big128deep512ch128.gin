@@ -62,7 +62,7 @@ resnet_biggan_deep.Discriminator.project_y = True
 # ==============================================================================
 flood_loss.enabled = True
 #flood_loss.enabled = True
-options.d_flood = 0.20
+options.d_flood = 0.30
 options.g_flood = 0.05
 
 # Parameters for G:
@@ -91,7 +91,7 @@ loss.fn = @hinge
 ModularGAN.conditional = True
 #ModularGAN.d_lr = 0.0005
 ModularGAN.d_lr  = 0.00002500
-ModularGAN.d_lr_mul = 0.3
+ModularGAN.d_lr_mul = 0.22
 ModularGAN.d_optimizer_fn = @tf.train.AdamOptimizer
 ModularGAN.deprecated_split_disc_calls = False
 #ModularGAN.dynamic_range = False
