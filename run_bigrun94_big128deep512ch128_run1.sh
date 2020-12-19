@@ -3,8 +3,8 @@ set -ex
 #export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
-export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod. Actually it's back, yay.
-#export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-56}"
+#export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod
+export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-56}"
 
 export RUN_NAME="${RUN_NAME:-bigrun94_big128deep256ch96}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
