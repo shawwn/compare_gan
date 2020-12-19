@@ -264,3 +264,4 @@ session_config.disable_optimizations = True
 
 spectral_norm_stateless.power_iteration_rounds = 20
 
+ModularGAN.log_truncated_ema = False
