@@ -20,10 +20,12 @@ begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun94_big128/deep512ch128/'
 # Parameters for generator/conditional_batch_norm:
 # ==============================================================================
 generator/conditional_batch_norm.use_bias = False
+generator/conditional_batch_norm.scale_start = 1.0
 
 # Parameters for ema/generator/conditional_batch_norm:
 # ==============================================================================
 ema/generator/conditional_batch_norm.use_bias = False
+ema/generator/conditional_batch_norm.scale_start = 1.0
 
 # Parameters for generator/cross_replica_moments:
 # ==============================================================================
