@@ -79,6 +79,7 @@ resnet_biggan_deep.Generator.ch = 128
 resnet_biggan_deep.Generator.embed_y = True
 resnet_biggan_deep.Generator.embed_y_dim = 128
 resnet_biggan_deep.Generator.experimental_fast_conv_to_rgb = True
+options.plain_tanh = True
 
 # Parameters for hinge:
 # ==============================================================================
