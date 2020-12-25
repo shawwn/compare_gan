@@ -584,7 +584,7 @@ def trainable_variable_ones(shape, name="v"):
 #/ evonorm functions
 
 @log_scope
-@gin.configurable(whitelist=["use_bias"])
+@gin.configurable(whitelist=["use_bias", "scale_start"])
 def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
                            scale=True, name="batch_norm", use_bias=False, scale_start=0.0):
   """Conditional batch normalization."""
