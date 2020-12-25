@@ -5,11 +5,11 @@ export PYTHONPATH="$PYTHONPATH:."
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
 #export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod
-export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-57}"
+export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-56}"
 
-export RUN_NAME="${RUN_NAME:-bigrun94_big128deep256ch96_dec25_deep256ch96_run10_g_ch128sa64_d_lrmul_0_22}"
+export RUN_NAME="${RUN_NAME:-bigrun94_big128deep256ch96_dec25_deep256ch96_run9_g_ch128sa64_d_lrmul_0_22}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec25/deep256ch96/run10_g_ch128sa64_d_lrmul_0_22}"
+export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec25/deep256ch96/run9_g_ch128sa64_d_lrmul_0_22}"
 export GIN_CONFIG="example_configs/bigrun94_big128deep512ch128.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -34,11 +34,6 @@ while true; do
     --gin_config "$GIN_CONFIG" \
     --gin_bindings "begin_run.model_dir = '${MODEL_DIR}/'" \
     --gin_bindings "begin_run.tpu_name = '${TPU_NAME}'" \
-    \
-    \
-    --gin_bindings "conditional_batch_norm.scale_start = 0.0" \
-    \
-    \
     "$@" 2>&1 | tee -a "$logfile"
   if [ ! -z "$TPU_NO_RECREATE" ]
   then
