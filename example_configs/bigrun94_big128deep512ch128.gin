@@ -5,39 +5,24 @@ AdamOptimizer.beta2 = 0.999
 AdamOptimizer.epsilon = 1e-08
 AdamOptimizer.use_locking = False
 
-# Parameters for generator/batch_norm:
-# ==============================================================================
-# None.
-
-# Parameters for ema/generator/batch_norm:
-# ==============================================================================
-# None.
-
 # Parameters for begin_run:
 # ==============================================================================
 begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun94_big128/deep512ch128/'
 
-# Parameters for generator/conditional_batch_norm:
+# Parameters for conditional_batch_norm:
 # ==============================================================================
-generator/conditional_batch_norm.use_bias = False
-generator/conditional_batch_norm.scale_start = 1.0
+conditional_batch_norm.use_bias = False
+conditional_batch_norm.scale_start = 1.0
 
-# Parameters for ema/generator/conditional_batch_norm:
+# Parameters for batch_norm:
 # ==============================================================================
-ema/generator/conditional_batch_norm.use_bias = False
-ema/generator/conditional_batch_norm.scale_start = 1.0
+batch_norm.scale_zero_init = True
 
-# Parameters for generator/cross_replica_moments:
+# Parameters for cross_replica_moments:
 # ==============================================================================
-generator/cross_replica_moments.group_size = None
-generator/cross_replica_moments.parallel = False
-generator/cross_replica_moments.use_traditional_moments = True
-
-# Parameters for ema/generator/cross_replica_moments:
-# ==============================================================================
-ema/generator/cross_replica_moments.group_size = None
-ema/generator/cross_replica_moments.parallel = False
-ema/generator/cross_replica_moments.use_traditional_moments = True
+cross_replica_moments.group_size = None
+cross_replica_moments.parallel = False
+cross_replica_moments.use_traditional_moments = True
 
 # Parameters for D:
 # ==============================================================================
@@ -180,45 +165,21 @@ run_config.save_checkpoints_steps = 250
 run_config.single_core = False
 run_config.tf_random_seed = None
 
-# Parameters for discriminator/spectral_norm:
+# Parameters for spectral_norm:
 # ==============================================================================
-discriminator/spectral_norm.epsilon = 1e-12
-discriminator/spectral_norm.power_iteration_rounds = 5
-discriminator/spectral_norm.save_in_checkpoint = True
-discriminator/spectral_norm.singular_value = 'right'
-discriminator/spectral_norm.use_resource = True
+spectral_norm.epsilon = 1e-12
+spectral_norm.power_iteration_rounds = 5
+spectral_norm.save_in_checkpoint = True
+spectral_norm.singular_value = 'right'
+spectral_norm.use_resource = True
 
-# Parameters for generator/spectral_norm:
+# Parameters for standardize_batch:
 # ==============================================================================
-generator/spectral_norm.epsilon = 1e-12
-generator/spectral_norm.power_iteration_rounds = 5
-generator/spectral_norm.save_in_checkpoint = True
-generator/spectral_norm.singular_value = 'right'
-generator/spectral_norm.use_resource = True
-
-# Parameters for ema/generator/spectral_norm:
-# ==============================================================================
-ema/generator/spectral_norm.epsilon = 1e-12
-ema/generator/spectral_norm.power_iteration_rounds = 5
-ema/generator/spectral_norm.save_in_checkpoint = True
-ema/generator/spectral_norm.singular_value = 'right'
-ema/generator/spectral_norm.use_resource = True
-
-# Parameters for generator/standardize_batch:
-# ==============================================================================
-generator/standardize_batch.decay = 0.9
-generator/standardize_batch.epsilon = 1e-05
-generator/standardize_batch.use_cross_replica_mean = True
-generator/standardize_batch.use_evonorm = False
-generator/standardize_batch.use_moving_averages = False
-
-# Parameters for ema/generator/standardize_batch:
-# ==============================================================================
-ema/generator/standardize_batch.decay = 0.9
-ema/generator/standardize_batch.epsilon = 1e-05
-ema/generator/standardize_batch.use_cross_replica_mean = True
-ema/generator/standardize_batch.use_evonorm = False
-ema/generator/standardize_batch.use_moving_averages = False
+standardize_batch.decay = 0.9
+standardize_batch.epsilon = 1e-05
+standardize_batch.use_cross_replica_mean = True
+standardize_batch.use_evonorm = False
+standardize_batch.use_moving_averages = False
 
 # Parameters for stop_loss:
 # ==============================================================================
@@ -246,17 +207,9 @@ TpuSummaries.save_summary_steps = 1
 # ==============================================================================
 train_imagenet_transform.crop_method = 'top'
 
-# Parameters for discriminator/weights:
+# Parameters for weights:
 # ==============================================================================
-discriminator/weights.initializer = 'orthogonal'
-
-# Parameters for generator/weights:
-# ==============================================================================
-generator/weights.initializer = 'orthogonal'
-
-# Parameters for ema/generator/weights:
-# ==============================================================================
-ema/generator/weights.initializer = 'orthogonal'
+weights.initializer = 'orthogonal'
 
 # Parameters for z:
 # ==============================================================================

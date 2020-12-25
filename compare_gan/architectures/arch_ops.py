@@ -390,7 +390,7 @@ def no_batch_norm(inputs):
 @log_scope
 @gin.configurable(
     blacklist=["inputs", "is_training", "center", "scale", "name"])
-def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
+def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm", scale_zero_init=False):
   """Performs the vanilla batch normalization with trainable scaling and offset.
 
   Args:
@@ -415,11 +415,12 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
     collections = [tf.GraphKeys.MODEL_VARIABLES,
                    tf.GraphKeys.GLOBAL_VARIABLES]
     if scale:
+      initializer = arch_ops.ones_initializer() if not scale_zero_init else arch_ops.zeros_initializer()
       gamma = tf.get_variable(
           "gamma",
           [num_channels],
           collections=collections,
-          initializer=arch_ops.ones_initializer())
+          initializer=initializer)
       gamma = graph_spectral_norm(gamma, init=1.0)
       outputs *= gamma
     if center:
