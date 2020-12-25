@@ -256,7 +256,7 @@ def standardize_batch(inputs,
                       decay=0.999,
                       epsilon=1e-3,
                       data_format="NHWC",
-                      use_moving_averages=True,
+                      use_moving_averages=False,
                       use_cross_replica_mean=None,
                       use_evonorm=False):
   """Adds TPU-enabled batch normalization layer.
