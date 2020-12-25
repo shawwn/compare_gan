@@ -13,10 +13,12 @@ begin_run.model_dir = 'gs://doto-euw4a/runs/bigrun94_big128/deep512ch128/'
 # ==============================================================================
 conditional_batch_norm.use_bias = False
 conditional_batch_norm.scale_start = 1.0
+#conditional_batch_norm.scale_start = 0.0
 
 # Parameters for batch_norm:
 # ==============================================================================
-batch_norm.scale_zero_init = True
+#batch_norm.scale_zero_init = True
+batch_norm.scale_zero_init = False
 
 # Parameters for cross_replica_moments:
 # ==============================================================================
@@ -47,8 +49,8 @@ resnet_biggan_deep.Discriminator.project_y = True
 
 # Parameters for flood_loss:
 # ==============================================================================
-flood_loss.enabled = True
 #flood_loss.enabled = True
+flood_loss.enabled = False
 options.d_flood = 0.30
 options.g_flood = 0.05
 
@@ -113,7 +115,7 @@ non_local_block.memory_saving_matmul = False
 # ==============================================================================
 options.architecture = 'resnet_biggan_deep_arch'
 options.batch_size = None
-options.batch_per_core = 2
+options.batch_per_core = 4
 
 # Counts for each dataset:
 # 2817346  gs://dota-euw4a/datasets/danbooru2019-s
@@ -185,13 +187,13 @@ standardize_batch.use_moving_averages = False
 # ==============================================================================
 stop_loss.d_stop_d_below = None
 stop_loss.d_stop_g_above = None
-#stop_loss.enabled = False
 stop_loss.g_stop_d_above = None
 stop_loss.g_stop_g_below = None
 stop_loss.max_loss = 128.0
 stop_loss.min_loss = -128.0
 
-stop_loss.enabled = True
+#stop_loss.enabled = True
+stop_loss.enabled = False
 #stop_loss.g_stop_g_below = 0.05 # Probably not necessary when using g_stop_d_above
 stop_loss.g_stop_d_above = 1.50
 stop_loss.d_stop_d_below = 0.20
@@ -221,6 +223,6 @@ z.stddev = 1.0
 
 session_config.disable_optimizations = True
 
-spectral_norm_stateless.power_iteration_rounds = 5
+spectral_norm_stateless.power_iteration_rounds = 20
 
 ModularGAN.log_truncated_ema = False
