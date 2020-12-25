@@ -619,7 +619,7 @@ def layer_norm(input_, is_training, scope):
 @op_scope
 @gin.configurable(blacklist=["inputs"])
 def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
-                  power_iteration_rounds=20):
+                  power_iteration_rounds=5):
   """Performs Spectral Normalization on a weight tensor.
 
   Details of why this is helpful for GAN's can be found in "Spectral
@@ -688,8 +688,8 @@ def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
 
 @log_scope
 @gin.configurable(blacklist=["inputs"])
-def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=True,
-                  save_in_checkpoint=False, power_iteration_rounds=2, is_training=None):
+def spectral_norm(inputs, epsilon=1e-12, singular_value="right", use_resource=True,
+                  save_in_checkpoint=False, power_iteration_rounds=5, is_training=None):
   """Performs Spectral Normalization on a weight tensor.
 
   Details of why this is helpful for GAN's can be found in "Spectral
