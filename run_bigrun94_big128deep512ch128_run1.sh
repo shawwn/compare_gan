@@ -1,5 +1,6 @@
 #!/bin/bash
 set -ex
+export PYTHONPATH="$PYTHONPATH:."
 #export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
