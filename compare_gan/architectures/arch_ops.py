@@ -564,7 +564,7 @@ def trainable_variable_ones(shape, name="v"):
 @op_scope
 @gin.configurable(whitelist=["use_bias"])
 def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
-                           scale=True, name="batch_norm", use_bias=False):
+                           scale=True, name="batch_norm", use_bias=False, scale_start=0.0):
   """Conditional batch normalization."""
   if y is None:
     raise ValueError("You must provide y for conditional batch normalization.")
@@ -577,6 +577,8 @@ def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
       if scale:
         gamma = linear(y, num_channels, scope="gamma", use_sn=use_sn,
                        use_bias=use_bias)
+        if scale_start != 0.0:
+          gamma += scale_start
         gamma = tf.reshape(gamma, [-1, 1, 1, num_channels])
         outputs *= gamma
       if center:
