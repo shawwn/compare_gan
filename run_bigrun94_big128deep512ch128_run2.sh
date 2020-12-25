@@ -37,6 +37,8 @@ while true; do
     \
     \
     --gin_bindings "conditional_batch_norm.scale_start = 0.0" \
+    --gin_bindings "options.batch_per_core = 2" \
+    --gin_bindings "spectral_norm_stateless.power_iteration_rounds = 5" \
     \
     \
    "$@" 2>&1 | tee -a "$logfile"
