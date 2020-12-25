@@ -61,15 +61,16 @@ def log_scope(fn, name=None):
     @functools.wraps(fn)
     def _fn(inputs, *args, **kwargs):
         with tf.name_scope(fn.__name__):
+          # sadly, this breaks EMA's var scope.
           variables = []
-          def var_tracker(getter, name, *args, **kwargs):
-            var = getter(name, *args, **kwargs)
-            variables.append(var)
-            return var
-          with tf.variable_scope("", values=[], reuse=tf.AUTO_REUSE,
-                                 custom_getter=var_tracker):
-            outputs = fn(inputs, *args, **kwargs)
-            log_shape(variables, inputs, outputs[0] if isinstance(outputs, tuple) else outputs, name)
+          # def var_tracker(getter, name, *args, **kwargs):
+          #   var = getter(name, *args, **kwargs)
+          #   variables.append(var)
+          #   return var
+          # with tf.variable_scope("", values=[], reuse=tf.AUTO_REUSE,
+          #                        custom_getter=var_tracker):
+          outputs = fn(inputs, *args, **kwargs)
+          log_shape(variables, inputs, outputs[0] if isinstance(outputs, tuple) else outputs, name)
         return outputs
     return _fn
 
