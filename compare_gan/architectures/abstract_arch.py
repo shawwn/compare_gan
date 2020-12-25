@@ -45,7 +45,7 @@ class _Module(object):
     return [var for var in tf.trainable_variables() if self._name in var.name]
 
 
-@gin.configurable("G", blacklist=["name", "image_shape"])
+@gin.configurable("G", blacklist=["name", "image_shape", "options"])
 class AbstractGenerator(_Module):
   """Interface for generator architectures."""
 
@@ -53,7 +53,8 @@ class AbstractGenerator(_Module):
                name="generator",
                image_shape=None,
                batch_norm_fn=None,
-               spectral_norm=False):
+               spectral_norm=False,
+               options={}):
     """Constructor for all generator architectures.
 
     Args:
@@ -67,6 +68,7 @@ class AbstractGenerator(_Module):
     self._image_shape = image_shape
     self._batch_norm_fn = batch_norm_fn
     self._spectral_norm = spectral_norm
+    self.options = options
 
   def __call__(self, z, y, *, is_training, reuse=tf.AUTO_REUSE, **kwds):
     with tf.variable_scope(self.name, values=[z, y], reuse=reuse):

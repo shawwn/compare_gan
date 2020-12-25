@@ -247,7 +247,8 @@ class ModularGAN(AbstractGAN):
             "Generator architecture {} not implemented.".format(
                 self._architecture))
       self._generator = architecture_fns[self._architecture](
-          image_shape=self._dataset.image_shape)
+          image_shape=self._dataset.image_shape,
+          options=self.options)
     return self._generator
 
   @property
@@ -393,6 +394,10 @@ class ModularGAN(AbstractGAN):
     # All summary tensors are synced to host 0 on every step. To avoid sending
     # more images then needed we transfer at most `sampler_per_replica` to
     # create a 8x8 image grid.
+    if self.options["plain_tanh"]:
+      # images are in [-1 .. 1]; rescale to [0 .. 1]
+      images *= 0.5
+      images += 0.5
     batch_size_per_replica = images.shape[0].value
     num_replicas = params["context"].num_replicas if "context" in params else 1
     grid_shape = (self.options.get("image_grid_width", 3), self.options.get("image_grid_height", 3))

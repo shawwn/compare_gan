@@ -189,6 +189,7 @@ class Generator(abstract_arch.AbstractGenerator):
                embed_y_dim=128,
                experimental_fast_conv_to_rgb=False,
                blocks_with_attention="64",
+               plain_tanh=False,
                **kwargs):
     """Constructor for BigGAN generator.
 
@@ -207,6 +208,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._experimental_fast_conv_to_rgb = experimental_fast_conv_to_rgb
     self._blocks_with_attention = set(blocks_with_attention.split(","))
     self._blocks_with_attention.discard('')
+    self._plain_tanh = self.options.get('plain_tanh', plain_tanh)
 
   def _resnet_block(self, name, in_channels, out_channels, scale):
     """ResNet block for the generator."""
@@ -320,8 +322,11 @@ class Generator(abstract_arch.AbstractGenerator):
       net = ops.conv2d(net, output_dim=colors, k_h=3, k_w=3,
                        d_h=1, d_w=1, name="final_conv",
                        use_sn=self._spectral_norm)
-    logging.info("[Generator] after final processing: %s", net.shape)
-    net = (tf.nn.tanh(net) + 1.0) / 2.0
+    logging.info("[Generator] after final processing: %s (plain_tanh=%s)", net.shape, self._plain_tanh)
+    if self._plain_tanh:
+      net = tf.nn.tanh(net)
+    else:
+      net = (tf.nn.tanh(net) + 1.0) / 2.0
     return net
 
 

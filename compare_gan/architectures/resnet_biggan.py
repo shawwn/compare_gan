@@ -212,7 +212,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_y = embed_y
     self._embed_y_dim = embed_y_dim
     self._embed_bias = embed_bias
-    self._plain_tanh = plain_tanh
+    self._plain_tanh = self.options.get('plain_tanh', plain_tanh)
     self._use_relu = use_relu
     self._use_noise = use_noise
     self._randomize_noise = randomize_noise
@@ -367,7 +367,7 @@ class Generator(abstract_arch.AbstractGenerator):
     net = ops.conv2d(net, output_dim=self._image_shape[2], k_h=3, k_w=3,
                      d_h=1, d_w=1, name="final_conv",
                      use_sn=self._spectral_norm)
-    logging.info("[Generator] after final processing: %s", net.shape)
+    logging.info("[Generator] after final processing: %s (plain_tanh=%s)", net.shape, self._plain_tanh)
     if self._plain_tanh:
       net = tf.nn.tanh(net)
     else:

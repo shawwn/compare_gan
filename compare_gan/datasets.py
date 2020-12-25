@@ -957,6 +957,9 @@ class ImagesDataset(ImagenetDataset):
 
   def _parse_fn(self, features):
     image = tf.cast(features["image"], tf.float32) / 255.0
+    if self._options["plain_tanh"]:
+      # scale to range [-1 .. 1]
+      image = (image - 0.5) / 0.5
     label = features["label"]
     if self._options["random_labels"]:
       logging.info("Using random labels (0 through %d)", self.num_classes)
