@@ -52,7 +52,7 @@ dataset.seed = 547
 
 # Parameters for dataset_parser:
 # ==============================================================================
-dataset_parser.label_bias = 0
+#dataset_parser.label_bias = 0
 
 # Parameters for resnet_biggan_deep.Discriminator:
 # ==============================================================================
@@ -138,7 +138,11 @@ options.batch_per_core = 2
 # 855876   gs://dota-euw4a/datasets/danbooru2019figures
 # 104719   gs://arfa-euw4/datasets/ponies1024
 
-options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
+#options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
+#options.random_labels = True
+options.datasets = "gs://dota-euw4a/datasets/imagenet/train-0*"
+options.random_labels = False
+dataset_parser.label_bias = 1
 options.description = 'BigGAN-Deep-256 96ch'
 options.disc_iters = 2
 #options.disc_iters = 1
@@ -151,7 +155,6 @@ options.labels = ''
 options.lamba = 1
 options.model_dir = None
 options.num_classes = 1000
-options.random_labels = True
 options.training_steps = 25000000
 options.transpose_input = False
 options.z_dim = 128
