@@ -43,6 +43,10 @@ while true; do
     --gin_bindings "resnet_biggan_deep.Discriminator.ch = 128" \
     --gin_bindings "ModularGAN.d_lr_mul = 1.0" \
     \
+    --gin_bindings "stop_loss.enabled = True" \
+    --gin_bindings "stop_loss.g_stop_d_above = 1.50" \
+    --gin_bindings "stop_loss.g_stop_g_below = None" \
+    \
     \
    "$@" 2>&1 | tee -a "$logfile"
   if [ ! -z "$TPU_NO_RECREATE" ]
