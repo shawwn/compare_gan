@@ -34,11 +34,6 @@ while true; do
     --gin_config "$GIN_CONFIG" \
     --gin_bindings "begin_run.model_dir = '${MODEL_DIR}/'" \
     --gin_bindings "begin_run.tpu_name = '${TPU_NAME}'" \
-    \
-    \
-    --gin_bindings "conditional_batch_norm.scale_start = 0.0" \
-    \
-    \
     "$@" 2>&1 | tee -a "$logfile"
   if [ ! -z "$TPU_NO_RECREATE" ]
   then
