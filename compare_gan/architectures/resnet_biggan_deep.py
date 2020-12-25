@@ -68,7 +68,8 @@ class BigGanDeepResNetBlock(object):
                out_channels,
                scale,
                spectral_norm=False,
-               batch_norm=None):
+               batch_norm=None,
+               block_idx=None):
     """Constructs a new ResNet block with bottleneck.
 
     Args:
@@ -87,6 +88,7 @@ class BigGanDeepResNetBlock(object):
     self._scale = scale
     self._spectral_norm = spectral_norm
     self.batch_norm = batch_norm
+    self._block_idx = block_idx
 
   def __call__(self, inputs, z, y, is_training):
     return self.apply(inputs=inputs, z=z, y=y, is_training=is_training)
@@ -173,7 +175,8 @@ class BigGanDeepResNetBlock(object):
       # Add skip-connection.
       outputs += self._shortcut(inputs)
 
-      logging.info("[Block] %s (z=%s, y=%s) -> %s", inputs.shape,
+      idx = -1 if self._block_idx is None else self._block_idx
+      logging.info("[Block %d] %s (z=%s, y=%s) -> %s", idx + 1, inputs.shape,
                    None if z is None else z.shape,
                    None if y is None else y.shape, outputs.shape)
       return outputs
@@ -210,7 +213,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._blocks_with_attention.discard('')
     self._plain_tanh = self.options.get('plain_tanh', plain_tanh)
 
-  def _resnet_block(self, name, in_channels, out_channels, scale):
+  def _resnet_block(self, name, in_channels, out_channels, scale, block_idx):
     """ResNet block for the generator."""
     if scale not in ["up", "none"]:
       raise ValueError(
@@ -221,7 +224,8 @@ class Generator(abstract_arch.AbstractGenerator):
         out_channels=out_channels,
         scale=scale,
         spectral_norm=self._spectral_norm,
-        batch_norm=self.batch_norm)
+        batch_norm=self.batch_norm,
+        block_idx=block_idx)
 
   def _get_in_out_channels(self):
     # See Table 7-9.
@@ -294,7 +298,8 @@ class Generator(abstract_arch.AbstractGenerator):
           name=name,
           in_channels=in_channels[block_idx],
           out_channels=out_channels[block_idx],
-          scale=scale)
+          scale=scale,
+          block_idx=block_idx)
       net = block(net, z=z, y=y, is_training=is_training)
       res = net.shape[1].value
       if name in blocks_with_attention or str(res) in blocks_with_attention:
@@ -354,7 +359,7 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
     self._blocks_with_attention.discard('')
     self._project_y = project_y
 
-  def _resnet_block(self, name, in_channels, out_channels, scale):
+  def _resnet_block(self, name, in_channels, out_channels, scale, block_idx):
     """ResNet block for the generator."""
     if scale not in ["down", "none"]:
       raise ValueError(
@@ -365,7 +370,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
         out_channels=out_channels,
         scale=scale,
         spectral_norm=self._spectral_norm,
-        batch_norm=self.batch_norm)
+        batch_norm=self.batch_norm,
+        block_idx=block_idx)
 
   def _get_in_out_channels(self, colors, resolution):
     # See Table 7-9.
@@ -428,7 +434,8 @@ class Discriminator(abstract_arch.AbstractDiscriminator):
           name=name,
           in_channels=in_channels[block_idx],
           out_channels=out_channels[block_idx],
-          scale=scale)
+          scale=scale,
+          block_idx=block_idx)
       net = block(net, z=None, y=y, is_training=is_training)
       res = net.shape[1].value
       if name in blocks_with_attention or str(res) in blocks_with_attention:
