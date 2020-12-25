@@ -37,6 +37,7 @@ from absl import logging
 from compare_gan.architectures import arch_ops
 from compare_gan.gans import consts
 from compare_gan.tpu import tpu_ops
+from compare_gan import utils
 import gin
 from six.moves import range
 import tensorflow as tf
@@ -54,6 +55,27 @@ def op_scope(fn, name=None):
             return fn(*args, **kwargs)
     return _fn
 
+def log_scope(fn, name=None):
+    if name is None:
+        name = fn.__name__
+    @functools.wraps(fn)
+    def _fn(inputs, *args, **kwargs):
+        with tf.name_scope(fn.__name__):
+          variables = []
+          def var_tracker(getter, name, *args, **kwargs):
+            var = getter(name, *args, **kwargs)
+            variables.append(var)
+            return var
+          with tf.variable_scope("", values=[], reuse=tf.AUTO_REUSE,
+                                 custom_getter=var_tracker):
+            outputs = fn(inputs, *args, **kwargs)
+            log_shape(variables, inputs, outputs[0] if isinstance(outputs, tuple) else outputs, name)
+        return outputs
+    return _fn
+
+def log_shape(variables, inputs, outputs, msg='test'):
+  utils.log_parameter_overview(variables + [inputs, outputs], msg)
+  return outputs
 
 @op_scope
 @gin.configurable("weights")
@@ -226,7 +248,7 @@ def _accumulated_moments_for_inference(mean, variance, is_training):
       return accu_mean / accu_counter, accu_variance / accu_counter
 
 
-@op_scope
+@log_scope
 @gin.configurable(whitelist=["decay", "epsilon", "use_cross_replica_mean",
                              "use_moving_averages", "use_evonorm"])
 def standardize_batch(inputs,
@@ -359,13 +381,13 @@ def standardize_batch(inputs,
   return outputs
 
 
-@op_scope
+@log_scope
 @gin.configurable(blacklist=["inputs"])
 def no_batch_norm(inputs):
   return inputs
 
 
-@op_scope
+@log_scope
 @gin.configurable(
     blacklist=["inputs", "is_training", "center", "scale", "name"])
 def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
@@ -411,7 +433,7 @@ def batch_norm(inputs, is_training, center=True, scale=True, name="batch_norm"):
     return outputs
 
 
-@op_scope
+@log_scope
 @gin.configurable(whitelist=["num_hidden"])
 def self_modulated_batch_norm(inputs, z, is_training, use_sn,
                               center=True, scale=True,
@@ -466,7 +488,7 @@ def self_modulated_batch_norm(inputs, z, is_training, use_sn,
 
 # evonorm functions
 
-@op_scope
+@log_scope
 @gin.configurable(whitelist=["nonlinearity"])
 def evonorm_s0(inputs,
               data_format="NHWC",
@@ -561,7 +583,7 @@ def trainable_variable_ones(shape, name="v"):
 
 #/ evonorm functions
 
-@op_scope
+@log_scope
 @gin.configurable(whitelist=["use_bias"])
 def conditional_batch_norm(inputs, y, is_training, use_sn, center=True,
                            scale=True, name="batch_norm", use_bias=False, scale_start=0.0):
@@ -664,7 +686,7 @@ def spectral_norm_stateless(inputs, epsilon=1e-12, singular_value="right",
 
 
 
-@op_scope
+@log_scope
 @gin.configurable(blacklist=["inputs"])
 def spectral_norm(inputs, epsilon=1e-12, singular_value="auto", use_resource=True,
                   save_in_checkpoint=False, power_iteration_rounds=2, is_training=None):
@@ -812,7 +834,7 @@ def graph_spectral_norm(w, init=None):
     logging.info("[ops] Not graphing %s", w.name)
   return w
 
-@op_scope
+@log_scope
 def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
            use_sn=False, use_bias=True):
   """Linear layer without the non-linear activation applied."""
@@ -836,7 +858,7 @@ def linear(inputs, output_size, scope=None, stddev=0.02, bias_start=0.0,
     return outputs
 
 
-@op_scope
+@log_scope
 def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
            use_sn=False, use_bias=True):
   """Performs 2D convolution of the input."""
@@ -859,7 +881,7 @@ def conv2d(inputs, output_dim, k_h, k_w, d_h, d_w, stddev=0.02, name="conv2d",
 conv1x1 = functools.partial(conv2d, k_h=1, k_w=1, d_h=1, d_w=1)
 
 
-@op_scope
+@log_scope
 def deconv2d(inputs, output_shape, k_h, k_w, d_h, d_w,
              stddev=0.02, name="deconv2d", use_sn=False):
   """Performs transposed 2D convolution of the input."""
@@ -877,7 +899,7 @@ def deconv2d(inputs, output_shape, k_h, k_w, d_h, d_w,
     return tf.reshape(tf.nn.bias_add(deconv, bias), tf.shape(deconv))
 
 
-@op_scope
+@log_scope
 def lrelu(inputs, leak=0.2, name="lrelu"):
   """Performs leaky-ReLU on the input."""
   return tf.maximum(inputs, leak * inputs, name=name)
@@ -994,7 +1016,7 @@ def weight_norm_deconv2d(x, output_dim,
       x = tf.nn.bias_add(x, b)
       return x
 
-@op_scope
+@log_scope
 @gin.configurable(blacklist=['x', 'name', 'use_sn'])
 def non_local_block(x, name, use_sn, memory_saving_matmul=False):
   """Self-attention (non-local) block.
@@ -1011,7 +1033,7 @@ def non_local_block(x, name, use_sn, memory_saving_matmul=False):
   Returns:
     A tensor of the same shape after self-attention was applied.
   """
-  @op_scope
+  @log_scope
   def _spatial_flatten(inputs):
     shape = inputs.shape
     return tf.reshape(inputs, (-1, shape[1] * shape[2], shape[3]))
