@@ -7,7 +7,7 @@ unset TPU_HOST
 #export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod
 export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-59}"
 
-export RUN_NAME="${RUN_NAME:-bigrun94_big128deep256ch96_dec25_deep256ch96_run11_g_ch128sa64_d_lrmul_0_22}"
+export RUN_NAME="${RUN_NAME:-bigrun94_big128_dec25_deep256ch96_run11_g_ch128sa128_d_lrmul_1_0}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
 export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec25/deep256ch96/run11_g_ch128sa128_d_lrmul_1_0}"
 export GIN_CONFIG="example_configs/bigrun94_big128deep512ch128.gin"
