@@ -4,11 +4,11 @@ set -ex
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
 #export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod
-export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-56}"
+export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-57}"
 
 export RUN_NAME="${RUN_NAME:-bigrun94_big128deep256ch96}"
 tmux-set-title "${RUN_NAME} ${TPU_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec25/deep256ch96/run7_g_ch128sa64_d_lrmul_0_22}"
+export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun94_big128/dec25/deep256ch96/run8_g_ch128sa64_d_lrmul_0_22}"
 export GIN_CONFIG="example_configs/bigrun94_big128deep512ch128.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
