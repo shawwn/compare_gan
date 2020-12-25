@@ -92,7 +92,12 @@ from tensorflow.core.protobuf import rewriter_config_pb2
 @gin.configurable("session_config")
 def _get_session_config(disable_optimizations=False):
     if not disable_optimizations:
-      return None
+      session_config = config_pb2.ConfigProto(
+        allow_soft_placement=True,
+        isolate_session_state=False,
+        )
+      session_config.experimental.share_session_state_in_clusterspec_propagation = True
+      return session_config
     rewriter_config = rewriter_config_pb2.RewriterConfig(
         disable_model_pruning=True,
         disable_meta_optimizer=True,
@@ -109,6 +114,7 @@ def _get_session_config(disable_optimizations=False):
         allow_soft_placement=True,
         isolate_session_state=False,
         )
+    session_config.experimental.share_session_state_in_clusterspec_propagation = True
     return session_config
 
 
