@@ -5,7 +5,8 @@ export PYTHONPATH="$PYTHONPATH:."
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
 #export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod
-export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-59}"
+#export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-59}" # RIP small pod
+export TPU_NAME="${TPU_NAME:-tpu-v3-128-euw4a-56}"
 
 export RUN_NAME="${RUN_NAME:-bigrun94_big128_dec25_deep256ch96_run11_g_ch128sa128_d_lrmul_1_0}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
