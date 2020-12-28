@@ -38,6 +38,10 @@ while true; do
     \
     --gin_bindings "options.batch_per_core = 4" \
     \
+    --gin_bindings "options.datasets = 'gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*'" \
+    --gin_bindings "dataset_parser.label_bias = 0" \
+    --gin_bindings "options.random_labels = True" \
+    \
     --gin_bindings "stop_loss.enabled = False" \
     --gin_bindings "stop_loss.g_stop_d_above = 1.50" \
     --gin_bindings "stop_loss.g_stop_g_below = None" \
