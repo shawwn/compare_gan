@@ -4,7 +4,6 @@ export PYTHONPATH="$PYTHONPATH:."
 #export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
-#export TPU_NAME="${TPU_NAME:-tpu-v3-256-euw4a-55}" # RIP big pod
 export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-0}"
 
 export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run1_evos0}"
