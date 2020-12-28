@@ -118,17 +118,17 @@ options.batch_size = None
 options.batch_per_core = 2
 
 # Counts for each dataset:
-# 2817346  gs://dota-euw4a/datasets/danbooru2019-s
-# 427774   gs://dota-euw4a/datasets/e621-s
-# 302652   gs://dota-euw4a/datasets/portraits
-# 51798    gs://dota-euw4a/datasets/e621-portraits-s-512
-# 58537    gs://dota-euw4a/datasets/palm
-# 855876   gs://dota-euw4a/datasets/danbooru2019figures
-# 104719   gs://arfa-euw4/datasets/ponies1024
+# 2817346  gs://mldata-euw4/datasets/danbooru2019-s
+# 427774   gs://mldata-euw4/datasets/e621-s
+# 302652   gs://mldata-euw4/datasets/portraits
+# 51798    gs://mldata-euw4/datasets/e621-portraits-s-512
+# 58537    gs://mldata-euw4/datasets/palm
+# 855876   gs://mldata-euw4/datasets/danbooru2019figures
+# 104719   gs://arf-euw4/datasets/ponies1024
 
-#options.datasets = "gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*,gs://dota-euw4a/datasets/e621-s/e621-s-0*,gs://dota-euw4a/datasets/portraits/portraits-0*,gs://dota-euw4a/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://dota-euw4a/datasets/palm/palm-0*,gs://dota-euw4a/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arfa-euw4/datasets/ponies1024/ponies-1024-0*"
+#options.datasets = "gs://mldata-euw4/datasets/danbooru2019-s/danbooru2019-s-0*,gs://mldata-euw4/datasets/e621-s/e621-s-0*,gs://mldata-euw4/datasets/portraits/portraits-0*,gs://mldata-euw4/datasets/e621-portraits-s-512/e621-portraits-s-512-0*,gs://mldata-euw4/datasets/palm/palm-0*,gs://mldata-euw4/datasets/danbooru2019figures/danbooru2019figures-0*,gs://arf-euw4/datasets/ponies1024/ponies-1024-0*"
 #options.random_labels = True
-options.datasets = "gs://dota-euw4a/datasets/imagenet/train-0*"
+options.datasets = "gs://mldata-euw4/datasets/imagenet/train-0*"
 options.random_labels = False
 dataset_parser.label_bias = 1
 options.description = 'BigGAN-Deep-256 128ch evonorm-s0 bs32'

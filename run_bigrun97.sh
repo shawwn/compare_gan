@@ -8,7 +8,7 @@ export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-0}"
 
 export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run1_evos0}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://doto-euw4a/runs/bigrun97/dec28/run1_evos0}"
+export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run1_evos0}"
 export GIN_CONFIG="example_configs/bigrun97.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -28,7 +28,7 @@ while true; do
   timeout --signal=SIGKILL 16h \
     python3 $wrapper compare_gan/main.py \
     --use_tpu \
-    --tfds_data_dir 'gs://dota-euw4a/tensorflow_datasets/' \
+    --tfds_data_dir 'gs://ml-euw4/tensorflow_datasets/' \
     --model_dir "${MODEL_DIR}" \
     --gin_config "$GIN_CONFIG" \
     --gin_bindings "begin_run.model_dir = '${MODEL_DIR}/'" \
@@ -38,7 +38,7 @@ while true; do
     \
     --gin_bindings "options.batch_per_core = 4" \
     \
-    --gin_bindings "options.datasets = 'gs://dota-euw4a/datasets/danbooru2019-s/danbooru2019-s-0*'" \
+    --gin_bindings "options.datasets = 'gs://mldata-euw4/datasets/danbooru2019-s/danbooru2019-s-0*'" \
     --gin_bindings "dataset_parser.label_bias = 0" \
     --gin_bindings "options.random_labels = True" \
     \
