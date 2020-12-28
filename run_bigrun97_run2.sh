@@ -39,6 +39,10 @@ while true; do
     \
     --gin_bindings "options.batch_per_core = 4" \
     \
+    --gin_bindings "flood_loss.enabled = True" \
+    --gin_bindings "options.d_flood =  0.20" \
+    --gin_bindings "options.g_flood = -0.40" \
+    \
     --gin_bindings "stop_loss.enabled = False" \
     --gin_bindings "stop_loss.g_stop_d_above = 1.50" \
     --gin_bindings "stop_loss.g_stop_g_below = None" \
