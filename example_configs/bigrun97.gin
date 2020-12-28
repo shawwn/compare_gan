@@ -180,7 +180,7 @@ spectral_norm.use_resource = True
 standardize_batch.decay = 0.9
 standardize_batch.epsilon = 1e-05
 standardize_batch.use_cross_replica_mean = True
-standardize_batch.use_evonorm = False
+standardize_batch.use_evonorm = True
 standardize_batch.use_moving_averages = False
 
 # Parameters for stop_loss:
