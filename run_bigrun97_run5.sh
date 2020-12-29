@@ -37,8 +37,9 @@ while true; do
     --gin_bindings "standardize_batch.use_evonorm = True" \
     --gin_bindings "options.bn_activation = 'auto'" \
     \
+    --gin_bindings "conditional_batch_norm.scale_start = 1.0" \
     --gin_bindings "options.batch_per_core = 4" \
-    --gin_bindings "ModularGAN.d_lr_mul = 0.2" \
+    --gin_bindings "ModularGAN.d_lr_mul = 1.0" \
     \
     --gin_bindings "options.datasets = 'gs://mldata-euw4/datasets/danbooru2019-s/danbooru2019-s-0*'" \
     --gin_bindings "dataset_parser.label_bias = 0" \
