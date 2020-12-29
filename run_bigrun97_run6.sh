@@ -6,9 +6,9 @@ export PYTHONPATH="$PYTHONPATH:."
 unset TPU_HOST
 export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-1}"
 
-export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run6_evos0_imagenet}"
+export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run6_evos0_imagenet_dlrmul_0_2}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run6_evos0_imagenet}"
+export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run6_evos0_imagenet_dlrmul_0_2}"
 export GIN_CONFIG="example_configs/bigrun97.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -39,13 +39,13 @@ while true; do
     \
     --gin_bindings "conditional_batch_norm.scale_start = 1.0" \
     --gin_bindings "options.batch_per_core = 4" \
-    --gin_bindings "ModularGAN.d_lr_mul = 1.0" \
+    --gin_bindings "ModularGAN.d_lr_mul = 0.2" \
     \
     --gin_bindings "flood_loss.enabled = False" \
     --gin_bindings "options.d_flood =  0.20" \
     --gin_bindings "options.g_flood = -0.40" \
     \
-    --gin_bindings "stop_loss.enabled = False" \
+    --gin_bindings "stop_loss.enabled = True" \
     --gin_bindings "stop_loss.d_stop_d_below = 0.20" \
     --gin_bindings "stop_loss.g_stop_d_above = None" \
     --gin_bindings "stop_loss.g_stop_g_below = None" \

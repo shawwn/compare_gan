@@ -51,7 +51,7 @@ resnet_biggan_deep.Discriminator.project_y = True
 # ==============================================================================
 #flood_loss.enabled = True
 flood_loss.enabled = False
-options.d_flood = 0.30
+options.d_flood = 0.20
 options.g_flood = 0.05
 
 # Parameters for G:
