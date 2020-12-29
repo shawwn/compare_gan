@@ -86,7 +86,7 @@ from six.moves import range
 import tensorflow as tf
 
 
-@gin.configurable
+@gin.configurable(blacklist=['use_relu'])
 class BigGanResNetBlock(resnet_ops.ResNetBlock):
   """ResNet block with options for various normalizations.
 
@@ -182,7 +182,6 @@ class Generator(abstract_arch.AbstractGenerator):
                embed_bias=False,
                channel_multipliers=None,
                plain_tanh=False,
-               use_relu=True,
                use_noise=False,
                randomize_noise=True,
                **kwargs):
@@ -213,7 +212,9 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_y_dim = embed_y_dim
     self._embed_bias = embed_bias
     self._plain_tanh = self.options.get('plain_tanh', plain_tanh)
-    self._use_relu = use_relu
+    bn_activation = self.options.get('bn_activation')
+    assert bn_activation in ['none', 'relu']
+    self._use_relu = bn_activation == 'relu'
     self._use_noise = use_noise
     self._randomize_noise = randomize_noise
     if hierarchical_z and stylegan_z:

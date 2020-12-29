@@ -36,6 +36,7 @@ while true; do
     --gin_bindings "begin_run.tpu_name = '${TPU_NAME}'" \
     \
     --gin_bindings "standardize_batch.use_evonorm = True" \
+    --gin_bindings "options.bn_activation = 'relu'" \
     \
     --gin_bindings "options.batch_per_core = 4" \
     \

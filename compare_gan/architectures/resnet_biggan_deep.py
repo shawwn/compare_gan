@@ -58,7 +58,7 @@ from six.moves import range
 import tensorflow as tf
 
 
-@gin.configurable
+@gin.configurable(blacklist=['use_relu'])
 class BigGanDeepResNetBlock(object):
   """ResNet block with bottleneck and identity preserving skip connections."""
 
@@ -69,7 +69,8 @@ class BigGanDeepResNetBlock(object):
                scale,
                spectral_norm=False,
                batch_norm=None,
-               block_idx=None):
+               block_idx=None,
+               use_relu=True):
     """Constructs a new ResNet block with bottleneck.
 
     Args:
@@ -88,7 +89,7 @@ class BigGanDeepResNetBlock(object):
     self._scale = scale
     self._spectral_norm = spectral_norm
     self.batch_norm = batch_norm
-    self._block_idx = block_idx
+    self._use_relu = use_relu
 
   def __call__(self, inputs, z, y, is_training):
     return self.apply(inputs=inputs, z=z, y=y, is_training=is_training)
@@ -118,6 +119,11 @@ class BigGanDeepResNetBlock(object):
                             use_sn=self._spectral_norm)
         shortcut = tf.concat([shortcut, added], axis=-1)
       return shortcut
+
+  @property
+  def block_idx(self):
+      idx = -1 if self._block_idx is None else self._block_idx
+      return idx
 
   def apply(self, inputs, z, y, is_training):
     """"ResNet block containing possible down/up sampling, shared for G / D.
@@ -149,24 +155,30 @@ class BigGanDeepResNetBlock(object):
 
       with tf.variable_scope("conv1", values=[outputs]):
         outputs = bn(outputs, name="bn")
-        outputs = tf.nn.relu(outputs)
+        if self._use_relu:
+          outputs = tf.nn.relu(outputs)
+        else:
+          logging.info("[Block %d] %s skipping relu", self.block_idx + 1, inputs.shape)
         outputs = conv1x1(outputs, bottleneck_channels, name="1x1_conv")
 
       with tf.variable_scope("conv2", values=[outputs]):
         outputs = bn(outputs, name="bn")
-        outputs = tf.nn.relu(outputs)
+        if self._use_relu:
+          outputs = tf.nn.relu(outputs)
         if self._scale == "up":
           outputs = resnet_ops.unpool(outputs)
         outputs = conv3x3(outputs, bottleneck_channels, name="3x3_conv")
 
       with tf.variable_scope("conv3", values=[outputs]):
         outputs = bn(outputs, name="bn")
-        outputs = tf.nn.relu(outputs)
+        if self._use_relu:
+          outputs = tf.nn.relu(outputs)
         outputs = conv3x3(outputs, bottleneck_channels, name="3x3_conv")
 
       with tf.variable_scope("conv4", values=[outputs]):
         outputs = bn(outputs, name="bn")
-        outputs = tf.nn.relu(outputs)
+        if self._use_relu:
+          outputs = tf.nn.relu(outputs)
         if self._scale == "down":
           outputs = tf.nn.pool(outputs, [2, 2], "AVG", "SAME", strides=[2, 2],
                                name="avg_pool")
@@ -175,8 +187,7 @@ class BigGanDeepResNetBlock(object):
       # Add skip-connection.
       outputs += self._shortcut(inputs)
 
-      idx = -1 if self._block_idx is None else self._block_idx
-      logging.info("[Block %d] %s (z=%s, y=%s) -> %s", idx + 1, inputs.shape,
+      logging.info("[Block %d] %s (z=%s, y=%s) -> %s", self.block_idx + 1, inputs.shape,
                    None if z is None else z.shape,
                    None if y is None else y.shape, outputs.shape)
       return outputs
@@ -212,6 +223,9 @@ class Generator(abstract_arch.AbstractGenerator):
     self._blocks_with_attention = set(blocks_with_attention.split(","))
     self._blocks_with_attention.discard('')
     self._plain_tanh = self.options.get('plain_tanh', plain_tanh)
+    bn_activation = self.options.get('bn_activation')
+    assert bn_activation in ['none', 'relu']
+    self._use_relu = bn_activation == 'relu'
 
   def _resnet_block(self, name, in_channels, out_channels, scale, block_idx):
     """ResNet block for the generator."""
@@ -225,7 +239,8 @@ class Generator(abstract_arch.AbstractGenerator):
         scale=scale,
         spectral_norm=self._spectral_norm,
         batch_norm=self.batch_norm,
-        block_idx=block_idx)
+        block_idx=block_idx,
+        use_relu=self._use_relu)
 
   def _get_in_out_channels(self):
     # See Table 7-9.
@@ -315,7 +330,10 @@ class Generator(abstract_arch.AbstractGenerator):
     # Use unconditional batch norm.
     logging.info("[Generator] before final processing: %s", net.shape)
     net = ops.batch_norm(net, is_training=is_training, name="final_norm")
-    net = tf.nn.relu(net)
+    if self._use_relu:
+      net = tf.nn.relu(net)
+    else:
+      logging.info("[Generator] skipping relu")
     colors = self._image_shape[2]
     if self._experimental_fast_conv_to_rgb:
 
