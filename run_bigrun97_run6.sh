@@ -4,11 +4,11 @@ export PYTHONPATH="$PYTHONPATH:."
 #export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/tfk/lib}"
 #export TPU_HOST=${TPU_HOST:-10.255.128.3}
 unset TPU_HOST
-export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-0}"
+export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-1}"
 
-export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run5_evos0_danbooru}"
+export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run6_evos0_imagenet}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run5_evos0_danbooru}"
+export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run6_evos0_imagenet}"
 export GIN_CONFIG="example_configs/bigrun97.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -50,10 +50,6 @@ while true; do
     --gin_bindings "stop_loss.g_stop_d_above = None" \
     --gin_bindings "stop_loss.g_stop_g_below = None" \
     --gin_bindings "stop_loss.d_stop_g_above = None" \
-    \
-    --gin_bindings "options.datasets = 'gs://mldata-euw4/datasets/danbooru2019-s/danbooru2019-s-0*'" \
-    --gin_bindings "dataset_parser.label_bias = 0" \
-    --gin_bindings "options.random_labels = True" \
     \
     \
    "$@" 2>&1 | tee -a "$logfile"
