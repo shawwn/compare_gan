@@ -184,14 +184,10 @@ class ModularGAN(AbstractGAN):
     self._d_optimizer_fn = d_optimizer_fn
     if self._d_optimizer_fn is None:
       self._d_optimizer_fn = g_optimizer_fn
-    self._g_lr_base = g_lr
-    self._d_lr_base = g_lr if d_lr is None else d_lr
+    self._g_lr = g_lr
+    self._d_lr = g_lr if d_lr is None else d_lr
     self._g_lr_mul = g_lr_mul
     self._d_lr_mul = d_lr_mul
-    self._g_lr_base_var = None
-    self._d_lr_base_var = None
-    self._g_lr_mul_var = None
-    self._d_lr_mul_var = None
     self._disc_step = -1
     self._log_truncated_ema = log_truncated_ema
 
@@ -229,10 +225,11 @@ class ModularGAN(AbstractGAN):
       return self._disc_iters + 1
     return 1
 
-  def make_variable(self, name, value, dtype=None, shape=None):
+  def mkvar(self, name, value, dtype=None, shape=None):
     with tf.name_scope('ModularGAN/'), tf.control_dependencies(None):
       var = tf.Variable(value, name=name, trainable=False, use_resource=True, dtype=dtype, shape=shape, collections=[tf.GraphKeys.LOCAL_VARIABLES])
       logging.info("Created variable %s (handle=%s) (shared_name=%s)", var.name, var._handle_name, var._shared_name)
+      self._tpu_summary.scalar("ModularGAN/"+name, var)
       return var
 
   @property
@@ -839,25 +836,17 @@ class ModularGAN(AbstractGAN):
         train_op=g_loss.op)
 
   def get_disc_optimizer(self, use_tpu=True):
-    self._d_lr_base_var = self.make_variable("d_lr_base", self._d_lr_base)
-    self._d_lr_mul_var = self.make_variable("d_lr_mul", self._d_lr_mul)
-    d_lr = self._d_lr_var * self._d_lr_mul_var
-    self._tpu_summary.scalar("ModularGAN/d_lr", d_lr)
-    self._tpu_summary.scalar("ModularGAN/d_lr_base", self._d_lr_base_var)
-    self._tpu_summary.scalar("ModularGAN/d_lr_mul", self._d_lr_mul_var)
-    opt = self._d_optimizer_fn(d_lr, name="d_opt")
+    d_lr = self.mkvar("d_lr", self._d_lr)
+    d_lr_mul = self.mkvar("d_lr_mul", self._d_lr_mul)
+    opt = self._d_optimizer_fn(d_lr * d_lr_mul, name="d_opt")
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
     return opt
 
   def get_gen_optimizer(self, use_tpu=True):
-    self._g_lr_base_var = self.make_variable("g_lr_base", self._g_lr_base)
-    self._g_lr_mul_var = self.make_variable("g_lr_mul", self._g_lr_mul)
-    g_lr = self._g_lr_base_var * self._g_lr_mul_var
-    self._tpu_summary.scalar("ModularGAN/g_lr", g_lr)
-    self._tpu_summary.scalar("ModularGAN/g_lr_base", self._g_lr_base_var)
-    self._tpu_summary.scalar("ModularGAN/g_lr_mul", self._g_lr_mul_var)
-    opt = self._g_optimizer_fn(g_lr, name="g_opt")
+    g_lr = self.mkvar("g_lr", self._g_lr)
+    g_lr_mul = self.mkvar("g_lr_mul", self._g_lr_mul)
+    opt = self._g_optimizer_fn(g_lr * g_lr_mul, name="g_opt")
     if use_tpu:
       opt = tf.contrib.tpu.CrossShardOptimizer(opt)
     return opt
@@ -935,6 +924,10 @@ class ModularGAN(AbstractGAN):
       logging.info("Using g_stop_g_below=%f", g_stop_g_below)
       logging.info("Using d_stop_g_above=%f", d_stop_g_above)
       logging.info("Using d_stop_d_below=%f", d_stop_d_below)
+      g_stop_d_above = self.mkvar("g_stop_d_above", g_stop_d_above)
+      g_stop_g_below = self.mkvar("g_stop_g_below", g_stop_g_below)
+      d_stop_g_above = self.mkvar("d_stop_g_above", d_stop_g_above)
+      d_stop_d_below = self.mkvar("d_stop_d_below", d_stop_d_below)
       def lt(a, b): return tf.maximum(0.0, tf.math.sign(b - a))
       def gt(a, b): return tf.maximum(0.0, tf.math.sign(a - b))
       g_stop = lt(d_loss, g_stop_d_above) * gt(g_loss, g_stop_g_below)
@@ -949,10 +942,12 @@ class ModularGAN(AbstractGAN):
       d_flood = self.options.get("d_flood", None)
       if d_flood is not None:
         logging.info("Using d_flood=%f", d_flood)
+        d_flood = self.mkvar("d_flood", d_flood)
         self.d_loss = tf.abs(self.d_loss - d_flood) + d_flood
 
       g_flood = self.options.get("g_flood", None)
       if g_flood is not None:
+        g_flood = self.mkvar("g_flood", g_flood)
         logging.info("Using g_flood=%f", g_flood)
         self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
 
