@@ -184,10 +184,10 @@ class ModularGAN(AbstractGAN):
     self._d_optimizer_fn = d_optimizer_fn
     if self._d_optimizer_fn is None:
       self._d_optimizer_fn = g_optimizer_fn
-    self._g_lr = g_lr
-    self._d_lr = g_lr if d_lr is None else d_lr
-    self._g_lr *= g_lr_mul
-    self._d_lr *= d_lr_mul
+    self._g_lr = self.make_variable("g_lr", g_lr)
+    self._d_lr = self.make_variable("d_lr", g_lr if d_lr is None else d_lr)
+    self._g_lr *= self.make_variable("g_lr_mul", g_lr_mul)
+    self._d_lr *= self.make_variable("d_lr_mul", d_lr_mul)
     self._disc_step = -1
     self._log_truncated_ema = log_truncated_ema
 
@@ -224,6 +224,12 @@ class ModularGAN(AbstractGAN):
     if unroll_graph:
       return self._disc_iters + 1
     return 1
+
+  def make_variable(self, name, value, dtype=None, shape=None):
+    with tf.name_scope('ModularGAN/'), tf.control_dependencies(None):
+      var = tf.Variable(value, trainable=False, use_resource=True, dtype=dtype, sape=shape, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+      logging.info("Created variable %s (handle=%s) (shared_name=%s)", var.name, var._handle_name, var._shared_name)
+      return var
 
   @property
   def conditional(self):
