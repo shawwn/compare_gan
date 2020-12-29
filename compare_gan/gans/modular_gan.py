@@ -227,7 +227,7 @@ class ModularGAN(AbstractGAN):
 
   def make_variable(self, name, value, dtype=None, shape=None):
     with tf.name_scope('ModularGAN/'), tf.control_dependencies(None):
-      var = tf.Variable(value, trainable=False, use_resource=True, dtype=dtype, shape=shape, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+      var = tf.Variable(value, name=name, trainable=False, use_resource=True, dtype=dtype, shape=shape, collections=[tf.GraphKeys.LOCAL_VARIABLES])
       logging.info("Created variable %s (handle=%s) (shared_name=%s)", var.name, var._handle_name, var._shared_name)
       return var
 
