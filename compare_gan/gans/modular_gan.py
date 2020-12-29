@@ -186,8 +186,8 @@ class ModularGAN(AbstractGAN):
       self._d_optimizer_fn = g_optimizer_fn
     self._g_lr = self.make_variable("g_lr", g_lr)
     self._d_lr = self.make_variable("d_lr", g_lr if d_lr is None else d_lr)
-    self._g_lr *= self.make_variable("g_lr_mul", g_lr_mul)
-    self._d_lr *= self.make_variable("d_lr_mul", d_lr_mul)
+    self._g_lr = self._g_lr * self.make_variable("g_lr_mul", g_lr_mul)
+    self._d_lr = self._d_lr * self.make_variable("d_lr_mul", d_lr_mul)
     self._disc_step = -1
     self._log_truncated_ema = log_truncated_ema
 
