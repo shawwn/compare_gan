@@ -89,6 +89,7 @@ class BigGanDeepResNetBlock(object):
     self._scale = scale
     self._spectral_norm = spectral_norm
     self.batch_norm = batch_norm
+    self._block_idx = block_idx
     self._use_relu = use_relu
 
   def __call__(self, inputs, z, y, is_training):
