@@ -794,19 +794,23 @@ class ModularGAN(AbstractGAN):
 
     # Train D.
     d_losses = []
+    d_losses_real = []
+    d_losses_fake = []
     d_steps = self._disc_iters if unroll_graph else 1
     for i in range(d_steps):
       with self.with_disc_step(i):
         with tf.control_dependencies(d_losses):
-          d_loss = train_disc_fn(features=fs[i], labels=ls[i])
+          d_loss, d_loss_real, d_loss_fake = train_disc_fn(features=fs[i], labels=ls[i])
           d_losses.append(d_loss)
+          d_losses_real.append(d_loss_real)
+          d_losses_fake.append(d_loss_fake)
 
     # Train G.
     with tf.control_dependencies(d_losses):
       with tf.name_scope("gen_step"):
         g_loss = train_gen_fn()
 
-    for i, (d_loss, d_loss_real, d_loss_fake) in enumerate(d_losses):
+    for i, (d_loss, d_loss_real, d_loss_fake) in enumerate(zip(d_losses, d_losses_real, d_losses_fake)):
       self._tpu_summary.scalar("loss/d_{}".format(i), d_loss)
       self._tpu_summary.scalar("loss/d_{}_real".format(i), d_loss_real)
       self._tpu_summary.scalar("loss/d_{}_fake".format(i), d_loss_fake)
