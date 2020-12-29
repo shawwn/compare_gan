@@ -6,9 +6,9 @@ export PYTHONPATH="$PYTHONPATH:."
 unset TPU_HOST
 export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-0}"
 
-export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run5_evos0_danbooru_dlr_mul_0_2}"
+export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run5_evos0_danbooru}"
 tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
-export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run5_evos0_danbooru_dlr_mul_0_2}"
+export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run5_evos0_danbooru}"
 export GIN_CONFIG="example_configs/bigrun97.gin"
 
 date="$(python3 -c 'import datetime; print(datetime.datetime.now().strftime("%Y-%m-%d"))')"
@@ -41,10 +41,6 @@ while true; do
     --gin_bindings "options.batch_per_core = 4" \
     --gin_bindings "ModularGAN.d_lr_mul = 1.0" \
     \
-    --gin_bindings "options.datasets = 'gs://mldata-euw4/datasets/danbooru2019-s/danbooru2019-s-0*'" \
-    --gin_bindings "dataset_parser.label_bias = 0" \
-    --gin_bindings "options.random_labels = True" \
-    \
     --gin_bindings "flood_loss.enabled = False" \
     --gin_bindings "options.d_flood =  0.20" \
     --gin_bindings "options.g_flood = -0.40" \
@@ -54,6 +50,10 @@ while true; do
     --gin_bindings "stop_loss.g_stop_d_above = None" \
     --gin_bindings "stop_loss.g_stop_g_below = None" \
     --gin_bindings "stop_loss.d_stop_g_above = None" \
+    \
+    --gin_bindings "options.datasets = 'gs://mldata-euw4/datasets/danbooru2019-s/danbooru2019-s-0*'" \
+    --gin_bindings "dataset_parser.label_bias = 0" \
+    --gin_bindings "options.random_labels = True" \
     \
     \
    "$@" 2>&1 | tee -a "$logfile"
