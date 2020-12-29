@@ -232,7 +232,8 @@ class Generator(abstract_arch.AbstractGenerator):
         scale=scale,
         is_gen_block=True,
         spectral_norm=self._spectral_norm,
-        batch_norm=self.batch_norm)
+        batch_norm=self.batch_norm,
+        use_relu=self._use_relu)
 
   def _get_in_out_channels(self):
     resolution = self._image_shape[0]
