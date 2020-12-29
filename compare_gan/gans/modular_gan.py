@@ -227,9 +227,14 @@ class ModularGAN(AbstractGAN):
 
   def mkvar(self, name, value, dtype=None, shape=None):
     with tf.name_scope('ModularGAN/'), tf.control_dependencies(None):
-      var = tf.Variable(value, name=name, trainable=False, use_resource=True, dtype=dtype, shape=shape, collections=[tf.GraphKeys.LOCAL_VARIABLES])
-      logging.info("Created variable %s (handle=%s) (shared_name=%s)", var.name, var._handle_name, var._shared_name)
-      self._tpu_summary.scalar("ModularGAN/"+name, var)
+      var = [v for v in tf.local_variables() if v.name.rsplit(':', 1)[0] == 'ModularGAN/' + name]
+      if len(var) > 0:
+        var = var[0]
+        logging.info("Reusing variable %s (handle=%s) (shared_name=%s)", var.name, var._handle_name, var._shared_name)
+      else:
+        var = tf.Variable(value, name=name, trainable=False, use_resource=True, dtype=dtype, shape=shape, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+        logging.info("Created variable %s (handle=%s) (shared_name=%s)", var.name, var._handle_name, var._shared_name)
+        self._tpu_summary.scalar("ModularGAN/"+name, var)
       return var
 
   @property
@@ -836,7 +841,7 @@ class ModularGAN(AbstractGAN):
         host_call=self._tpu_summary.get_host_call(),
         # Estimator requires a loss which gets displayed on TensorBoard.
         # The given Tensor is evaluated but not used to create gradients.
-        loss=d_losses[0][0],
+        loss=d_losses[0],
         train_op=g_loss.op)
 
   def get_disc_optimizer(self, use_tpu=True):
