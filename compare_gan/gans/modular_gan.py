@@ -211,6 +211,8 @@ class ModularGAN(AbstractGAN):
 
     # Will be set by create_loss().
     self.d_loss = None
+    self.d_loss_real = None
+    self.d_loss_fake = None
     self.g_loss = None
     self.penalty_loss = None
 
@@ -647,7 +649,9 @@ class ModularGAN(AbstractGAN):
           var_list=self.discriminator.trainable_variables,
           global_step=step)
       with tf.control_dependencies([train_op]):
-        return tf.identity(self.d_loss)
+        return [tf.identity(self.d_loss),
+                tf.identity(self.d_loss_real),
+                tf.identity(self.d_loss_fake)]
 
   def _train_generator(self, features, labels, step, optimizer, params):
     # Set the random offset tensor for operations in tpu_random.py.
@@ -795,8 +799,10 @@ class ModularGAN(AbstractGAN):
       with tf.name_scope("gen_step"):
         g_loss = train_gen_fn()
 
-    for i, d_loss in enumerate(d_losses):
+    for i, (d_loss, d_loss_real, d_loss_fake) in enumerate(d_losses):
       self._tpu_summary.scalar("loss/d_{}".format(i), d_loss)
+      self._tpu_summary.scalar("loss/d_{}_real".format(i), d_loss_real)
+      self._tpu_summary.scalar("loss/d_{}_fake".format(i), d_loss_fake)
     self._tpu_summary.scalar("loss/g", g_loss)
     if self._g_use_ema:
       self._add_images_to_summary(fs[0]["generated_ema"               ], "fake_images_ema_truncation_1_0", params)
@@ -819,7 +825,7 @@ class ModularGAN(AbstractGAN):
         host_call=self._tpu_summary.get_host_call(),
         # Estimator requires a loss which gets displayed on TensorBoard.
         # The given Tensor is evaluated but not used to create gradients.
-        loss=d_losses[0],
+        loss=d_losses[0][0],
         train_op=g_loss.op)
 
   def get_disc_optimizer(self, use_tpu=True):
@@ -879,7 +885,7 @@ class ModularGAN(AbstractGAN):
       d_real, d_fake = tf.split(d_all, 2)
       d_real_logits, d_fake_logits = tf.split(d_all_logits, 2)
 
-    self.d_loss, _, _, self.g_loss = loss_lib.get_losses(
+    self.d_loss, self.d_loss_real, self.d_loss_fake, self.g_loss = loss_lib.get_losses(
         d_real=d_real, d_fake=d_fake, d_real_logits=d_real_logits,
         d_fake_logits=d_fake_logits)
 
