@@ -184,8 +184,8 @@ class ModularGAN(AbstractGAN):
     self._d_optimizer_fn = d_optimizer_fn
     if self._d_optimizer_fn is None:
       self._d_optimizer_fn = g_optimizer_fn
-    self._g_lr = g_lr
-    self._d_lr = g_lr if d_lr is None else d_lr
+    self._g_lr_base = g_lr
+    self._d_lr_base = g_lr if d_lr is None else d_lr
     self._g_lr_mul = g_lr_mul
     self._d_lr_mul = d_lr_mul
     self._g_lr_base_var = None
@@ -839,7 +839,7 @@ class ModularGAN(AbstractGAN):
         train_op=g_loss.op)
 
   def get_disc_optimizer(self, use_tpu=True):
-    self._d_lr_var = self.make_variable("d_lr", self._d_lr)
+    self._d_lr_base_var = self.make_variable("d_lr_base", self._d_lr_base)
     self._d_lr_mul_var = self.make_variable("d_lr_mul", self._d_lr_mul)
     d_lr = self._d_lr_var * self._d_lr_mul_var
     self._tpu_summary.scalar("ModularGAN/d_lr", d_lr)
@@ -851,7 +851,7 @@ class ModularGAN(AbstractGAN):
     return opt
 
   def get_gen_optimizer(self, use_tpu=True):
-    self._g_lr_base_var = self.make_variable("g_lr", self._g_lr)
+    self._g_lr_base_var = self.make_variable("g_lr_base", self._g_lr_base)
     self._g_lr_mul_var = self.make_variable("g_lr_mul", self._g_lr_mul)
     g_lr = self._g_lr_base_var * self._g_lr_mul_var
     self._tpu_summary.scalar("ModularGAN/g_lr", g_lr)
