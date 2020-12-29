@@ -905,9 +905,8 @@ class ModularGAN(AbstractGAN):
         discriminator=self.discriminator)
     self.d_loss += self._lambda * penalty_loss
 
-  @staticmethod
   @gin.configurable("stop_loss", blacklist=["g_loss", "d_loss"])
-  def stop_loss(g_loss, d_loss,
+  def stop_loss(self, g_loss, d_loss,
                 g_stop_d_above=None, # Recommended: 1.50
                 g_stop_g_below=None, # Recommended: 0.05
                 d_stop_g_above=None, # Recommended: None
@@ -951,4 +950,4 @@ class ModularGAN(AbstractGAN):
         logging.info("Using g_flood=%f", g_flood)
         self.g_loss = tf.abs(self.g_loss - g_flood) + g_flood
 
-    self.g_loss, self.d_loss = ModularGAN.stop_loss(self.g_loss, self.d_loss)
+    self.g_loss, self.d_loss = self.stop_loss(self.g_loss, self.d_loss)
