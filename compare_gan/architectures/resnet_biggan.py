@@ -212,7 +212,7 @@ class Generator(abstract_arch.AbstractGenerator):
     self._embed_y_dim = embed_y_dim
     self._embed_bias = embed_bias
     self._plain_tanh = self.options.get('plain_tanh', plain_tanh)
-    bn_activation = self.options.get('bn_activation')
+    bn_activation = self.options.get('bn_activation', 'relu')
     assert bn_activation in ['none', 'relu']
     self._use_relu = bn_activation == 'relu'
     self._use_noise = use_noise
