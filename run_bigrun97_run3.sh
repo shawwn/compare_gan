@@ -7,7 +7,7 @@ unset TPU_HOST
 export TPU_NAME="${TPU_NAME:-tpu-v3-8-euw4a-100}"
 
 export RUN_NAME="${RUN_NAME:-bigrun97_dec28_run3_evos0_danbooru}"
-tmux-set-title "$${TPU_NAME} ${RUN_NAME}"
+tmux-set-title "${TPU_NAME} ${RUN_NAME}"
 export MODEL_DIR="${MODEL_DIR:-gs://mlpublic-euw4/runs/bigrun97/dec28/run3_evos0_danbooru}"
 export GIN_CONFIG="example_configs/bigrun97.gin"
 
