@@ -618,7 +618,7 @@ if __name__ == '__main__':
     #graph = tf.Graph()
     graph = tf.compat.v1.get_default_graph()
     #sess = tf.compat.v1.InteractiveSession(master, graph=graph, config=session_config)
-    sess = get_session(config=session_config, monitored=True)
+    sess = get_session(config=session_config, monitored=True, interactive=True)
     devices = sess.list_devices()
     cores = sorted([x.name for x in devices if ':TPU:' in x.name])
     num_cores = len(cores)
