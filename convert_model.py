@@ -259,6 +259,10 @@ def with_dep(dep, op):
   with tf.control_dependencies(dep() if callable(dep) else dep):
     return op() if callable(op) else tf.identity(op)
 
+# model_dir = 'gs://mlpublic-euw4/runs/bigrun97/dec28/run6_evos0_imagenet_dlrmul_0_4'
+# import convert_model; reload(convert_model); loader = convert_model.CompareGANLoader( model_dir ); inout = loader.build(is_training=True); gs = tf.train.get_or_create_global_step()
+# label=7; step=gs.eval(); seed=4; truncation=0.7; fake=loader.run(inout, ema_only=True, z=loader.truncated_z_sample(truncation=truncation, seed=seed), y=[label])
+# img = PIL.Image.fromarray(((fake[0]*0.5+0.5)*255).astype(np.uint8)); img.save('ema_label{label}_step{step}_trunc{truncation}_seed{seed}.png'.format(label=label, step=step, truncation=truncation, seed=seed))
 
 # import convert_model; reload(convert_model); loader = convert_model.CompareGANLoader( 'gs://arfa-euw4/runs/bigrun/nov19_01' ); inout = loader.build(is_training=True)
 # loader.load() # only need to do this once
