@@ -34,9 +34,10 @@ def build_graph(self, model=None, is_training=False):
     else:
       y_gen, y_disc = None, None
 
-    outputs_disc["prediction"], _, _ = (None,None,None) if model=='gen' else self.discriminator(
-        inputs_disc["images"], y=y_disc, is_training=is_training
-    )
+    if model != 'gen':
+      outputs_disc["prediction"], _, _ = self.discriminator(
+          inputs_disc["images"], y=y_disc, is_training=is_training
+      )
 
     z = inputs_gen["z"]
     generated = None if model=='disc' else self.generator(z=z, y=y_gen, is_training=is_training)
@@ -57,10 +58,11 @@ def build_graph(self, model=None, is_training=False):
                     print("Could not find EMA variable for %s." % name)
                 return var
             return ema_var
-        with tf.variable_scope("", values=[z, y_gen], reuse=True, custom_getter=ema_getter):
+        with tf.variable_scope("", values=[z, y_gen], reuse=True, custom_getter=ema_getter), gin.config_scope("ema"):
             generated_ema = self.generator(z, y=y_gen, is_training=is_training)
-    outputs_gen["generated"] = None if model=='disc' else generated
-    outputs_gen["generated_ema"] = None if model=='disc' else generated_ema
+    if model != 'disc':
+      outputs_gen["generated"] = generated
+      outputs_gen["generated_ema"] = generated_ema
     return {
         "gen": {
             "inputs": inputs_gen, 
@@ -166,7 +168,7 @@ class CompareGANLoader:
     b[np.arange(a.size),a] = 1
     return b
 
-  def run(self, built, z=None, y=None, seed=None, session=None):
+  def run(self, built, z=None, y=None, seed=None, ema_only=False, session=None):
     if session is None:
       session = tf.get_default_session()
     if y is None:
@@ -176,7 +178,10 @@ class CompareGANLoader:
       y = self.one_hot(y)
     if z is None:
       z = self.truncated_z_sample(seed=seed)
-    return session.run(built['gen']['outputs'], {
+    g_outputs = built['gen']['outputs']
+    if ema_only:
+      g_outputs = g_outputs['generated_ema']
+    return session.run(g_outputs, {
           built['gen']['inputs']['labels']: y,
           built['gen']['inputs']['z']: z,
         })

@@ -95,6 +95,11 @@ def call_with_accepted_args(fn, **kwargs):
   logging.info("Calling %s with args %s.", fn, kwargs)
   return fn(**kwargs)
 
+def numel(v):
+  elems = v.get_shape().num_elements()
+  if elems is None:
+    return v.get_shape()[1:].num_elements()
+  return elems
 
 def get_parameter_overview(variables, limit=40):
   """Returns a string with variables names, their shapes, count, and types.
@@ -122,7 +127,7 @@ def get_parameter_overview(variables, limit=40):
   max_name_len = max([len(v.name) for v in variables] + [len("Name")])
   max_shape_len = max([len(str(v.get_shape())) for v in variables] + [len(
       "Shape")])
-  max_size_len = max([len("{:,}".format(v.get_shape().num_elements()))
+  max_size_len = max([len("{:,}".format(numel(v)))
                       for v in variables] + [len("Size")])
   max_type_len = max([len(v.dtype.base_dtype.name) for v in variables] + [len(
       "Type")])
@@ -139,7 +144,7 @@ def get_parameter_overview(variables, limit=40):
 
   lines = [separator, header, separator]
 
-  total_weights = sum(v.get_shape().num_elements() for v in variables)
+  total_weights = sum(numel(v) for v in variables)
 
   # Create lines for up to 80 variables.
   for v in variables:
@@ -149,7 +154,7 @@ def get_parameter_overview(variables, limit=40):
     lines.append(var_line_format.format(
         v.name, max_name_len,
         str(v.get_shape()), max_shape_len,
-        "{:,}".format(v.get_shape().num_elements()), max_size_len,
+        "{:,}".format(numel(v)), max_size_len,
         v.dtype.base_dtype.name, max_type_len))
 
   lines.append(separator)

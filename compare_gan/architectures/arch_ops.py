@@ -568,14 +568,26 @@ def instance_std(x, eps=1e-5):
 @op_scope
 def group_std(x, groups=32, eps=1e-5, use_cross_replica_mean=None):
   N, H, W, C = x.shape
+  if N.value is None:
+    N = -1
   x = tf.reshape(x, [N, H, W, groups, C // groups])
   if use_cross_replica_mean:
     _, var = tpu_ops.cross_replica_moments(x, [1, 2, 4], keepdims=True)
   else:
     _, var = tf.nn.moments(x, [1, 2, 4], keepdims=True)
   std = tf.sqrt(var + eps)
-  std = tf.broadcast_to(std, x.shape)
-  return tf.reshape(std, [N, H, W, C])
+  # this fails for placeholders with unknown batch dimension
+  #std = tf.broadcast_to(std, x.shape)
+  #
+  #    std is e.g. [N, 1, 1, 32, 1]
+  #      x is e.g. [N, 4, 4, 32, 64]
+  # tiling is e.g. [1, 4, 4, 1, 64]
+  S = x.shape.as_list()
+  tiling = [1, S[1], S[2], 1, S[4]]
+  std = tf.tile(std, tiling)
+  # reshape back to e.g. [N, 4, 4, 2048]
+  out = tf.reshape(std, [N, H, W, C])
+  return out
 
 @op_scope
 def trainable_variable_ones(shape, name="v"):
