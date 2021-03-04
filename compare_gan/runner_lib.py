@@ -116,7 +116,7 @@ def get_options_dict(batch_size=gin.REQUIRED,
   """
   del discriminator_normalization
   if bn_activation == 'auto':
-    if gin.query_parameter('generator/standardize_batch.use_evonorm'):
+    if gin.query_parameter('standardize_batch.use_evonorm'):
       bn_activation = 'none'
     else:
       bn_activation = 'relu'
