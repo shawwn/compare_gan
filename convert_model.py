@@ -2,8 +2,33 @@
 import tensorflow as tf
 from compare_gan.gans.modular_gan import ModularGAN
 
+def generator_ema(self, z, y, *, is_training, **kwds):
+  g_vars = [var for var in tf.trainable_variables() if "generator" in var.name]
+  with tf.variable_scope("", reuse=tf.AUTO_REUSE, use_resource=True):
+    ema = tf.train.ExponentialMovingAverage(decay=self._ema_decay)
+    # Create the variables that will be loaded from the checkpoint.
+    ema.apply(g_vars)
+  def ema_getter(getter, name, *args, **kwargs):
+    var = getter(name, *args, **kwargs)
+    ema_var = ema.average(var)
+    if ema_var is None:
+      var_names_without_ema = {"u_var", "accu_mean", "accu_variance",
+                               "accu_counter", "update_accus"}
+      if name.split("/")[-1] not in var_names_without_ema:
+        logging.warning("Could not find EMA variable for %s.", name)
+      return var
+    return ema_var
+  with tf.variable_scope("", values=[z, y], reuse=True, custom_getter=ema_getter, use_resource=True), gin.config_scope("ema"):
+    print('z', z, 'y', y, 'is_training', is_training, 'kwds', kwds)
+    generated_ema = self.generator(z=z, y=y, is_training=is_training, **kwds)
+    generated_ema = tf.stop_gradient(generated_ema)
+    return generated_ema
+
+ModularGAN.generator_ema = generator_ema
+
 
 def build_graph(self, model=None, is_training=False):
+    tf.compat.v1.enable_resource_variables()
     batch_size = None
     y_gen, y_disc = None, None
     inputs_gen, inputs_disc = {}, {}
@@ -34,10 +59,9 @@ def build_graph(self, model=None, is_training=False):
     else:
       y_gen, y_disc = None, None
 
-    if model != 'gen':
-      outputs_disc["prediction"], _, _ = self.discriminator(
-          inputs_disc["images"], y=y_disc, is_training=is_training
-      )
+    outputs_disc["prediction"], _, _ = (None,None,None) if model=='gen' else self.discriminator(
+        inputs_disc["images"], y=y_disc, is_training=is_training
+    )
 
     z = inputs_gen["z"]
     generated = None if model=='disc' else self.generator(z=z, y=y_gen, is_training=is_training)
@@ -58,11 +82,10 @@ def build_graph(self, model=None, is_training=False):
                     print("Could not find EMA variable for %s." % name)
                 return var
             return ema_var
-        with tf.variable_scope("", values=[z, y_gen], reuse=True, custom_getter=ema_getter), gin.config_scope("ema"):
+        with tf.variable_scope("", values=[z, y_gen], reuse=True, custom_getter=ema_getter, use_resource=True):
             generated_ema = self.generator(z, y=y_gen, is_training=is_training)
-    if model != 'disc':
-      outputs_gen["generated"] = generated
-      outputs_gen["generated_ema"] = generated_ema
+    outputs_gen["generated"] = None if model=='disc' else generated
+    outputs_gen["generated_ema"] = None if model=='disc' else generated_ema
     return {
         "gen": {
             "inputs": inputs_gen, 
@@ -168,7 +191,7 @@ class CompareGANLoader:
     b[np.arange(a.size),a] = 1
     return b
 
-  def run(self, built, z=None, y=None, seed=None, ema_only=False, session=None):
+  def run(self, built, z=None, y=None, seed=None, session=None):
     if session is None:
       session = tf.get_default_session()
     if y is None:
@@ -178,10 +201,7 @@ class CompareGANLoader:
       y = self.one_hot(y)
     if z is None:
       z = self.truncated_z_sample(seed=seed)
-    g_outputs = built['gen']['outputs']
-    if ema_only:
-      g_outputs = g_outputs['generated_ema']
-    return session.run(g_outputs, {
+    return session.run(built['gen']['outputs'], {
           built['gen']['inputs']['labels']: y,
           built['gen']['inputs']['z']: z,
         })
@@ -259,13 +279,40 @@ def with_dep(dep, op):
   with tf.control_dependencies(dep() if callable(dep) else dep):
     return op() if callable(op) else tf.identity(op)
 
-# model_dir = 'gs://mlpublic-euw4/runs/bigrun97/dec28/run6_evos0_imagenet_dlrmul_0_4'
-# import convert_model; reload(convert_model); loader = convert_model.CompareGANLoader( model_dir ); inout = loader.build(is_training=True); gs = tf.train.get_or_create_global_step()
-# label=7; step=gs.eval(); seed=4; truncation=0.7; fake=loader.run(inout, ema_only=True, z=loader.truncated_z_sample(truncation=truncation, seed=seed), y=[label])
-# img = PIL.Image.fromarray(((fake[0]*0.5+0.5)*255).astype(np.uint8)); img.save('ema_label{label}_step{step}_trunc{truncation}_seed{seed}.png'.format(label=label, step=step, truncation=truncation, seed=seed))
 
-# import convert_model; reload(convert_model); loader = convert_model.CompareGANLoader( 'gs://arfa-euw4/runs/bigrun/nov19_01' ); inout = loader.build(is_training=True)
+import tf_tools as tft
+from tensorflow.python.tpu import tpu_function
+
+
+def update_bns(loader, batch_size=16, n=50, ema=True):
+  def computation():
+    random_z = loader.model.z_generator([batch_size, loader.model._z_dim], distribution_fn=tf.random.truncated_normal)
+    random_y = loader.model._get_one_hot_labels(tf.random.uniform([batch_size], dtype=tf.int32, minval=0, maxval=loader.num_classes))
+    gen = (loader.model.generator_ema if ema else loader.model.generator)(z=random_z, y=random_y, is_training=False)
+    print(gen)
+    gen_op = tf.group([gen])
+    return gen_op
+  @tpu_function.on_device_training_loop
+  def body():
+    return tf.contrib.tpu.repeat(n, computation)
+  return tft.tpu_shard(body)
+
+def regen(filename=None, seed=657, truncation=1.0, batch_size=16, n=None, offset=0, label=None, output='generated_ema', drange=[-1,1]):
+  n=batch_size if n is None else n;
+  inout = inout_eval;
+  import random;
+  p = lambda *x: print(*x) or x[0];
+  seed=p(seed if seed is not None else random.randint(0, 100000), 'seed');
+  rng = np.random.RandomState(seed=seed);
+  sample = r(inout['gen']['outputs'][output], {inout['gen']['inputs']['z']: loader.truncated_z_sample(seed=seed, truncation=truncation, batch_size=batch_size)[offset:][0:n], inout['gen']['inputs']['labels']: [label if label is not None else rng.randint(loader.num_classes) for _ in range(batch_size)][offset:][0:n]});
+  convert_model.save_image_grid(sample, p(filename if filename is not None else 'generated.png'), drange=drange)
+
+
+# model_dir = 'gs://arfa-euw4/runs/bigrun/nov19_01'
+# model_dir = 'gs://mlpublic-euw4/runs/bigrun97/dec28/run6_evos0_imagenet_dlrmul_0_4'
+# import convert_model; reload(convert_model); loader = convert_model.CompareGANLoader( model_dir ); inout = loader.build(is_training=True); inout_eval = loader.build(is_training=False);
 # loader.load() # only need to do this once
+# loader.load( ckpt = 'gs://arfa-euw4/runs/bigrun/nov19_01/model.ckpt-247250' )
 # convert_model.datdisk(r(convert_model.fimg2png(loader.run(inout, z=loader.truncated_z_sample(seed=0, truncation=1.0), y=[1])['generated_ema'][0])), 'foo.png')
 # or
 # samples = loader.run(inout, z=loader.truncated_z_sample(seed=0, truncation=1.0), y=[1])['generated'][0]
@@ -275,10 +322,13 @@ def with_dep(dep, op):
 # seed=None; rng = np.random.RandomState(seed=seed); batch_size = 16; sample = r(inout['gen']['outputs']['generated_ema'], {inout['gen']['inputs']['z']: loader.truncated_z_sample(seed=seed, truncation=1.0, batch_size=batch_size), inout['gen']['inputs']['labels']: [rng.randint(loader.num_classes) for _ in range(batch_size)]}); convert_model.save_image_grid(sample, 'generated.png')
 
 
-# means, variances, counters = [v for v in tf.global_variables() if "accu/accu_mean" in v.name], [v for v in tf.global_variables() if "accu/accu_variance" in v.name], [v for v in tf.global_variables() if "accu/accu_counter" in v.name]; commit_accu = [(m.assign(m / c, read_value=False), v.assign(v / c, read_value=False), c.assign(1, read_value=False)) for m, v, c in zip(means, variances, counters)];
+# u_vars = [v for v in tf.local_variables() + tf.global_variables() if v.name.rsplit('/', 1)[-1].rsplit(':',1)[0] == 'u_var']
+# means, variances, counters, updates = [v for v in tf.global_variables() if "accu/accu_mean" in v.name], [v for v in tf.global_variables() if "accu/accu_variance" in v.name], [v for v in tf.global_variables() if "accu/accu_counter" in v.name], [v for v in tf.global_variables() if "accu/update_accu" in v.name];
+
+# commit_accu = [(m.assign(m / c, read_value=False), v.assign(v / c, read_value=False), c.assign(1, read_value=False)) for m, v, c in zip(means, variances, counters)];
 
 
-# r([v.initializer for v in tf.all_variables() if v.name.rsplit('/', 1)[-1].rsplit(':',1)[0] == 'u_var']); r([v.initializer for v in tf.all_variables() if 'accu/' in v.name]); r(enable_updates); r(disable_update_accus); 
+# r([v.initializer for v in tf.local_variables() + tf.global_variables() if v.name.rsplit('/', 1)[-1].rsplit(':',1)[0] == 'u_var']); r([v.initializer for v in tf.local_variables() + tf.global_variables() if 'accu/' in v.name]); r(enable_updates); r(disable_update_accus); 
 
 #import random; p = lambda *x: print(*x) or x[0]; seed = p(random.randint(0, 1000), 'seed'); rng = np.random.RandomState(seed=seed); batch_size = 4; sample = r(inout['gen']['outputs']['generated_ema'], {inout['gen']['inputs']['z']: loader.truncated_z_sample(seed=seed, truncation=0.1, batch_size=batch_size), inout['gen']['inputs']['labels']: [rng.randint(loader.num_classes) for _ in range(batch_size)]}); convert_model.save_image_grid(sample, 'generated.png');
 
